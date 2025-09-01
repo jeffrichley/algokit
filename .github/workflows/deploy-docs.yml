@@ -35,7 +35,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv pip install -e ".[docs]"
+          uv pip install --system -e ".[docs]"
           mkdocs build
 
       - name: Setup Pages
