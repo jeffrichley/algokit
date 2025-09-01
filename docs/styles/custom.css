@@ -1,0 +1,140 @@
+/* Custom styles for Algorithm Kit documentation */
+
+/* Custom quote widget styles */
+.quote-widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.quote-widget blockquote {
+    font-size: 1.5rem;
+    font-style: italic;
+    margin: 0 0 1rem 0;
+    border: none;
+}
+
+.quote-widget cite {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* Custom button styles */
+.md-button {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.md-button--primary {
+    background-color: #667eea;
+    color: white;
+}
+
+.md-button--primary:hover {
+    background-color: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+/* Custom card grid styles */
+.grid.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.grid.cards > div {
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.grid.cards > div:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Custom mermaid diagram styles */
+.mermaid {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+/* Custom admonition styles */
+.admonition {
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.admonition.tip {
+    border-left-color: #28a745;
+}
+
+.admonition.note {
+    border-left-color: #17a2b8;
+}
+
+.admonition.warning {
+    border-left-color: #ffc107;
+}
+
+.admonition.important {
+    border-left-color: #dc3545;
+}
+
+/* Custom code block styles */
+.highlight {
+    border-radius: 8px;
+    border: 1px solid #e1e4e8;
+}
+
+/* Custom table styles */
+.md-typeset table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.md-typeset table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Custom navigation styles */
+.md-nav__link {
+    transition: color 0.2s ease;
+}
+
+.md-nav__link:hover {
+    color: #667eea;
+}
+
+/* Custom footer styles */
+.md-footer {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .grid.cards {
+        grid-template-columns: 1fr;
+    }
+
+    .quote-widget {
+        padding: 1.5rem;
+    }
+
+    .quote-widget blockquote {
+        font-size: 1.25rem;
+    }
+}

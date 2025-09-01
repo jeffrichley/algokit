@@ -1,0 +1,52 @@
+name: Documentation
+
+on:
+  # Build + publish rendered docs whenever main changes
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "pyproject.toml"
+      - "src/**"
+
+  # Allow manual rebuilds
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-deploy-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─── 1️⃣ Checkout ----------------------------------------------------------------
+      - uses: actions/checkout@v4
+
+      # ─── 2️⃣ Install the same interpreter you test with ------------------------------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # ─── 3️⃣ Install uv + nox (same bootstrap used in ci_nox.yml) --------------------
+      - run: |
+          python -m pip install --quiet uv
+          uv pip install --system --quiet 'nox>=2024.4.15'
+
+      # ─── 4️⃣ Build docs via the existing nox session ---------------------------------
+      - name: Build MkDocs HTML
+        run: nox --sessions docs            # builds into site/
+
+      # ─── 5️⃣ Upload the artifact for GitHub Pages ------------------------------------
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      # ─── 6️⃣ Deploy to GitHub Pages (main branch only) -------------------------------
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main'

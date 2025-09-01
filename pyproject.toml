@@ -1,0 +1,252 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+
+[project]
+name = "algokit"
+dynamic = ["version", "readme"]
+description = "A python implementation of control and learning algorithms"
+authors = [
+  {name = "Jeff Richley", email = "jeffrichley@gmail.com"}
+]
+license = {text = "MIT"}
+requires-python = ">=3.11"
+keywords = ["python,control,learning,ai"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Software Development :: Libraries",
+  "Typing :: Typed"
+]
+dependencies = [
+  "pydantic>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/jeffrichley/algokit"
+Documentation = "https://jeffrichley.github.io/algokit"
+Repository = "https://github.com/jeffrichley/algokit.git"
+"Bug Tracker" = "https://github.com/jeffrichley/algokit/issues"
+Changelog = "https://github.com/jeffrichley/algokit/blob/main/CHANGELOG.md"
+Source = "https://github.com/jeffrichley/algokit"
+
+[tool.setuptools.dynamic]
+version = {attr = "algokit.__version__"}
+readme = {file = "README.md"}
+
+[project.optional-dependencies]
+dev = [
+  "black>=24.3.0",
+  "ruff>=0.4.0",
+  "pre-commit>=3.6",
+  "mkdocs-material>=9.5",
+  "pip-audit>=2.6",
+  "ipython>=8.10",
+  "types-requests",
+  "vulture>=2.14",
+  "hypothesis>=6.136.6",
+  "monkeytype>=23.3.0",
+  "mypy>=1.17.0",
+  "pytest>=8.4.1",
+  "pytest-asyncio>=1.1.0",
+  "pytest-cov>=6.2.1",
+  "coverage>=7.0.0",
+  "pytest-html>=4.1.1",
+  "pytest-mock>=3.14.1",
+  "pytest-randomly>=3.16.0",
+  "pytest-repeat>=0.9.4",
+  "pytest-timeout>=2.4.0",
+  "pytest-xdist>=3.8.0",
+  "radon>=6.0",
+  "types-pyyaml>=6.0.12.20250516",
+  "xenon>=0.9",
+  "validate-pyproject>=0.24.1",
+  "toml-sort>=0.24.2",
+  "psutil>=7.0.0",
+  "types-pillow>=10.2.0.20240822",
+  "types-setuptools>=80.9.0.20250529",
+  "types-urllib3>=1.26.25.14",
+]
+test = [
+  "hypothesis>=6.136.6",
+  "pytest-benchmark>=4.0.0",
+  "psutil>=5.9.0"
+]
+docs = [
+  "mkdocs>=1.5.0",
+  "mkdocs-material>=9.5.0",
+  "mkdocs-mermaid2-plugin>=1.0.0",
+  "mkdocs-git-revision-date-localized-plugin>=1.2.0",
+  "mkdocstrings>=0.24.0",
+  "mkdocstrings-python>=1.7.0"
+]
+typecheck = [
+  "mypy"
+]
+security = [
+  "pip-audit"
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+files = ["src", "tests"]
+python_version = "3.11"
+mypy_path = "stubs"
+# ✅ Basic safety
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_equality = true
+# ✅ Any-type restrictions
+disallow_any_unimported = true
+disallow_any_expr = true
+disallow_any_decorated = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+# ✅ Warning enforcement
+warn_return_any = true
+warn_unused_ignores = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_unreachable = true
+# ✅ Coverage enforcement
+implicit_reexport = false
+# ✅ Import type-checking
+ignore_missing_imports = false # change to true *only for per-module overrides*
+follow_imports = "normal"
+show_error_codes = true
+# ✅ Clean output formatting
+pretty = true
+color_output = true
+show_column_numbers = true
+exclude = []
+
+# Test-specific overrides - relaxed typing for test files
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Disable noisy test-specific error codes
+disable_error_code = [
+    "misc",              # Expression type contains "Any" (mostly decorators)
+    "no-untyped-def",    # Missing type annotations for arguments
+    "attr-defined",      # Attribute errors (mock objects)
+    "comparison-overlap", # Comparison overlap errors
+    "var-annotated",     # Variable annotation issues
+    "arg-type",          # Argument type mismatches (common in tests)
+#    "unused-ignore",     # Type ignores that do nothing
+]
+# Relax typing requirements for test files
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
+no_implicit_optional = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.benchmark]
+min_rounds = 5           # Minimum number of test rounds to run
+max_time = 10.0          # Maximum time (seconds) to spend on each benchmark
+warmup = true            # Run warmup iterations before timing
+warmup_iterations = 3    # Number of warmup iterations to run
+
+[tool.pytest.randomly]
+# Enable random test ordering
+enabled = true
+# Show the seed used for reproducibility
+seed = "auto"
+# Randomize test collection order
+randomize_by_default = true
+
+# Pytest configuration moved to pytest.ini for consistency
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src"] # Helps with module resolution
+exclude = [
+    "stubs",  # External library stubs that we don't control
+    "examples",  # Example code may have different standards
+    "scripts",  # Utility scripts may have different standards
+]
+
+[tool.ruff.lint]
+extend-select = [
+  "E",    # pycodestyle errors (syntax, indentation, etc.)
+  "F",    # pyflakes (logical errors, unused imports)
+  "I",    # isort (import sorting)
+  "N",    # pep8-naming (naming conventions)
+  "B",    # flake8-bugbear (bug-prone patterns)
+  "Q",    # flake8-quotes (quote consistency)
+  "SIM",  # flake8-simplify (code simplification)
+  "C90",  # mccabe (cyclomatic complexity)
+  "ARG",  # flake8-unused-arguments
+  "TID",  # flake8-tidy-imports (import organization)
+  "UP",   # pyupgrade (modern Python syntax)
+  "PL",   # pylint (general linting)
+  "PERF", # perflint (performance issues)
+  "D"     # pydocstyle (docstring conventions)
+]
+ignore = [
+  "E501", # Line too long (we use Black's wrapping)
+  "PLR2004" # Magic value used in comparison (mostly in tests where it's acceptable)
+]
+fixable = ["ALL"] # Enables autofix where possible
+unfixable = [] # Keep empty to allow all fixes
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Test files - relax some rules for test code
+"tests/**/*.py" = [
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D200",  # One-line docstring should fit on one line
+    "D205",  # 1 blank line required between summary line and description
+    "D400",  # First line should end with a period
+    "D401",  # First line should be in imperative mood
+    "D415",  # First line should end with a period, question mark, or exclamation point
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.xenon]
+max-absolute = "B"    # Maximum complexity for any single function (A=0, B=10, C=20)
+max-modules = "A"     # Maximum complexity for any single module (A=0, B=10, C=20)
+max-average = "A"     # Maximum average complexity across all modules (A=0, B=10, C=20)
+exclude = ["tests", "examples", "scripts"]

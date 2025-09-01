@@ -1,0 +1,53 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "jeffrichley"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      pytest:
+        patterns:
+          - "pytest*"
+        update-types:
+          - "minor"
+          - "patch"
+      types:
+        patterns:
+          - "types-*"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-tools:
+        patterns:
+          - "ruff*"
+          - "mypy*"
+          - "black*"
+          - "isort*"
+          - "opencv*"
+          - "pillow*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Ignore major version bumps for critical dependencies
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pytest"
+        update-types: ["version-update:semver-major"]
+      # Ignore unrelated package with same name
+      - dependency-name: "algokit"
+    # Allow auto-merge for patch updates (security fixes)
+    auto-merge:
+      when:
+        - dependency-type: "direct"
+        - update-type: "patch"
+        - base: "main"
