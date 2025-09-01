@@ -63,7 +63,7 @@ Get up and running with Algorithm Kit in minutes:
 ## Architecture at a Glance
 
 ```mermaid
-flowchart LR
+graph LR
     A[Source Code] --> B[Testing]
     B --> C[Quality Checks]
     C --> D[Documentation]

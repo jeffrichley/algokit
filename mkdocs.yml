@@ -79,6 +79,11 @@ plugins:
   - mermaid2:
       arguments:
         theme: dark
+        mermaid:
+          theme: dark
+          flowchart:
+            useMaxWidth: true
+            htmlLabels: true
 
 nav:
   - Overview: index.md
