@@ -44,9 +44,7 @@ markdown_extensions:
       generic: true
   - pymdownx.caret
   - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: material.extensions.emoji.twemoji
-      emoji_generator: material.extensions.emoji.to_svg
+  - pymdownx.emoji
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
@@ -54,11 +52,7 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: mermaid2.fence_mermaid_custom
+  - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist
