@@ -87,6 +87,15 @@ plugins:
 
 nav:
   - Overview: index.md
+  - Algorithm Families:
+      - Classic Dynamic Programming: classic-dp.md
+      - Reinforcement Learning (Model-Free): reinforcement-learning.md
+      - Hierarchical Reinforcement Learning: hrl.md
+      - Dynamic Movement Primitives: dmps.md
+      - Gaussian Process Modeling: gaussian-process.md
+      - Real-Time Control: real-time-control.md
+      - Model Predictive Control: mpc.md
+      - Classical Planning Algorithms: classical-planning.md
   - API Reference: api.md
   - Contributing: contributing.md
   - Security: SECURITY.md
