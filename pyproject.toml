@@ -48,7 +48,7 @@ dev = [
   "ruff>=0.4.0",
   "pre-commit>=3.6",
   "mkdocs-material>=9.5",
-  "pip-audit>=2.6",
+  "pip-audit>=2.9.0",
   "ipython>=8.10",
   "types-requests",
   "vulture>=2.14",
@@ -74,6 +74,7 @@ dev = [
   "types-pillow>=10.2.0.20240822",
   "types-setuptools>=80.9.0.20250529",
   "types-urllib3>=1.26.25.14",
+  "commitizen>=4.8.3",
 ]
 test = [
   "hypothesis>=6.136.6",
@@ -94,7 +95,7 @@ typecheck = [
   "mypy"
 ]
 security = [
-  "pip-audit"
+  # pip-audit is included in dev dependencies
 ]
 
 [tool.black]
@@ -252,3 +253,12 @@ max-absolute = "B"    # Maximum complexity for any single function (A=0, B=10, C
 max-modules = "A"     # Maximum complexity for any single module (A=0, B=10, C=20)
 max-average = "A"     # Maximum average complexity across all modules (A=0, B=10, C=20)
 exclude = ["tests", "examples", "scripts"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+tag_format = "v$version"
+update_changelog_on_bump = true
+version_files = [
+    "src/algokit/__init__.py:__version__"
+]

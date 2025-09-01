@@ -36,20 +36,15 @@ INSTALL_MODES = ["minimal", "full"]  # "minimal" == core deps only; "full" == de
 def install_project(session, mode: str = "minimal"):
     """Install the project with uv and the chosen extras mode."""
     assert mode in INSTALL_MODES
-    extras = "" if mode == "minimal" else "[dev]"
-    session.run("uv", "pip", "install", "-q", "-e", f".{extras}", external=True)
-    # Always install core test dependencies
-    session.run(
-        "uv",
-        "pip",
-        "install",
-        "-q",
-        "pytest",
-        "pytest-cov",
-        "pytest-asyncio",
-        "hypothesis",
-        external=True,
-    )
+
+    if mode == "minimal":
+        # Just core dependencies
+        session.run("uv", "pip", "install", "-q", "-e", ".", external=True)
+    elif mode == "full":
+        # Development: main + dev dependencies
+        session.run("uv", "pip", "install", "-q", "-e", ".[dev]", external=True)
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
 
 
 # -------- Sessions -------- #
@@ -73,7 +68,7 @@ def tests(session, mode):
 @nox.session(python=PYTHON_VERSIONS[0])
 def lint(session):
     """Run Ruff autofix + Black check."""
-    session.run("uv", "pip", "install", "-q", "ruff", "black", external=True)
+    install_project(session, "full")
     session.run("ruff", "check", "src", "tests", "--fix")
     session.run("black", "--check", "src", "tests")
 
@@ -89,6 +84,7 @@ def type_check(session):
 def docs(session):
     """Build MkDocs docs."""
     install_project(session, "full")
+    # Install docs dependencies on top of dev dependencies
     session.run("uv", "pip", "install", "-q", "-e", ".[docs]", external=True)
     session.run("mkdocs", "build", external=True)
 
@@ -97,6 +93,7 @@ def docs(session):
 def docs_linkcheck(session):
     """Check MkDocs docs links."""
     install_project(session, "full")
+    # Install docs dependencies on top of dev dependencies
     session.run("uv", "pip", "install", "-e", ".[docs]", external=True)
     # Build docs to check for internal link issues
     session.run("mkdocs", "build", external=True)
@@ -105,14 +102,14 @@ def docs_linkcheck(session):
 @nox.session(python=PYTHON_VERSIONS[0], name="pre-commit")
 def precommit_hooks(session):
     """Run pre-commit hooks on all files."""
-    session.run("uv", "pip", "install", "-q", "pre-commit", external=True)
+    install_project(session, "full")
     session.run("pre-commit", "run", "--all-files")
 
 
 @nox.session(python=PYTHON_VERSIONS[0])
 def coverage_html(session):
     """Generate an HTML coverage report."""
-    session.run("uv", "pip", "install", "-q", "coverage[toml]", external=True)
+    install_project(session, "full")
     session.run("coverage", "html")
     html_path = PROJECT_ROOT / "htmlcov" / "index.html"
     session.log(f"Generated coverage HTML at {html_path.as_uri()}")
@@ -124,7 +121,7 @@ def coverage_html(session):
 @nox.session(python=PYTHON_VERSIONS[0])
 def complexity(session):
     """Fail if cyclomatic complexity exceeds score B."""
-    session.run("uv", "pip", "install", "-q", "xenon", external=True)
+    install_project(session, "full")
     # Tweak --max-absolute (A=0, B=10, C=20) to your tolerance
     session.run("xenon", "--max-absolute", "B", "src")
 
@@ -132,7 +129,7 @@ def complexity(session):
 @nox.session(python=PYTHON_VERSIONS[0])
 def security(session):
     """Run pip-audit against project dependencies."""
-    session.run("uv", "pip", "install", "-q", "pip-audit", external=True)
+    install_project(session, "full")
     # Audit direct + transitive deps pinned in uv.lock
     session.run("pip-audit", "--progress-spinner=off")
 
@@ -140,6 +137,16 @@ def security(session):
 @nox.session(python=PYTHON_VERSIONS[0])
 def pyproject(session):
     """Validate pyproject.toml configuration."""
-    session.run("uv", "pip", "install", "-q", "-e", ".", external=True)
-    session.run("uv", "pip", "install", "-q", "validate-pyproject", external=True)
+    install_project(session, "full")
     session.run("validate-pyproject", "pyproject.toml")
+
+
+@nox.session(python=PYTHON_VERSIONS[0])
+def dev_full(session):
+    """Install all development dependencies including docs for full development setup."""
+    install_project(session, "full")
+    # Install docs dependencies on top of dev dependencies
+    session.run("uv", "pip", "install", "-q", "-e", ".[docs]", external=True)
+    session.log(
+        "Full development environment installed with main + dev + docs dependencies"
+    )

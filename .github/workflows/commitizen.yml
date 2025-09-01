@@ -13,6 +13,6 @@ jobs:
           fetch-depth: 0
 
       - name: Commitizen Bump
-        uses: commitizen-tools/commitizen-action@v0.24.0
+        uses: commitizen-tools/commitizen-action@0.24.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -52,9 +52,27 @@ pre-commit:
 release:
     gh pr create --fill --title "chore: release"
 
+# Commitizen commands
+commitizen-version:
+    uv run python -m commitizen version --project
+
+commitizen-bump:
+    uv run python -m commitizen bump
+
+commitizen-check:
+    uv run python -m commitizen check --rev-range HEAD~1..HEAD
+
 # Install development dependencies
 install:
-    uv sync --all-extras
+    uv sync --dev
+
+# Install all dependencies including docs for full development
+install-full:
+    nox -s dev_full
+
+# Install minimal dependencies (core only)
+install-minimal:
+    uv sync
 
 # Clean up generated files
 clean:
