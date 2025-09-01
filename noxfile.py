@@ -55,13 +55,15 @@ def install_project(session, mode: str = "minimal"):
 def tests(session, mode):
     """Run pytest with coverage."""
     install_project(session, mode)
+
+    # For minimal mode, we need to install test dependencies separately
+    if mode == "minimal":
+        session.run("uv", "pip", "install", "-q", "pytest", "pytest-cov", external=True)
+
     session.run(
         "pytest",
         "tests",
         "--disable-warnings",
-        "--cov=src",
-        "--cov-report=term-missing",
-        external=True,
     )
 
 
