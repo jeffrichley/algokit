@@ -86,7 +86,9 @@ docs = [
   "mkdocs-mermaid2-plugin>=1.0.0",
   "mkdocs-git-revision-date-localized-plugin>=1.2.0",
   "mkdocstrings>=0.24.0",
-  "mkdocstrings-python>=1.7.0"
+  "mkdocstrings-python>=1.7.0",
+  # Add pymdownx extensions for Material theme functionality
+  "pymdown-extensions>=10.0.0"
 ]
 typecheck = [
   "mypy"
@@ -194,7 +196,6 @@ exclude = [
     "scripts",  # Utility scripts may have different standards
 ]
 
-
 [tool.ruff.lint]
 extend-select = [
   "E",    # pycodestyle errors (syntax, indentation, etc.)
@@ -241,12 +242,6 @@ convention = "google"
     "D400",  # First line should end with a period
     "D401",  # First line should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
-]
-# Ignore YAML validation issues for mkdocs.yml with !!python/name: syntax
-"mkdocs.yml" = [
-    "Y001",  # YAML validation issues
-    "Y002",  # YAML validation issues
-    "Y003",  # YAML validation issues
 ]
 
 [tool.setuptools.packages.find]

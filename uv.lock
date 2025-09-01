@@ -53,6 +53,7 @@ docs = [
     { name = "mkdocs-mermaid2-plugin" },
     { name = "mkdocstrings" },
     { name = "mkdocstrings-python" },
+    { name = "pymdown-extensions" },
 ]
 security = [
     { name = "pip-audit" },
@@ -89,6 +90,7 @@ requires-dist = [
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "psutil", marker = "extra == 'test'", specifier = ">=5.9.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.1.0" },
     { name = "pytest-benchmark", marker = "extra == 'test'", specifier = ">=4.0.0" },
