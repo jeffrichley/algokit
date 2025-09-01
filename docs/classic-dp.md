@@ -5,7 +5,13 @@ Model problems with optimal substructure and overlapping subproblems.
 ## Linear DP
 
 ### Fibonacci
-TODO: Implementation forthcoming.
+Compute Fibonacci numbers using a simple dynamic programming approach.
+
+```python
+from algokit.classic_dp import fibonacci
+
+fibonacci(10)  # 55
+```
 
 ### Longest Increasing Subsequence (LIS)
 TODO: Implementation forthcoming.

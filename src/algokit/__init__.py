@@ -5,6 +5,9 @@ __author__ = "Jeff Richley"
 __email__ = "jeffrichley@gmail.com"
 
 
+from algokit.classic_dp import fibonacci
+
+
 def main_function(input_data: str | None) -> str:
     """Main function for Algorithm Kit.
 
@@ -22,4 +25,4 @@ def main_function(input_data: str | None) -> str:
     return f"Processed: {input_data}"
 
 
-__all__ = ["main_function"]
+__all__ = ["main_function", "fibonacci"]
