@@ -40,6 +40,14 @@ jobs:
       - name: Build MkDocs HTML
         run: nox --sessions docs            # builds into site/
 
+      # ─── 4️⃣ Copy docs to root for GitHub Pages ---------------------------------
+      - name: Prepare for GitHub Pages
+        run: |
+          # Copy all contents from site/ to root for GitHub Pages deployment
+          cp -r site/* .
+          # Remove the site directory
+          rm -rf site
+
       # ─── 5️⃣ Upload the artifact for GitHub Pages ------------------------------------
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
