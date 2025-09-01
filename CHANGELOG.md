@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.2.2 (2025-09-01)
+
+### Fix
+
+- **docs**: Fix Mermaid diagram rendering in documentation
+
 ## v0.2.1 (2025-09-01)
 
 ### Fix
