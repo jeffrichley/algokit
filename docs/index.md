@@ -9,76 +9,20 @@
 
 ## Algorithm Families
 
-- [Classic Dynamic Programming](classic-dp.md)
-  - Linear DP
-    - [Fibonacci](classic-dp.md#fibonacci)
-    - [Longest Increasing Subsequence (LIS)](classic-dp.md#longest-increasing-subsequence-lis)
-    - [Maximum Subarray (Kadane's Algorithm)](classic-dp.md#maximum-subarray-kadane-s-algorithm)
-    - [House Robber](classic-dp.md#house-robber)
-    - [Climbing Stairs](classic-dp.md#climbing-stairs)
-    - [Jump Game I & II](classic-dp.md#jump-game-i-ii)
-  - 2D / Grid-Based DP
-    - [Unique Paths](classic-dp.md#unique-paths)
-    - [Minimum Path Sum](classic-dp.md#minimum-path-sum)
-    - [Longest Common Subsequence (LCS)](classic-dp.md#longest-common-subsequence-lcs)
-    - [Edit Distance](classic-dp.md#edit-distance)
-    - [Maximum Square Submatrix](classic-dp.md#maximum-square-submatrix)
-  - Knapsack Variants
-    - [0/1 Knapsack](classic-dp.md#0-1-knapsack)
-    - [Unbounded Knapsack](classic-dp.md#unbounded-knapsack)
-    - [Partition Equal Subset Sum](classic-dp.md#partition-equal-subset-sum)
-    - [Target Sum](classic-dp.md#target-sum)
-  - String DP
-    - [Longest Common Subsequence (LCS)](classic-dp.md#longest-common-subsequence-lcs-1)
-    - [Edit Distance](classic-dp.md#edit-distance-1)
-    - [Regular Expression Matching](classic-dp.md#regular-expression-matching)
-    - [Wildcard Matching](classic-dp.md#wildcard-matching)
-    - [Palindromic Substrings](classic-dp.md#palindromic-substrings)
-  - Interval DP
-    - [Matrix Chain Multiplication](classic-dp.md#matrix-chain-multiplication)
-    - [Burst Balloons](classic-dp.md#burst-balloons)
-    - [Palindrome Partitioning](classic-dp.md#palindrome-partitioning)
-  - Bitmask / Digit DP
-    - [Traveling Salesman Problem (TSP)](classic-dp.md#traveling-salesman-problem-tsp)
-    - [Assignment Problem](classic-dp.md#assignment-problem)
-    - [Digit Sum Count](classic-dp.md#digit-sum-count)
-  - Tree/DAG DP
-    - [Diameter of Tree](classic-dp.md#diameter-of-tree)
-    - [House Robber III](classic-dp.md#house-robber-iii)
-    - [Longest Path in DAG](classic-dp.md#longest-path-in-dag)
-- [Reinforcement Learning (Model-Free)](reinforcement-learning.md)
-  - [Q-Learning](reinforcement-learning.md#q-learning)
-  - [SARSA](reinforcement-learning.md#sarsa)
-  - [Deep Q-Network (DQN)](reinforcement-learning.md#deep-q-network-dqn)
-  - [Proximal Policy Optimization (PPO)](reinforcement-learning.md#proximal-policy-optimization-ppo)
-  - [A2C / A3C](reinforcement-learning.md#a2c-a3c)
-- [Hierarchical Reinforcement Learning](hrl.md)
-  - [Options Framework](hrl.md#options-framework)
-  - [Feudal Reinforcement Learning](hrl.md#feudal-reinforcement-learning)
-  - [MAXQ Decomposition](hrl.md#maxq-decomposition)
-  - [HIRO](hrl.md#hiro)
-- [Dynamic Movement Primitives](dmps.md)
-  - [DMP Encoding/Decoding](dmps.md#dmp-encoding-decoding)
-  - [Imitation Learning Using DMPs](dmps.md#imitation-learning-using-dmps)
-- [Gaussian Process Modeling](gaussian-process.md)
-  - [Gaussian Process Regression](gaussian-process.md#gaussian-process-regression)
-  - [Sparse Gaussian Processes](gaussian-process.md#sparse-gaussian-processes)
-  - [Bayesian Optimization](gaussian-process.md#bayesian-optimization)
-  - [PILCO](gaussian-process.md#pilco)
-- [Real-Time Control](real-time-control.md)
-  - [PID Controller (P/PI/PD/PID)](real-time-control.md#pid-controller-p-pi-pd-pid)
-  - [Bang-bang Control](real-time-control.md#bang-bang-control)
-  - [Kalman Filter](real-time-control.md#kalman-filter)
-- [Model Predictive Control](mpc.md)
-  - [Finite Horizon MPC](mpc.md#finite-horizon-mpc)
-  - [Nonlinear MPC](mpc.md#nonlinear-mpc)
-  - [Learning-based MPC](mpc.md#learning-based-mpc)
-- [Classical Planning Algorithms](classical-planning.md)
-  - [A*](classical-planning.md#a)
-  - [Dijkstra's](classical-planning.md#dijkstra-s)
-  - [RRT / PRM](classical-planning.md#rrt-prm)
-  - [STRIPS / PDDL](classical-planning.md#strips-pddl)
+Explore the algorithm landscapes covered by Algorithm Kit.
 
+| Family | Highlighted Algorithms | Status |
+| --- | --- | --- |
+| [Classic Dynamic Programming](classic-dp.md) | Fibonacci, LIS, Knapsack | :material-code-tags: Code |
+| [Reinforcement Learning (Model-Free)](reinforcement-learning.md) | Q-Learning, SARSA, DQN | :material-progress-clock: Coming Soon |
+| [Hierarchical Reinforcement Learning](hrl.md) | Options, Feudal RL, MAXQ, HIRO | :material-progress-clock: Coming Soon |
+| [Dynamic Movement Primitives](dmps.md) | DMP Encoding, Imitation Learning | :material-progress-clock: Coming Soon |
+| [Gaussian Process Modeling](gaussian-process.md) | Regression, Bayesian Optimization | :material-progress-clock: Coming Soon |
+| [Real-Time Control](real-time-control.md) | PID, Bang-bang, Kalman Filter | :material-progress-clock: Coming Soon |
+| [Model Predictive Control](mpc.md) | Finite Horizon, Nonlinear, Learning-based | :material-progress-clock: Coming Soon |
+| [Classical Planning Algorithms](classical-planning.md) | A*, Dijkstra, RRT, STRIPS | :material-progress-clock: Coming Soon |
+
+**Status legend**: :material-code-tags: Code available · :material-progress-clock: Coming Soon
 
 ## Quick Start
 
