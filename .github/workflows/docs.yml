@@ -23,13 +23,13 @@ jobs:
 
     steps:
       # ─── 1️⃣ Checkout ----------------------------------------------------------------
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # ─── 2️⃣ Install the same interpreter you test with ------------------------------
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+          cache: "uv"
 
       # ─── 3️⃣ Install uv + nox (same bootstrap used in ci_nox.yml) --------------------
       - run: |
@@ -40,21 +40,5 @@ jobs:
       - name: Build MkDocs HTML
         run: nox --sessions docs            # builds into site/
 
-      # ─── 4️⃣ Copy docs to root for GitHub Pages ---------------------------------
-      - name: Prepare for GitHub Pages
-        run: |
-          # Copy all contents from site/ to root for GitHub Pages deployment
-          cp -r site/* .
-          # Remove the site directory
-          rm -rf site
-
-      # ─── 5️⃣ Upload the artifact for GitHub Pages ------------------------------------
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      # ─── 6️⃣ Deploy to GitHub Pages (main branch only) -------------------------------
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-        if: github.ref == 'refs/heads/main'
+      # ─── 4️⃣ Documentation built successfully --------------------------------------
+      # Note: Documentation deployment is handled by the dedicated deploy-docs.yml workflow

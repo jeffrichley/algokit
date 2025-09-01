@@ -64,10 +64,6 @@ clean:
     rm -rf .pytest_cache
     rm -rf .mypy_cache
     rm -rf .ruff_cache
-    # Clean GitHub Pages build artifacts
-    rm -f index.html 404.html sitemap.xml sitemap.xml.gz
-    rm -rf assets search api contributing SECURITY
-    rm -f objects.inv
 
 # Show help
 default:

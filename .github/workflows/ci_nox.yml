@@ -16,7 +16,7 @@ jobs:
         python-version: ["3.11", "3.12"]
         mode: [minimal, full]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Python and Nox
         uses: wntrblm/nox@2025.05.01
