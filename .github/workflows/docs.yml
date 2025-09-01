@@ -29,7 +29,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "uv"
 
       # ─── 3️⃣ Install uv + nox (same bootstrap used in ci_nox.yml) --------------------
       - run: |
