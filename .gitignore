@@ -48,6 +48,17 @@ dist/
 site/
 docs/build/
 docs/site/
+# GitHub Pages build artifacts (built to root for deployment)
+index.html
+404.html
+sitemap.xml
+sitemap.xml.gz
+assets/
+search/
+api/
+contributing/
+SECURITY/
+objects.inv
 
 # -----------------------------------------------------------------------------
 # 🧠 IDEs & Editor Noise

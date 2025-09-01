@@ -90,7 +90,7 @@ def docs(session):
     """Build MkDocs docs."""
     install_project(session, "full")
     session.run("uv", "pip", "install", "-q", "-e", ".[docs]", external=True)
-    session.run("mkdocs", "build", external=True)
+    session.run("mkdocs", "build", "--site-dir", ".", external=True)
 
 
 @nox.session(python=PYTHON_VERSIONS[0])
@@ -99,7 +99,7 @@ def docs_linkcheck(session):
     install_project(session, "full")
     session.run("uv", "pip", "install", "-q", "-e", ".[docs]", external=True)
     # Build docs to check for internal link issues
-    session.run("mkdocs", "build", external=True)
+    session.run("mkdocs", "build", "--site-dir", ".", external=True)
 
 
 @nox.session(python=PYTHON_VERSIONS[0], name="pre-commit")
