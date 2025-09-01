@@ -5,7 +5,7 @@ Model problems with optimal substructure and overlapping subproblems.
 ## Linear DP
 
 ### Fibonacci
-TODO: Implementation forthcoming.
+TODO: Implementation and example forthcoming.
 
 ### Longest Increasing Subsequence (LIS)
 TODO: Implementation forthcoming.
@@ -102,3 +102,7 @@ TODO: Implementation forthcoming.
 
 ### Longest Path in DAG
 TODO: Implementation forthcoming.
+
+## Flow Diagrams
+
+Flow diagrams illustrating each algorithm will be added in future updates.
