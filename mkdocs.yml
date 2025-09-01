@@ -33,6 +33,16 @@ theme:
         name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    search: material/magnify
+    previous: material/chevron-left
+    next: material/chevron-right
+    top: material/arrow-up
+    link: material/link
+    expand: material/chevron-down
+    collapse: material/chevron-up
+
 
 markdown_extensions:
   - admonition
@@ -44,7 +54,9 @@ markdown_extensions:
       generic: true
   - pymdownx.caret
   - pymdownx.details
-  - pymdownx.emoji
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
@@ -52,7 +64,11 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist
