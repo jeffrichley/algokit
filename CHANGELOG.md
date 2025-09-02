@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.5.0 (2025-09-02)
+
+### Feat
+
+- **structure**: complete project restructuring and fibonacci implementation
+
 ## v0.4.0 (2025-09-02)
 
 ### Feat
