@@ -1,8 +1,6 @@
 ---
-description: "World-class Git and Quality Workflow for Algorithm Kit Projects"
 alwaysApply: false
 ---
-
 # 🌱 StuffIt: Git + Quality Workflow Guide for Algorithm Kit
 
 When the user says **"stuffit"**, run the full Git + quality workflow.

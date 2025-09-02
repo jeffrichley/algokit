@@ -1,37 +1,6 @@
-# 🧪 Algorithm Kit Project Testing Rules
-
-This document defines **precise, enforceable rules** for writing tests in Algorithm Kit projects.
-It's designed to:
-
-* Ensure consistent, maintainable, high-quality tests
-* Balance fast execution with deep coverage
-* Guide humans and AI contributors equally
-
 ---
-
-## ✅ Core Principles
-
-* Test **WHAT** the system does, not **HOW** it does it. Focus on public behavior, not internal implementation. Tests should fail when behavior is incorrect, not just when implementation changes.
-* All production code must have tests. No exceptions.
-* Tests must be readable, reliable, and relevant.
-* All code should maintain **≥90% line and branch coverage**, unless explicitly exempted.
-* Tests are tiered by scope and purpose—each type of test has a specific role in verifying the system.
-* They must be placed in the correct subdirectory (e.g., unit/, integration/, e2e/) and tagged with the appropriate @pytest.mark.* marker to indicate their type and execution scope.
-* This ensures test suites are fast, maintainable, and logically organized, and allows selective running in CI pipelines or during development.
-
-### 🔍 Example Directory + Marker Pairings
-
-| Directory              | Purpose                            | Marker                 |
-|------------------------|------------------------------------|------------------------|
-| `tests/unit/`          | Fast, isolated function/class tests | `@pytest.mark.unit`    |
-| `tests/integration/`   | Cross-module or DB/file system I/O  | `@pytest.mark.integration` |
-| `tests/functional/`    | High-level, multi-layer behavior    | `@pytest.mark.functional`  |
-| `tests/e2e/`           | End-to-end user flows or API         | `@pytest.mark.e2e`     |
-| `tests/performance/`   | Load/latency testing                | `@pytest.mark.performance` |
-
-
+alwaysApply: true
 ---
-
 ## ✅ Test Structure Rules
 
 ### ✅ Function Naming
@@ -155,6 +124,39 @@ Use interface segregation or fakes before mocking internal flow.
 
 ---
 
+### ⚠️ Exception Message Testing
+
+* **Always assert the exception type first.**
+
+  ```python
+  with pytest.raises(ValueError):
+      ...
+  ```
+
+* **If testing the message, check only the stable invariant.**
+  Use `match` with a minimal regex:
+
+  ```python
+  with pytest.raises(ValueError, match=r"type group"):
+      ...
+  ```
+
+* **Capture the exception for further checks when needed:**
+
+  ```python
+  with pytest.raises(ValueError) as excinfo:
+      factory.create_component("nonexistent_component")
+  assert "type group" in str(excinfo.value)
+  ```
+
+* **Prefer custom exceptions with fields.**
+  Instead of parsing messages, define domain-specific exceptions with attributes (e.g., `component`, `reason`, `code`) and assert those directly.
+
+* **Avoid brittle exact matches.**
+  Only test full message strings if they are a documented, user-facing contract.
+
+---
+
 ## 🧪 Pytest Markers
 
 Use markers for runtime scoping and CI targeting:
@@ -210,6 +212,62 @@ def test_returns_403_when_user_is_unauthenticated():
 * Use factory libraries (e.g., `FactoryBoy`, `pydantic-factories`)
 * Use `scope="session"` for containers or expensive setup
 * Avoid `autouse=True` unless necessary
+
+### ⚙️ Fixture Best Practices
+
+* **Scope smartly**:
+
+  * `function` scope for cheap, isolated objects.
+  * `module` scope for mid-weight resources shared in a file.
+  * `session` scope for heavy, read-only resources.
+
+* **Layer isolation**: session-scoped heavy fixture + function-scoped copy/reset fixture.
+
+```python
+@pytest.fixture(scope="session")
+def base_dataset():
+    return load_my_big_dataset()
+
+@pytest.fixture(scope="function")
+def dataset(base_dataset):
+    return copy.deepcopy(base_dataset)
+```
+
+* **Centralize in conftest.py**: avoid redeclaring.
+
+* **Prefer factory fixtures**: return a callable instead of many variants.
+
+```python
+@pytest.fixture
+def user_factory():
+    def make_user(name="alice", role="viewer"):
+        return User(name=name, role=role)
+    return make_user
+```
+
+* **Use `yield` for teardown**: clean and clear.
+
+* **Avoid `autouse=True` unless trivial/global**.
+
+* **Compose fixtures**: let small fixtures depend on others; pytest caches them per scope.
+
+* **Reset hooks**: keep resource session-scoped; reset state per test.
+
+* **Use built-ins**: `tmp_path`, `monkeypatch`, `caplog`, etc. before writing custom ones.
+
+* **Parametrize instead of duplicating**:
+
+```python
+@pytest.mark.parametrize("role", ["viewer", "editor", "admin"])
+def test_roles(user_factory, role):
+    user = user_factory(role=role)
+```
+
+* **Parallel safety**: ensure session-scoped fixtures work with pytest-xdist.
+
+* **Performance guardrails**: if fixture >200ms, widen scope or cache.
+
+* **Document scope choice** in the fixture docstring.
 
 ---
 
@@ -294,3 +352,4 @@ Tests must be:
 - **Focused** – each test proves one thing
 - **Descriptive** – names and docstrings must explain intent
 - **Strategic** – only mock external boundaries
+- **Fixture-smart** – scoped appropriately, centralized, and reused
