@@ -30,10 +30,20 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy --config-file=pyproject.toml src/ tests/
-        language: python
+        entry: nox -s type_check
+        language: system
         pass_filenames: false
         types: [python]
+      - id: pip-audit
+        name: pip-audit
+        entry: nox -s security
+        language: system
+        pass_filenames: false
+      - id: xenon-complexity
+        name: Check Code Complexity (Xenon)
+        entry: nox -s complexity
+        language: system
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -54,15 +64,3 @@ repos:
     rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
-  - repo: local
-    hooks:
-      - id: pip-audit
-        name: pip-audit
-        entry: uv run pip-audit
-        language: python
-        pass_filenames: false
-      - id: xenon-complexity
-        name: Check Code Complexity (Xenon)
-        entry: uv run xenon --max-absolute B --max-average A src/
-        language: python
-        pass_filenames: false
