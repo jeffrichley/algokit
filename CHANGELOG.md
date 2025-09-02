@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.4.0 (2025-09-02)
+
+### Feat
+
+- **rules**: import comprehensive development standards from redwing_core
+
 ## v0.3.0 (2025-09-02)
 
 ### Feat
