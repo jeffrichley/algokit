@@ -1,6 +1,6 @@
 # Hierarchical Reinforcement Learning
 
-Introduce temporal abstraction and multi-level decision-making.
+Introduce temporal abstraction and multi-level decision making by structuring tasks into subgoals or options. This hierarchy enables efficient exploration and learning for long-horizon problems.
 
 ## Algorithms
 

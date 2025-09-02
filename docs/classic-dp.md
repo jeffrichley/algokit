@@ -1,6 +1,6 @@
 # Classic Dynamic Programming
 
-Model problems with optimal substructure and overlapping subproblems.
+Solve discrete optimization and counting problems by exploiting overlapping subproblems and optimal substructure. Dynamic programming shines in path finding, resource allocation, and sequence analysis tasks.
 
 ## Linear DP
 
@@ -108,3 +108,7 @@ TODO: Implementation forthcoming.
 
 ### Longest Path in DAG
 TODO: Implementation forthcoming.
+
+## Flow Diagrams
+
+Flow diagrams illustrating each algorithm will be added in future updates.

@@ -1,6 +1,6 @@
 # Real-Time Control
 
-Implement fast, reactive control systems with feedback.
+Implement fast, reactive control systems that rely on continuous feedback. These methods keep robots and embedded systems stable under tight latency constraints.
 
 ## Algorithms
 

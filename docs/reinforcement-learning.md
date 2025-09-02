@@ -1,6 +1,6 @@
 # Reinforcement Learning (Model-Free)
 
-Teach agents to learn optimal behavior through interaction with an environment.
+Teach agents to learn optimal behavior through trial-and-error interaction when the environment dynamics are unknown. Model-free approaches focus on value functions and policies derived directly from experience.
 
 ## Algorithms
 

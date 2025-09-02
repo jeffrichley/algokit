@@ -1,6 +1,6 @@
 # Model Predictive Control
 
-Use optimization to plan control actions over a horizon.
+Use constrained optimization to plan control actions over a moving horizon. Model predictive control balances performance with constraint satisfaction in process control and robotics.
 
 ## Algorithms
 

@@ -1,6 +1,6 @@
 # Dynamic Movement Primitives
 
-Encode reusable trajectories for motion planning.
+Encode reusable motion trajectories as stable dynamical systems. Dynamic movement primitives let robots reproduce and adapt motions learned from demonstrations.
 
 ## Algorithms
 
