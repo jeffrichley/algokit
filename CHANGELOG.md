@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.3.0 (2025-09-02)
+
+### Feat
+
+- upgrade to Python 3.12+ and add py.typed support
+
 ## v0.2.2 (2025-09-01)
 
 ### Fix

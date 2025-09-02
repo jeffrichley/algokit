@@ -1,6 +1,6 @@
 """Algorithm Kit - A python implementation of control and learning algorithms."""
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 __author__ = "Jeff Richley"
 __email__ = "jeffrichley@gmail.com"
 
