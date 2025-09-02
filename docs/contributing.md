@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Algorithm Kit! This guide will he
 
 ### Prerequisites
 
-- Python 3.11 or 3.12
+- Python 3.12+
 - uv (Python package manager)
 - just (command runner)
 

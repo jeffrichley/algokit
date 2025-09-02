@@ -2,7 +2,7 @@
 
 Key features:
 - Uses `uv` for dependency installation.
-- Supports Python 3.11 and 3.12 (matrix-ready).
+- Supports Python 3.12+ (matrix-ready).
 - Sessions: tests, lint, type_check, docs, precommit, coverage_html, complexity, security, pyproject.
 - Re-uses local virtualenvs for speed; CI passes `--force-python` to isolate.
 - Parametrized "mode" for minimal vs full extras install.
@@ -29,7 +29,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 PROJECT_ROOT = Path(__file__).parent
 
-PYTHON_VERSIONS = ["3.11", "3.12"]  # Update when a stable 3.13 lands
+PYTHON_VERSIONS = ["3.12"]  # Update when a stable 3.13 lands
 INSTALL_MODES = ["minimal", "full"]  # "minimal" == core deps only; "full" == dev[all]
 
 

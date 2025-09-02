@@ -21,7 +21,7 @@ By participating in this project, you agree to maintain a respectful environment
 
 ### Prerequisites
 
-- **Python 3.11+**: Required for modern type hints and features
+- **Python 3.12+**: Required for modern type hints and features
 - **uv**: Fast Python package manager (recommended)
 - **Git**: Version control system
 

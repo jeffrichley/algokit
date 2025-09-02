@@ -1,0 +1,2 @@
+# This file indicates that the algokit package supports type checking
+# It allows mypy and other type checkers to recognize this as a typed package

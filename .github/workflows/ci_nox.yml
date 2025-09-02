@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
         mode: [minimal, full]
     steps:
       - uses: actions/checkout@v5
@@ -33,10 +33,10 @@ jobs:
           nox --sessions "tests-${{ matrix.python-version }}(mode='${{ matrix.mode }}')"
 
       - name: Run quality gates
-        if: ${{ matrix.python-version == '3.11' && matrix.mode == 'full' }}
+        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
         run: |
           nox -s lint type_check docs docs_linkcheck complexity security pyproject
 
       - name: Upload coverage to Codecov
-        if: ${{ matrix.python-version == '3.11' && matrix.mode == 'full' }}
+        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
         uses: codecov/codecov-action@v4
