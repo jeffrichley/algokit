@@ -1,6 +1,6 @@
 # Gaussian Process Modeling
 
-Model functions with uncertainty using Bayesian regression.
+Model unknown functions with quantified uncertainty using Bayesian regression. Gaussian processes are well suited for surrogate modeling, regression, and Bayesian optimization.
 
 ## Algorithms
 

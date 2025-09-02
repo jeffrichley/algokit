@@ -24,6 +24,34 @@ Explore the algorithm landscapes covered by Algorithm Kit.
 
 **Status legend**: :material-code-tags: Code available · :material-progress-clock: Coming Soon
 
+### Family Overviews
+
+Get a feel for the types of problems each family tackles before diving in.
+
+#### Classic Dynamic Programming
+Break complex problems into overlapping subproblems with optimal substructure. Ideal for tasks like path finding, resource allocation, and sequence analysis.
+
+#### Reinforcement Learning (Model-Free)
+Learn policies through trial and error when environment dynamics are unknown. Useful for game playing, robotics, and other sequential decision-making tasks.
+
+#### Hierarchical Reinforcement Learning
+Introduce temporal abstraction via options or subgoals to manage long-horizon tasks more efficiently.
+
+#### Dynamic Movement Primitives
+Encode smooth, reusable motion trajectories as stable dynamical systems, enabling robots to adapt motions to new goals and timings.
+
+#### Gaussian Process Modeling
+Model functions with quantified uncertainty using Bayesian regression—great for surrogate modeling, regression, and Bayesian optimization.
+
+#### Real-Time Control
+Design fast, feedback-driven controllers such as PID or Kalman filters for systems with tight latency requirements.
+
+#### Model Predictive Control
+Solve constrained optimization problems over a moving horizon to compute control actions, balancing performance and safety.
+
+#### Classical Planning Algorithms
+Search state spaces for action sequences that achieve goals in robotics and AI planning domains.
+
 ## Quick Start
 
 Get up and running with Algorithm Kit in minutes:
