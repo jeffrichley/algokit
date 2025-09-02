@@ -20,6 +20,12 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: ["--ignore-words-list=algokit,jeffrichley"]
+        exclude: ^(docs/site/|.git/|.nox/|htmlcov/)
   - repo: local
     hooks:
       - id: mypy

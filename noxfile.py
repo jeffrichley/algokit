@@ -4,7 +4,7 @@ Key features:
 - Uses `uv` for dependency installation.
 - Supports Python 3.12+ (matrix-ready).
 - Sessions: tests, lint, type_check, docs, precommit, coverage_html, complexity, security, pyproject.
-- Re-uses local virtualenvs for speed; CI passes `--force-python` to isolate.
+- Reuses local virtualenvs for speed; CI passes `--force-python` to isolate.
 - Parametrized "mode" for minimal vs full extras install.
 
 Generated from the Seedling Copier template.
@@ -23,8 +23,9 @@ nox.options.sessions = [
     "complexity",
     "security",
     "pyproject",
+    "spellcheck",
 ]
-# Re‑use existing venvs locally for speed; CI can override with --no-reuse-existing-virtualenvs
+# Reuse existing venvs locally for speed; CI can override with --no-reuse-existing-virtualenvs
 nox.options.reuse_existing_virtualenvs = True
 
 PROJECT_ROOT = Path(__file__).parent
@@ -141,6 +142,15 @@ def pyproject(session):
     """Validate pyproject.toml configuration."""
     install_project(session, "full")
     session.run("validate-pyproject", "pyproject.toml")
+
+
+@nox.session(python=PYTHON_VERSIONS[0])
+def spellcheck(session):
+    """Run codespell to check for spelling errors."""
+    install_project(session, "full")
+    session.run(
+        "codespell", "src", "tests", "docs", "--ignore-words-list=algokit,jeffrichley"
+    )
 
 
 @nox.session(python=PYTHON_VERSIONS[0])

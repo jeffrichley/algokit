@@ -26,7 +26,7 @@ docs-serve:
     mkdocs serve
 
 # Run all quality checks
-quality: lint type-check docs-linkcheck
+quality: lint type-check docs-linkcheck spellcheck
 
 # Generate coverage report
 coverage:
@@ -43,6 +43,10 @@ complexity:
 # Validate pyproject.toml
 pyproject:
     nox -s pyproject
+
+# Run spell checking
+spellcheck:
+    nox -s spellcheck
 
 # Run pre-commit hooks
 pre-commit:

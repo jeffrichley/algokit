@@ -75,6 +75,7 @@ dev = [
   "types-setuptools>=80.9.0.20250529",
   "types-urllib3>=1.26.25.14",
   "commitizen>=4.8.3",
+  "codespell>=2.4.0",
 ]
 test = [
   "hypothesis>=6.136.6",
@@ -265,3 +266,7 @@ update_changelog_on_bump = true
 version_files = [
     "src/algokit/__init__.py:__version__"
 ]
+
+[tool.codespell]
+ignore-words-list = "algokit,jeffrichley,pyproject"
+skip = "*.pyc,*.pyo,*.pyd,.git,*.so,*.egg,*.egg-info,.tox,.venv,.nox,htmlcov,site"
