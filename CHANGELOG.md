@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.6.0 (2025-09-02)
+
+### Feat
+
+- **quality**: add codespell integration for spell checking
+
+### Fix
+
+- **pre-commit**: use python language for local hooks to ensure proper uv environment
+
+### Refactor
+
+- **deps**: consolidate dependency groups and update tooling
+
 ## v0.5.0 (2025-09-02)
 
 ### Feat
