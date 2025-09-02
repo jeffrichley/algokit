@@ -1,273 +1,112 @@
-# 📘 Roadmap: AI, Planning, and Control Algorithms
-
-This document outlines a comprehensive roadmap for implementing and teaching a variety of foundational and advanced algorithms in AI, control, planning, and machine learning. It is designed to support instructional use, demos for students, and personal mastery. This project is named **AlgoKit**.
+Perfect, Jeff. Based on the full roadmap conversation you uploaded and your request to **ensure all implementation is under `src/`**, I’ve put together a comprehensive **project plan and directory structure** for **AlgoKit**, with packages organized by algorithm families, each housing implementations of their specific algorithms. Testing will live under a top-level `tests/` directory and mirror the structure of `src/`.
 
 ---
 
-## 🔁 Step-by-Step Plan for AlgoKit
+## ✅ ALGORITHMIC IMPLEMENTATION PLAN — AlgoKit
 
-### Phase 1: Setup and Scaffolding
+### 🧱 Base Project Structure
 
-1. ✅ Initialize GitHub repository: `algokit`
-2. ✅ Create top-level folder structure (see end of doc)
-3. ✅ Create template README and CONTRIBUTING docs
-4. ✅ Define testing framework (e.g. `pytest`, `unittest`)
-5. ✅ Set up CI (GitHub Actions or similar)
-
-### Phase 2: Core Implementations
-
-6. 🧠 Implement Classic DP problems (week-by-week)
-7. 🧪 Implement core RL algorithms (Q, SARSA, PPO, etc.)
-8. 🧱 Build HRL scaffolding (options, subgoal modeling)
-9. 🧬 Add DMP encoding/decoding + demo tasks
-10. 📈 Integrate GP regression and Bayesian opt
-11. ⏱ Build PID + Kalman controller demos
-12. 📉 Implement MPC with linear and nonlinear examples
-13. 🧭 Add optional planning tools (A\*, RRT, etc.)
-
-### Phase 3: Visualization and Teaching Support
-
-14. 📝 Write Jupyter notebooks for each algorithm
-15. 📊 Add animated visualizations (matplotlib, gifs)
-16. 🧑‍🏫 Create sample lecture slides (reveal.js or pptx)
-17. 🎓 Add student exercises and challenge problems
-
-### Phase 4: Final Polish and Deployment
-
-18. 🧹 Clean and lint all code (ruff, black, mypy)
-19. 🚀 Publish as a JupyterBook and/or GitHub Pages
-20. 🔁 Add plug-and-play `main.py` launcher for CLI use
-
----
-
-## 1. Classic Dynamic Programming (DP)
-
-### Goal:
-
-Model problems with optimal substructure and overlapping subproblems.
-
-### Categories & Algorithms:
-
-#### 1.1 Linear DP
-
-* Fibonacci (memoized/tabulated)
-* Longest Increasing Subsequence (LIS)
-* Maximum Subarray (Kadane’s Algorithm)
-* House Robber
-* Climbing Stairs
-* Jump Game I & II
-
-#### 1.2 2D / Grid-Based DP
-
-* Unique Paths
-* Minimum Path Sum
-* Longest Common Subsequence (LCS)
-* Edit Distance
-* Maximum Square Submatrix
-
-#### 1.3 Knapsack Variants
-
-* 0/1 Knapsack
-* Unbounded Knapsack
-* Partition Equal Subset Sum
-* Target Sum
-
-#### 1.4 String DP
-
-* LCS
-* Edit Distance
-* Regular Expression Matching
-* Wildcard Matching
-* Palindromic Substrings
-
-#### 1.5 Interval DP
-
-* Matrix Chain Multiplication
-* Burst Balloons
-* Palindrome Partitioning
-
-#### 1.6 Bitmask / Digit DP
-
-* Traveling Salesman Problem (TSP)
-* Assignment Problem
-* Digit Sum Count
-
-#### 1.7 Tree/DAG DP
-
-* Diameter of Tree
-* House Robber III
-* Longest Path in DAG
-
----
-
-## 2. Reinforcement Learning (Model-Free)
-
-### Goal:
-
-Teach agents to learn optimal behavior through interaction with an environment.
-
-### Algorithms:
-
-* Q-Learning
-* SARSA
-* Deep Q-Network (DQN)
-* Proximal Policy Optimization (PPO)
-* A2C / A3C
-
-### Concepts:
-
-* Exploration vs exploitation
-* Discounted return
-* Temporal difference learning
-* Experience replay and target networks
-
----
-
-## 3. Hierarchical Reinforcement Learning (HRL)
-
-### Goal:
-
-Introduce temporal abstraction and multi-level decision-making.
-
-### Algorithms:
-
-* Options Framework
-* Feudal Reinforcement Learning
-* MAXQ Decomposition
-* HIRO (state-of-the-art)
-
-### Concepts:
-
-* Subgoals
-* Macro-actions
-* Inter-option policy training
-
----
-
-## 4. Dynamic Movement Primitives (DMPs)
-
-### Goal:
-
-Encode reusable trajectories for motion planning.
-
-### Algorithms:
-
-* DMP encoding/decoding
-* Imitation learning using DMPs
-
-### Concepts:
-
-* Nonlinear dynamical systems
-* Attractor landscapes
-* Temporal scaling
-
----
-
-## 5. Gaussian Process Modeling
-
-### Goal:
-
-Model functions with uncertainty using Bayesian regression.
-
-### Algorithms:
-
-* GP Regression
-* Sparse GPs
-* Bayesian Optimization
-* PILCO (Model-based RL)
-
-### Concepts:
-
-* Kernel functions
-* Posterior predictive distribution
-* Acquisition functions (UCB, EI)
-
----
-
-## 6. Real-Time Control
-
-### Goal:
-
-Implement fast, reactive control systems with feedback.
-
-### Algorithms:
-
-* PID Controller (P/PI/PD/PID)
-* Bang-bang control
-* Kalman Filter
-
-### Concepts:
-
-* Feedback vs feedforward
-* Tuning gains
-* Real-time latency constraints
-
----
-
-## 7. Model Predictive Control (MPC)
-
-### Goal:
-
-Use optimization to plan control actions over a horizon.
-
-### Algorithms:
-
-* Finite Horizon MPC
-* Nonlinear MPC
-* Learning-based MPC
-
-### Concepts:
-
-* Cost functions
-* State and control constraints
-* Receding horizon optimization
-
----
-
-## 8. (Optional) Classical Planning Algorithms
-
-### Goal:
-
-Solve planning problems in state or configuration space.
-
-### Algorithms:
-
-* A\*
-* Dijkstra’s
-* RRT / PRM (sampling-based)
-* STRIPS / PDDL (symbolic AI)
-
-### Concepts:
-
-* Heuristics
-* Search graph expansion
-* Plan execution and validation
-
----
-
-## Suggested Structure
-
-```bash
+```
 algokit/
-├── classic_dp/
-├── reinforcement_learning/
-├── hrl/
-├── dmps/
-├── gaussian_process/
-├── real_time_control/
-├── mpc/
-├── classical_planning/
-├── notebooks/
-└── README.md
+├── src/
+│   ├── classic_dp/                  # 📘 Dynamic Programming (Non-RL)
+│   │   ├── linear_dp/
+│   │   ├── grid_dp/
+│   │   ├── knapsack/
+│   │   ├── string_dp/
+│   │   ├── interval_dp/
+│   │   ├── bitmask_dp/
+│   │   └── tree_dp/
+│   ├── reinforcement_learning/      # 🧪 Model-Free RL
+│   │   ├── tabular/
+│   │   ├── deep_q/
+│   │   └── policy_gradient/
+│   ├── hrl/                         # 🧠 Hierarchical RL
+│   │   ├── options_framework/
+│   │   ├── feudal_rl/
+│   │   └── hiro/
+│   ├── dmps/                        # 🤖 Dynamic Movement Primitives
+│   ├── gaussian_process/           # 📈 Gaussian Process Modeling
+│   ├── real_time_control/          # 🕒 Real-Time Control
+│   ├── mpc/                         # 🔁 Model Predictive Control
+│   └── classical_planning/         # 🧭 Optional: A*, STRIPS, RRT, etc.
+├── tests/
+│   ├── classic_dp/
+│   ├── reinforcement_learning/
+│   ├── hrl/
+│   ├── dmps/
+│   ├── gaussian_process/
+│   ├── real_time_control/
+│   ├── mpc/
+│   └── classical_planning/
+├── notebooks/                      # Teaching/demo notebooks
+├── assets/                         # GIFs, images, visualizations
+├── README.md
+├── pyproject.toml                  # With uv, ruff, black, pytest
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # GitHub Actions (test, lint, mypy)
+└── .pre-commit-config.yaml
 ```
 
-Each folder should include:
+---
 
-* Standalone implementations
-* Visualization and test cases
-* Notebook versions for demo/teaching
-* Annotated examples with didactic comments
+### 🧭 Roadmap Phases
+
+#### **🔹 Phase 1: Initialization**
+
+* [x] Create GitHub repo
+* [x] Scaffold project directory structure
+* [x] Add `pyproject.toml` with `uv`, `pytest`, `ruff`, `mypy`
+* [x] Add CI via GitHub Actions
+* [x] Configure pre-commit: `black`, `ruff`, `mypy`, `trailing-whitespace`
+
+#### **🔹 Phase 2: Implementation Modules**
+
+Each major folder in `src/` will have:
+
+* `__init__.py`
+* One subpackage per concept category (e.g., `linear_dp`, `tabular`)
+* Algorithm implementations with consistent naming:
+
+  * `fibonacci.py`
+  * `q_learning.py`
+  * `dmp_encoder.py`
+  * `pid_controller.py`
+* Optional `visualize.py` or `demo_*.py` files for visualization
+
+##### 🧩 Packages & Modules Breakdown
+
+| **Family**               | **Submodules**                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `classic_dp`             | `linear_dp`, `grid_dp`, `knapsack`, `string_dp`, `interval_dp`, `bitmask_dp`, `tree_dp` |
+| `reinforcement_learning` | `tabular` (Q, SARSA), `deep_q` (DQN), `policy_gradient` (PPO, A2C)                      |
+| `hrl`                    | `options_framework`, `feudal_rl`, `hiro`                                                |
+| `dmps`                   | `dmp_core.py`, `imitation_learning.py`                                                  |
+| `gaussian_process`       | `gp_regression.py`, `bayesian_optimization.py`                                          |
+| `real_time_control`      | `pid.py`, `kalman_filter.py`, `bang_bang.py`                                            |
+| `mpc`                    | `linear_mpc.py`, `nonlinear_mpc.py`                                                     |
+| `classical_planning`     | `astar.py`, `dijkstra.py`, `rrt.py`, `strips.py`                                        |
+
+#### **🔹 Phase 3: Testing**
+
+* Each `tests/<family>/` mirrors the structure of `src/`
+* Use `pytest` as test runner
+* One `test_*.py` file per algorithm
+* Example: `tests/classic_dp/linear_dp/test_fibonacci.py`
+
+#### **🔹 Phase 4: Teaching & Demos**
+
+* Jupyter notebooks in `notebooks/` for each family
+* Use Matplotlib / Pygame for visualizations
+* Include demo runners for live CLI interaction
 
 ---
 
-Ready to start building out each module or publishing this as a GitHub repo or JupyterBook.
+### 🧠 Best Practices
+
+* Type hint everything
+* Add Google-style docstrings to all public methods
+* Use `__all__` in `__init__.py` for clean API
+* Keep algorithm logic separate from I/O and visualization
+* Use `@dataclass` where useful (e.g. DMP params, MPC config)

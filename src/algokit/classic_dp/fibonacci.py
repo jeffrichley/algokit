@@ -1,6 +1,4 @@
-"""Classic dynamic programming algorithms."""
-
-from __future__ import annotations
+"""Fibonacci number implementation using dynamic programming."""
 
 
 def fibonacci(n: int) -> int:
@@ -23,6 +21,3 @@ def fibonacci(n: int) -> int:
     for _ in range(2, n + 1):
         a, b = b, a + b
     return b
-
-
-__all__ = ["fibonacci"]

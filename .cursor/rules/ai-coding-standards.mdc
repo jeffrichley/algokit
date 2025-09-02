@@ -1,0 +1,765 @@
+---
+alwaysApply: true
+---
+## 🐍 Python Code Style
+
+### Formatting Rules
+
+- **Line Length**: 88 characters (Black default)
+- **Target Python**: 3.12+
+- **Formatter**: Black (automatic)
+- **Linter**: Ruff (comprehensive)
+
+### Code Style Requirements
+
+#### ✅ DO:
+```python
+# Use type hints for all functions
+def process_data(data: list[dict[str, str]]) -> ProcessedResult:
+    """Process data and return results."""
+    pass
+
+# Use descriptive variable names
+user_config = load_user_config()
+processed_items = [item for item in items if item.is_valid]
+
+# Use proper spacing
+def calculate_score(
+    base_score: float,
+    multiplier: float = 1.0,
+    bonus: float = 0.0
+) -> float:
+    """Calculate final score with optional modifiers."""
+    return (base_score * multiplier) + bonus
+```
+
+#### ❌ DON'T:
+```python
+# No type hints
+def process_data(data):
+    pass
+
+# Poor variable names
+d = load_config()
+l = [i for i in items if i.valid]
+
+# Poor spacing
+def calculate_score(base_score:float,multiplier:float=1.0,bonus:float=0.0)->float:
+    return base_score*multiplier+bonus
+```
+
+### Naming Conventions
+
+- **Functions/Methods**: `snake_case`
+- **Classes**: `PascalCase`
+- **Constants**: `UPPER_SNAKE_CASE`
+- **Private Methods**: `_leading_underscore`
+- **Protected Methods**: `_leading_underscore` (convention only)
+
+---
+
+## 🧠 Type Safety Requirements
+
+### MyPy Configuration
+
+The project uses **extremely strict** MyPy settings:
+
+```toml
+[tool.mypy]
+# Basic safety
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_equality = true
+
+# Any-type restrictions
+disallow_any_unimported = true
+disallow_any_expr = true
+disallow_any_decorated = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+
+# Warning enforcement
+warn_return_any = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_unreachable = true
+```
+
+### Type Annotation Rules
+
+#### ✅ Required Type Annotations:
+```python
+# All function parameters
+def process_item(item: dict[str, str], config: Config) -> ProcessedItem:
+    pass
+
+# All return values
+def get_user_data(user_id: str) -> UserData:
+    pass
+
+# All variables with complex types
+user_list: list[User] = []
+config_map: dict[str, Config] = {}
+
+# Generic types
+from typing import TypeVar, Generic
+
+T = TypeVar('T')
+class Registry(Generic[T]):
+    def get_item(self, name: str) -> T:
+        pass
+```
+
+#### ❌ Forbidden:
+```python
+# No Any types (except in specific cases)
+def process_data(data: Any) -> Any:  # ❌ BANNED - Use specific types instead
+    pass
+
+# No untyped functions
+def process_data(data):  # ❌ BANNED
+    pass
+
+# No implicit Optional
+def get_user(user_id: str) -> User:  # ❌ if User can be None
+    pass
+```
+
+### Type Ignore Rules
+
+**Only use `# type: ignore` in these specific cases:**
+
+1. **@patch decorators only** (with permission):
+```python
+@patch('module.function')
+def test_something(mock_func: MagicMock) -> None:  # type: ignore[misc]  # patch decorator modifies signature
+    pass
+```
+
+2. **@pytest.fixture decorators** (with permission):
+```python
+@pytest.fixture  # type: ignore[misc]
+def test_data() -> TestData:
+    return TestData()
+```
+
+3. **Platform-specific code** (with justification):
+```python
+if sys.platform == "win32":
+    import win32api  # type: ignore[import]
+```
+
+**Always ask permission before using `# type: ignore`**
+
+---
+
+## 🧪 Testing Standards
+
+### Test Structure Requirements
+
+All tests must follow the **@testing-rules.mdc** guidelines:
+
+#### Test Organization:
+```
+tests/
+├── unit/           # Fast, isolated tests
+├── integration/    # Cross-module tests
+├── functional/     # High-level behavior
+├── e2e/           # End-to-end flows
+└── performance/   # Load/latency tests
+```
+
+#### Test Naming:
+```python
+# Files: test_<module>.py
+# Classes: Test<ClassName>
+# Methods: test_<expected_behavior>_when_<context>()
+
+@pytest.mark.unit
+def test_register_raises_on_duplicate() -> None:
+    """Test that register() raises ValueError if name already exists."""
+    # Arrange
+    registry = Registry()
+
+    # Act
+    with pytest.raises(ValueError):
+        registry.register("duplicate", {})
+
+    # Assert
+    assert "duplicate" not in registry.names
+```
+
+#### Test Requirements:
+- **Docstrings**: Every test must have a 1-line docstring
+- **Arrange-Act-Assert**: Clear separation with blank lines
+- **One assertion per test**: Focus on one behavior
+- **Meaningful assertions**: No `assert True`
+- **Proper mocking**: Only mock external systems
+
+### Coverage Requirements
+
+- **Minimum**: 80% overall
+- **New code**: 100% coverage required
+- **Critical paths**: 100% coverage required
+- **Security functions**: 100% coverage required
+
+### Test Examples
+
+#### ✅ Good Test:
+```python
+@pytest.mark.unit
+def test_registry_register_stores_builder() -> None:
+    """Test that register_builder stores a builder correctly."""
+    # Arrange
+    registry = Registry[EnvironmentBuilder, PluginGroupEnv](PluginGroup.ENV)
+    builder = MockEnvironmentBuilder()
+
+    # Act
+    registry.register_builder(builder, "test_builder")
+
+    # Assert
+    assert registry.get_builder("test_builder") is builder
+```
+
+#### ❌ Bad Test:
+```python
+def test_something():
+    # No docstring
+    registry = Registry()
+    registry.register("test", {})
+    assert True  # Meaningless assertion
+```
+
+---
+
+## 📚 Documentation Requirements
+
+### Docstring Standards
+
+All public APIs must use **Google-style docstrings**:
+
+```python
+def process_data_batch(
+    data: list[dict[str, str]],
+    processor: Optional[DataProcessor] = None,
+    batch_size: Optional[int] = None
+) -> ProcessedData:
+    """Process a batch of data records.
+
+    Args:
+        data: List of data records to process
+        processor: Optional custom processor (uses default if None)
+        batch_size: Optional batch size (auto-calculated if None)
+
+    Returns:
+        A ProcessedData object containing the processed results
+
+    Raises:
+        ValueError: If data list is empty or invalid
+        TypeError: If data contains invalid types
+
+    Example:
+        >>> data = [{"id": "1", "value": "test"}]
+        >>> result = process_data_batch(data)
+        >>> result.save("output.json")
+    """
+    pass
+```
+
+### Documentation Requirements:
+- **All public functions**: Must have docstrings
+- **All public classes**: Must have docstrings
+- **All public modules**: Must have docstrings
+- **Parameters**: Document with types
+- **Returns**: Document with types
+- **Exceptions**: Document all raised exceptions
+- **Examples**: Include for complex functions
+
+---
+
+## 📦 Import Organization
+
+### Import Order (enforced by Ruff):
+
+```python
+# 1. Standard library imports
+import os
+import sys
+from typing import List, Optional, TypeVar
+
+# 2. Third-party imports
+import numpy as np
+import pydantic
+from pluggy import PluginManager
+from unittest.mock import MagicMock
+
+# 3. Local imports (absolute only)
+from redwing_core.models import ExampleModel
+from redwing_core.core import CoreClass
+from redwing_core.typed_registry.types import PluginGroup
+```
+
+### Import Rules:
+- **No relative imports**: Use absolute imports only
+- **Group imports**: Standard library → Third-party → Local
+- **Sort imports**: Alphabetically within groups
+- **Single import per line**: For clarity
+
+#### ❌ Forbidden:
+```python
+# Relative imports
+from .models import ExampleModel  # ❌ BANNED
+from ..core import CoreClass      # ❌ BANNED
+
+# Multiple imports per line
+import os, sys, typing  # ❌ BANNED
+```
+
+---
+
+## ⚠️ Error Handling
+
+### Exception Handling Rules:
+
+```python
+# Use specific exceptions
+try:
+    result = process_data(data)
+except ValueError as e:
+    logger.error(f"Invalid data format: {e}")
+    raise
+except FileNotFoundError as e:
+    logger.error(f"Required file not found: {e}")
+    raise
+
+# Don't catch generic exceptions
+try:
+    result = process_data(data)
+except Exception as e:  # ❌ Too broad
+    logger.error(f"Error: {e}")
+    raise
+```
+
+### Custom Exceptions:
+```python
+class PluginNotFoundError(Exception):
+    """Raised when a plugin is not found in the registry."""
+    pass
+
+class PluginValidationError(Exception):
+    """Raised when plugin validation fails."""
+    pass
+```
+
+---
+
+## 📈 Code Complexity
+
+### Xenon Complexity Limits:
+- **Functions**: Maximum complexity B (10)
+- **Modules**: Maximum complexity A (0)
+- **Average**: Maximum complexity A (0)
+
+### Complexity Examples:
+
+#### ✅ Good (Low Complexity):
+```python
+def calculate_score(base: float, bonus: float = 0.0) -> float:
+    """Calculate final score."""
+    return base + bonus
+```
+
+#### ❌ Bad (High Complexity):
+```python
+def calculate_score(base: float, bonus: float = 0.0, multiplier: float = 1.0,
+                   penalty: float = 0.0, threshold: float = 100.0,
+                   max_score: float = 1000.0, min_score: float = 0.0) -> float:
+    """Calculate final score with many conditions."""
+    score = base + bonus
+    if score > threshold:
+        score = score * multiplier
+    if score > max_score:
+        score = max_score
+    if score < min_score:
+        score = min_score
+    if penalty > 0:
+        score = score - penalty
+    return score
+```
+
+---
+
+## 🔒 Security Guidelines
+
+### Dependency Security:
+- **pip-audit**: Run regularly to check for vulnerabilities
+- **Dependabot**: Automatic security updates enabled
+- **No known vulnerabilities**: All dependencies must be secure
+
+### Code Security:
+```python
+# Use parameterized queries (if using SQL)
+cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+
+# Validate all inputs
+def process_user_input(data: str) -> ProcessedData:
+    if not data or len(data) > MAX_LENGTH:
+        raise ValueError("Invalid input data")
+    return ProcessedData(data)
+
+# Don't expose sensitive information
+logger.info("Processing user request")  # ✅ Good
+logger.info(f"Processing user {user.password}")  # ❌ Bad
+```
+
+---
+
+## 🔄 Common Patterns and Anti-patterns
+
+### ✅ Recommended Patterns:
+
+#### Type-Safe Registry Pattern:
+```python
+from typing import TypeVar, Generic
+
+T = TypeVar('T', bound=Builder)
+G = TypeVar('G', bound=PluginGroup)
+
+class Registry(Generic[T, G]):
+    def register_builder(self, builder: T, name: str) -> None:
+        if not self._validate_builder(builder):
+            raise PluginValidationError(f"Invalid builder: {name}")
+        self._plugins[name] = builder
+
+    def get_builder(self, name: str) -> T:
+        if name not in self._plugins:
+            raise PluginNotFoundError(f"Builder not found: {name}")
+        return self._plugins[name]
+```
+
+#### Builder Pattern:
+```python
+class EnvironmentBuilder(Protocol):
+    def create_environment(self, config: dict[str, str]) -> Environment:
+        ...
+
+class TestEnvironmentBuilder(EnvironmentBuilder):
+    def create_environment(self, config: dict[str, str]) -> Environment:
+        return TestEnvironment("test", config)
+
+class TestEnvironment:
+    def __init__(self, name: str, config: dict[str, str]) -> None:
+        self.name = name
+        self.config = config
+```
+
+#### Facade Pattern:
+```python
+class RegistryFacade:
+    def __init__(self) -> None:
+        self._env_registry = Registry[EnvironmentBuilder, PluginGroupEnv](PluginGroup.ENV)
+        self._learner_registry = Registry[LearnerBuilder, PluginGroupLearner](PluginGroup.LEARNER)
+
+    def register_env_builder(self, builder: EnvironmentBuilder, name: str) -> None:
+        self._env_registry.register_builder(builder, name)
+```
+
+#### Strategy Pattern:
+```python
+from abc import ABC, abstractmethod
+from typing import Protocol
+
+class DataProcessor(Protocol):
+    """Strategy interface for data processing."""
+    def process(self, data: dict[str, str]) -> ProcessedResult:
+        ...
+
+class JsonProcessor:
+    """Concrete strategy for JSON processing."""
+    def process(self, data: dict[str, str]) -> ProcessedResult:
+        # JSON-specific processing logic
+        return ProcessedResult(data, "json")
+
+class YamlProcessor:
+    """Concrete strategy for YAML processing."""
+    def process(self, data: dict[str, str]) -> ProcessedResult:
+        # YAML-specific processing logic
+        return ProcessedResult(data, "yaml")
+
+class DataProcessorContext:
+    """Context that uses the strategy."""
+    def __init__(self, processor: DataProcessor) -> None:
+        self._processor = processor
+
+    def execute_processing(self, data: dict[str, str]) -> ProcessedResult:
+        return self._processor.process(data)
+```
+
+#### Observer Pattern:
+```python
+from abc import ABC, abstractmethod
+from typing import Protocol
+
+class EventObserver(Protocol):
+    """Observer interface for event handling."""
+    def update(self, event: str, data: dict[str, str]) -> None:
+        ...
+
+class RegistryEventManager:
+    """Subject that manages observers."""
+    def __init__(self) -> None:
+        self._observers: list[EventObserver] = []
+
+    def attach(self, observer: EventObserver) -> None:
+        self._observers.append(observer)
+
+    def detach(self, observer: EventObserver) -> None:
+        self._observers.remove(observer)
+
+    def notify(self, event: str, data: dict[str, str]) -> None:
+        for observer in self._observers:
+            observer.update(event, data)
+
+class LoggingObserver:
+    """Concrete observer for logging events."""
+    def update(self, event: str, data: dict[str, str]) -> None:
+        print(f"Logging event: {event} with data: {data}")
+
+class MetricsObserver:
+    """Concrete observer for metrics collection."""
+    def update(self, event: str, data: dict[str, str]) -> None:
+        # Collect metrics based on event
+        pass
+```
+
+#### Factory Method Pattern:
+```python
+from abc import ABC, abstractmethod
+from typing import Protocol
+
+class EnvironmentCreator(Protocol):
+    """Factory method interface."""
+    def create_environment(self, config: dict[str, str]) -> Environment:
+        ...
+
+class DevelopmentEnvironmentCreator:
+    """Concrete factory for development environments."""
+    def create_environment(self, config: dict[str, str]) -> Environment:
+        return DevelopmentEnvironment(config)
+
+class ProductionEnvironmentCreator:
+    """Concrete factory for production environments."""
+    def create_environment(self, config: dict[str, str]) -> Environment:
+        return ProductionEnvironment(config)
+
+class EnvironmentFactory:
+    """Factory that creates appropriate environment creators."""
+    @staticmethod
+    def get_creator(env_type: str) -> EnvironmentCreator:
+        if env_type == "development":
+            return DevelopmentEnvironmentCreator()
+        elif env_type == "production":
+            return ProductionEnvironmentCreator()
+        else:
+            raise ValueError(f"Unknown environment type: {env_type}")
+```
+
+#### Command Pattern:
+```python
+from abc import ABC, abstractmethod
+from typing import Protocol
+
+class Command(Protocol):
+    """Command interface for operations."""
+    def execute(self) -> None:
+        ...
+
+    def undo(self) -> None:
+        ...
+
+class RegisterPluginCommand:
+    """Concrete command for registering plugins."""
+    def __init__(self, registry: Registry, plugin: Plugin, name: str) -> None:
+        self._registry = registry
+        self._plugin = plugin
+        self._name = name
+        self._was_registered = False
+
+    def execute(self) -> None:
+        if self._name not in self._registry:
+            self._registry.register(self._plugin, self._name)
+            self._was_registered = True
+
+    def undo(self) -> None:
+        if self._was_registered:
+            self._registry.unregister(self._name)
+
+class CommandInvoker:
+    """Invoker that executes commands."""
+    def __init__(self) -> None:
+        self._commands: list[Command] = []
+
+    def add_command(self, command: Command) -> None:
+        self._commands.append(command)
+
+    def execute_all(self) -> None:
+        for command in self._commands:
+            command.execute()
+
+    def undo_all(self) -> None:
+        for command in reversed(self._commands):
+            command.undo()
+```
+
+### ❌ Anti-patterns:
+
+#### Don't Use Any Types:
+```python
+# ❌ BANNED
+def process_data(data: Any) -> Any:
+    pass
+
+# ✅ Good
+def process_data(data: dict[str, str]) -> ProcessedData:
+    pass
+```
+
+#### Don't Use Relative Imports:
+```python
+# ❌ BANNED
+from .models import ExampleModel
+from ..core import CoreClass
+
+# ✅ Good
+from redwing_core.models import ExampleModel
+from redwing_core.core import CoreClass
+```
+
+#### Don't Mock Internal Logic:
+```python
+# ❌ BANNED (unless justified)
+@patch('redwing_core.internal._helper_function')
+def test_something(mock_helper: MagicMock) -> None:  # type: ignore[misc]  # patch decorator modifies signature
+    pass
+
+# ✅ Good
+@patch('requests.get')
+def test_api_call(mock_get: MagicMock) -> None:  # type: ignore[misc]  # patch decorator modifies signature
+    pass
+```
+
+---
+
+## ⚙️ Configuration Reference
+
+### Key Configuration Files:
+
+#### pyproject.toml (Main Configuration):
+```toml
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.mypy]
+disallow_untyped_defs = true
+disallow_any_expr = true
+# ... (see full config above)
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-select = ["E", "F", "I", "N", "B", "Q", "SIM", "C90", "ARG", "TID", "UP", "PL", "PERF", "D"]
+```
+
+#### .pre-commit-config.yaml:
+```yaml
+repos:
+  - repo: https://github.com/psf/black
+    hooks:
+      - id: black
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+  - repo: local
+    hooks:
+      - id: mypy
+        entry: uv run mypy --config-file=pyproject.toml src/ tests/
+```
+
+#### pytest.ini:
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py *_test.py
+python_classes = Test*
+python_functions = test_*
+addopts = --cov=src/redwing_core --cov-report=term-missing --cov-fail-under=80
+markers =
+    unit: unit tests
+    integration: integration tests
+    e2e: end-to-end test
+    performance: performance tests
+```
+
+### Quality Check Commands:
+
+```bash
+# Run all quality checks
+uv run nox -s lint type_check complexity security
+
+# Individual checks
+uv run ruff check src/ tests/ --fix
+uv run black src/ tests/
+uv run mypy src/ tests/
+uv run pytest tests/ --cov=src/redwing_core --cov-fail-under=80
+uv run xenon --max-absolute B src/
+uv run pip-audit
+
+# Pre-commit hooks
+uv run pre-commit run --all-files
+```
+
+---
+
+## 🚀 Quick Reference Checklist
+
+Before submitting any code, ensure:
+
+- [ ] **Type hints** on all functions and variables
+- [ ] **No `Any` types** (except with permission)
+- [ ] **Absolute imports only** (no relative imports)
+- [ ] **Google-style docstrings** on all public APIs
+- [ ] **Tests written** with proper structure and coverage
+- [ ] **Ruff passes** with no errors
+- [ ] **MyPy passes** with no errors
+- [ ] **Test coverage** ≥80% (100% for new code)
+- [ ] **Complexity** within Xenon limits
+- [ ] **No security vulnerabilities** in dependencies
+- [ ] **Documentation updated** for user-facing changes
+
+---
+
+## 🆘 Getting Help
+
+### Common Issues and Solutions:
+
+1. **MyPy "Any" errors**: Use proper type annotations instead of `Any`
+2. **Import errors**: Use absolute imports, not relative
+3. **Coverage failures**: Add tests for uncovered code paths
+4. **Complexity errors**: Refactor complex functions into smaller ones
+5. **Linting errors**: Run `uv run ruff check --fix` to auto-fix
+
+### Resources:
+- **Testing Rules**: `.cursor/rules/testing-rules.mdc`
+- **Contributing Guide**: `CONTRIBUTING.md`
+- **Project Documentation**: `docs/`
+- **Quality Checks**: `justfile` for shortcuts
+
+---
+
+**Remember**: This project maintains extremely high quality standards. When in doubt, prefer explicit typing, comprehensive testing, and clear documentation over shortcuts or workarounds.

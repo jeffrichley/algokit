@@ -3,7 +3,7 @@
 
 # Run tests
 test:
-    nox -s tests
+    nox -s "tests-3.12(mode='full')"
 
 # Run linting
 lint:
