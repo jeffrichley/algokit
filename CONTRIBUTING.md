@@ -39,7 +39,7 @@ uv sync
 pip install -r requirements.txt
 
 # Install in editable mode for development
-uv pip install -e ".[dev,docs]"
+uv pip install -e ".[dev]"
 ```
 
 ### Development Environment

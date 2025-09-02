@@ -44,17 +44,13 @@ readme = {file = "README.md"}
 
 [project.optional-dependencies]
 dev = [
+  # Linting & formatting
   "black>=24.3.0",
   "ruff>=0.4.0",
   "pre-commit>=3.6",
-  "mkdocs-material>=9.5",
-  "pip-audit>=2.9.0",
-  "ipython>=8.10",
-  "types-requests",
-  "vulture>=2.14",
+
+  # Testing (integral to development)
   "hypothesis>=6.136.6",
-  "monkeytype>=23.3.0",
-  "mypy>=1.17.0",
   "pytest>=8.4.1",
   "pytest-asyncio>=1.1.0",
   "pytest-cov>=6.2.1",
@@ -65,22 +61,33 @@ dev = [
   "pytest-repeat>=0.9.4",
   "pytest-timeout>=2.4.0",
   "pytest-xdist>=3.8.0",
-  "radon>=6.0",
+  "pytest-benchmark>=4.0.0",
+
+  # Type checking
+  "mypy>=1.17.0",
+  "types-requests",
   "types-pyyaml>=6.0.12.20250516",
-  "xenon>=0.9",
-  "validate-pyproject>=0.24.1",
-  "toml-sort>=0.24.2",
-  "psutil>=7.0.0",
   "types-pillow>=10.2.0.20240822",
   "types-setuptools>=80.9.0.20250529",
   "types-urllib3>=1.26.25.14",
+
+  # Security & quality analysis
+  "pip-audit>=2.9.0",
+  "vulture>=2.14",
+  "radon>=6.0",
+  "xenon>=0.9",
+
+  # Development utilities
+  "ipython>=8.10",
+  "monkeytype>=23.3.0",
+  "validate-pyproject>=0.24.1",
+  "toml-sort>=0.24.2",
+  "psutil>=7.0.0",
   "commitizen>=4.8.3",
   "codespell>=2.4.0",
-]
-test = [
-  "hypothesis>=6.136.6",
-  "pytest-benchmark>=4.0.0",
-  "psutil>=5.9.0"
+
+  # Documentation (for development)
+  "mkdocs-material>=9.5",
 ]
 docs = [
   "mkdocs>=1.5.0",
@@ -91,12 +98,6 @@ docs = [
   "mkdocstrings-python>=1.7.0",
   # Add pymdownx extensions for Material theme functionality
   "pymdown-extensions>=10.0.0"
-]
-typecheck = [
-  "mypy"
-]
-security = [
-  # pip-audit is included in dev dependencies
 ]
 
 [tool.black]

@@ -109,7 +109,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ```bash
 # Install development dependencies
-uv pip install -e ".[dev,docs]"
+uv pip install -e ".[dev]"
 
 # Run quality checks
 uv run dev checkit

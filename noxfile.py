@@ -160,5 +160,5 @@ def dev_full(session):
     # Install docs dependencies on top of dev dependencies
     session.run("uv", "pip", "install", "-q", "-e", ".[docs]", external=True)
     session.log(
-        "Full development environment installed with main + dev + docs dependencies"
+        "Full development environment installed with main + dev (includes testing, linting, type checking) + docs dependencies"
     )

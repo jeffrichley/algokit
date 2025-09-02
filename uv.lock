@@ -29,6 +29,7 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-html" },
     { name = "pytest-mock" },
@@ -57,14 +58,6 @@ docs = [
     { name = "mkdocstrings-python" },
     { name = "pymdown-extensions" },
 ]
-test = [
-    { name = "hypothesis" },
-    { name = "psutil" },
-    { name = "pytest-benchmark" },
-]
-typecheck = [
-    { name = "mypy" },
-]
 
 [package.metadata]
 requires-dist = [
@@ -73,7 +66,6 @@ requires-dist = [
     { name = "commitizen", marker = "extra == 'dev'", specifier = ">=4.8.3" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.136.6" },
-    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.136.6" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.10" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.5.0" },
     { name = "mkdocs-git-revision-date-localized-plugin", marker = "extra == 'docs'", specifier = ">=1.2.0" },
@@ -84,16 +76,14 @@ requires-dist = [
     { name = "mkdocstrings-python", marker = "extra == 'docs'", specifier = ">=1.7.0" },
     { name = "monkeytype", marker = "extra == 'dev'", specifier = ">=23.3.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.0" },
-    { name = "mypy", marker = "extra == 'typecheck'" },
     { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.9.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6" },
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "psutil", marker = "extra == 'test'", specifier = ">=5.9.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.1.0" },
-    { name = "pytest-benchmark", marker = "extra == 'test'", specifier = ">=4.0.0" },
+    { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.2.1" },
     { name = "pytest-html", marker = "extra == 'dev'", specifier = ">=4.1.1" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.1" },
@@ -113,7 +103,7 @@ requires-dist = [
     { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.14" },
     { name = "xenon", marker = "extra == 'dev'", specifier = ">=0.9" },
 ]
-provides-extras = ["dev", "test", "docs", "typecheck", "security"]
+provides-extras = ["dev", "docs"]
 
 [[package]]
 name = "annotated-types"

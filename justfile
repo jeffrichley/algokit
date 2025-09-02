@@ -2,54 +2,62 @@
 # Generated from the Seedling Copier template
 
 # Run tests
-test:
+test: install-dev
     nox -s "tests-3.12(mode='full')"
 
 # Run linting
-lint:
+lint: install-dev
     nox -s lint
 
 # Run type checking
-type-check:
+type-check: install-dev
     nox -s type_check
 
 # Build documentation
-docs:
+docs: install-docs
     nox -s docs
 
 # Check documentation links
-docs-linkcheck:
+docs-linkcheck: install-docs
     nox -s docs_linkcheck
 
 # Serve documentation locally
-docs-serve:
+docs-serve: install-docs
     mkdocs serve
 
+# Serve documentation with live reload for development
+docs-dev: install-docs
+    mkdocs serve --livereload --watch docs/
+
 # Run all quality checks
-quality: lint type-check docs-linkcheck spellcheck
+quality: install-dev install-docs
+    nox -s lint
+    nox -s type_check
+    nox -s docs_linkcheck
+    nox -s spellcheck
 
 # Generate coverage report
-coverage:
+coverage: install-dev
     nox -s coverage_html
 
 # Run security audit
-security:
+security: install-dev
     nox -s security
 
 # Run complexity analysis
-complexity:
+complexity: install-dev
     nox -s complexity
 
 # Validate pyproject.toml
-pyproject:
+pyproject: install-dev
     nox -s pyproject
 
 # Run spell checking
-spellcheck:
+spellcheck: install-dev
     nox -s spellcheck
 
 # Run pre-commit hooks
-pre-commit:
+pre-commit: install-dev
     nox -s pre-commit
 
 # Create a release PR
@@ -66,9 +74,17 @@ commitizen-bump:
 commitizen-check:
     uv run python -m commitizen check --rev-range HEAD~1..HEAD
 
-# Install development dependencies
-install:
-    uv sync --dev
+# Install core dependencies only (no groups)
+install-core:
+    uv sync
+
+# Install development dependencies (dev group - includes testing)
+install-dev:
+    uv sync --extra dev
+
+# Install documentation dependencies (docs group)
+install-docs:
+    uv sync --extra docs
 
 # Install all dependencies including docs for full development
 install-full:
