@@ -1,0 +1,626 @@
+# AlgoKit Algorithms Data Structure
+# This file serves as the single source of truth for all algorithm metadata
+# Used by MkDocs Macros to generate dynamic navigation and content
+#
+# Schema:
+# - families: Top-level algorithm families (e.g., dynamic-programming, reinforcement-learning)
+# - algorithms: Individual algorithm implementations with metadata
+# - relationships: Cross-references between algorithms and families
+# - status: Implementation progress tracking
+# - metadata: Global configuration and settings
+
+# Global metadata and configuration
+metadata:
+  version: "1.0.0"
+  last_updated: "2025-09-03"
+  total_families: 9
+  total_algorithms: 40
+  implementation_status:
+    complete: 6
+    planned: 34
+    percentage: 15.0
+
+# Algorithm families with overview information
+families:
+  dynamic-programming:
+    name: "Dynamic Programming"
+    description: "Algorithmic paradigm that solves complex problems by breaking them down into simpler subproblems with overlapping solutions"
+    overview: "Dynamic Programming (DP) is a powerful algorithmic paradigm that solves complex problems by breaking them down into simpler subproblems. The key insight is that many problems have overlapping subproblems and optimal substructure, allowing us to store and reuse solutions to avoid redundant computation."
+    key_characteristics:
+      - "Optimal Substructure"
+      - "Overlapping Subproblems"
+      - "Memoization/Tabulation"
+      - "State Transition"
+      - "Base Cases"
+      - "Recurrence Relation"
+    common_applications:
+      - "Optimization problems (knapsack, coin change)"
+      - "Sequence problems (Fibonacci, longest common subsequence)"
+      - "Path finding and graph algorithms"
+      - "Resource allocation and scheduling"
+      - "Bioinformatics and string processing"
+    related_families:
+      - "greedy-algorithms"
+      - "divide-and-conquer"
+      - "backtracking"
+      - "graph-algorithms"
+    status: "complete"
+    algorithms_count: 6
+    planned_count: 0
+
+  reinforcement-learning:
+    name: "Reinforcement Learning"
+    description: "Learning algorithms that enable agents to learn optimal behavior through interaction with an environment"
+    overview: "Reinforcement Learning (RL) is a type of machine learning where an agent learns to make decisions by taking actions in an environment to maximize cumulative reward. The agent learns through trial and error, receiving feedback in the form of rewards or penalties."
+    key_characteristics:
+      - "Agent-Environment Interaction"
+      - "Reward Maximization"
+      - "Policy Learning"
+      - "Value Function Approximation"
+      - "Exploration vs Exploitation"
+      - "Markov Decision Processes"
+    common_applications:
+      - "Game playing (chess, Go, video games)"
+      - "Robotics and autonomous systems"
+      - "Trading and finance"
+      - "Healthcare and medicine"
+      - "Autonomous vehicles"
+    related_families:
+      - "deep-learning"
+      - "optimization"
+      - "control-systems"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 6
+
+  control:
+    name: "Control Systems"
+    description: "Algorithms for controlling dynamic systems to achieve desired behavior and performance"
+    overview: "Control systems algorithms focus on designing controllers that can regulate the behavior of dynamic systems. These algorithms range from simple PID controllers to advanced adaptive and robust control methods."
+    key_characteristics:
+      - "System Modeling"
+      - "Controller Design"
+      - "Stability Analysis"
+      - "Performance Optimization"
+      - "Robustness"
+      - "Adaptation"
+    common_applications:
+      - "Industrial automation"
+      - "Aerospace systems"
+      - "Robotics"
+      - "Process control"
+      - "Automotive systems"
+    related_families:
+      - "mpc"
+      - "real-time-control"
+      - "optimization"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 5
+
+  mpc:
+    name: "Model Predictive Control"
+    description: "Advanced control strategy that uses a model to predict future system behavior and optimize control actions"
+    overview: "Model Predictive Control (MPC) is an advanced control strategy that uses a mathematical model of the system to predict future behavior and optimize control actions over a finite horizon. MPC is particularly effective for systems with constraints and multiple objectives."
+    key_characteristics:
+      - "Predictive Modeling"
+      - "Horizon Optimization"
+      - "Constraint Handling"
+      - "Multi-objective Control"
+      - "Real-time Adaptation"
+      - "Robustness"
+    common_applications:
+      - "Chemical process control"
+      - "Power systems"
+      - "Autonomous vehicles"
+      - "Robotics"
+      - "Building automation"
+    related_families:
+      - "control"
+      - "real-time-control"
+      - "optimization"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 7
+
+  hierarchical-rl:
+    name: "Hierarchical Reinforcement Learning"
+    description: "RL approaches that decompose complex tasks into hierarchical structures for more efficient learning"
+    overview: "Hierarchical Reinforcement Learning decomposes complex tasks into a hierarchy of simpler subtasks, enabling more efficient learning and better generalization. This approach is inspired by how humans break down complex problems."
+    key_characteristics:
+      - "Task Decomposition"
+      - "Hierarchical Structure"
+      - "Subtask Learning"
+      - "Temporal Abstraction"
+      - "Skill Reuse"
+      - "Modular Learning"
+    common_applications:
+      - "Complex robotics tasks"
+      - "Game playing"
+      - "Autonomous systems"
+      - "Multi-agent systems"
+      - "Natural language processing"
+    related_families:
+      - "reinforcement-learning"
+      - "planning"
+      - "multi-agent-systems"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 6
+
+  planning:
+    name: "Planning Algorithms"
+    description: "Algorithms for finding optimal or near-optimal sequences of actions to achieve goals"
+    overview: "Planning algorithms focus on finding optimal or near-optimal sequences of actions to achieve specific goals. These algorithms are fundamental to artificial intelligence and are used in robotics, games, and automated systems."
+    key_characteristics:
+      - "Goal-directed Search"
+      - "Action Sequencing"
+      - "Path Planning"
+      - "Constraint Satisfaction"
+      - "Optimality"
+      - "Completeness"
+    common_applications:
+      - "Robotics navigation"
+      - "Game AI"
+      - "Logistics and scheduling"
+      - "Autonomous systems"
+      - "Resource allocation"
+    related_families:
+      - "search-algorithms"
+      - "optimization"
+      - "graph-algorithms"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 4
+
+  gaussian-process:
+    name: "Gaussian Processes"
+    description: "Probabilistic models for regression, classification, and optimization with uncertainty quantification"
+    overview: "Gaussian Processes (GPs) are probabilistic models that provide a principled approach to regression, classification, and optimization. They offer uncertainty quantification and are particularly effective for small datasets and active learning scenarios."
+    key_characteristics:
+      - "Probabilistic Modeling"
+      - "Uncertainty Quantification"
+      - "Kernel Functions"
+      - "Non-parametric Learning"
+      - "Active Learning"
+      - "Bayesian Inference"
+    common_applications:
+      - "Machine learning"
+      - "Robotics"
+      - "Optimization"
+      - "Time series analysis"
+      - "Spatial modeling"
+    related_families:
+      - "machine-learning"
+      - "optimization"
+      - "probabilistic-models"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 6
+
+  dmps:
+    name: "Dynamic Movement Primitives"
+    description: "Learning-based approach for generating and adapting complex motor skills in robotics"
+    overview: "Dynamic Movement Primitives (DMPs) are a learning-based approach for representing, generating, and adapting complex motor skills. They provide a framework for learning and reproducing movements with generalization capabilities."
+    key_characteristics:
+      - "Movement Representation"
+      - "Skill Learning"
+      - "Generalization"
+      - "Adaptation"
+      - "Temporal Scaling"
+      - "Spatial Scaling"
+    common_applications:
+      - "Robotics manipulation"
+      - "Humanoid robots"
+      - "Prosthetics"
+      - "Animation"
+      - "Sports training"
+    related_families:
+      - "robotics"
+      - "learning-systems"
+      - "control-systems"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 5
+
+  real-time-control:
+    name: "Real-Time Control"
+    description: "Control algorithms designed for systems with strict timing constraints and real-time requirements"
+    overview: "Real-time control algorithms are designed for systems that must respond within strict timing constraints. These algorithms prioritize computational efficiency and predictable performance over optimality."
+    key_characteristics:
+      - "Timing Constraints"
+      - "Computational Efficiency"
+      - "Predictable Performance"
+      - "Real-time Adaptation"
+      - "Resource Management"
+      - "Fault Tolerance"
+    common_applications:
+      - "Embedded systems"
+      - "Real-time robotics"
+      - "Industrial control"
+      - "Automotive systems"
+      - "Aerospace control"
+    related_families:
+      - "control"
+      - "mpc"
+      - "embedded-systems"
+    status: "planned"
+    algorithms_count: 0
+    planned_count: 3
+
+# Individual algorithm implementations
+algorithms:
+  # Dynamic Programming Family (Complete)
+  fibonacci:
+    name: "Fibonacci Sequence"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "Classic problem demonstrating dynamic programming with multiple implementation approaches"
+    overview: "The Fibonacci sequence is a classic problem in computer science and mathematics that demonstrates the power of dynamic programming. The sequence is defined as: each number is the sum of the two preceding ones, usually starting with 0 and 1."
+    complexity:
+      time: "O(n)"
+      space: "O(1)"
+      notes: "Linear time with constant space using iterative approach"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "optimization"
+      - "fibonacci"
+      - "recursion"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/fibonacci.py"
+      test_file: "tests/dynamic_programming/test_fibonacci.py"
+      approaches:
+        - "Iterative (Recommended)"
+        - "Memoized (Key Pattern)"
+        - "Generator Pattern"
+    mathematical_formulation:
+      recurrence_relation: "F(n) = F(n-1) + F(n-2) for n > 1"
+      base_cases: "F(0) = 0, F(1) = 1"
+      closed_form: "Binet's formula available"
+    applications:
+      - "Learning DP concepts"
+      - "Mathematical sequences"
+      - "Educational examples"
+    related_algorithms:
+      - "coin-change"
+      - "longest-common-subsequence"
+      - "edit-distance"
+
+  coin-change:
+    name: "Coin Change Problem"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "Minimum coins optimization problem with greedy vs DP comparison"
+    overview: "The coin change problem involves finding the minimum number of coins needed to make up a given amount using coins of specified denominations. This problem demonstrates the difference between greedy and dynamic programming approaches."
+    complexity:
+      time: "O(amount × coins)"
+      space: "O(amount)"
+      notes: "Time complexity depends on amount and number of coin denominations"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "optimization"
+      - "coin-change"
+      - "greedy"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/coin_change.py"
+      test_file: "tests/dynamic_programming/test_coin_change.py"
+      approaches:
+        - "Dynamic Programming (Optimal)"
+        - "Greedy (Fast but suboptimal)"
+        - "Recursive with memoization"
+    mathematical_formulation:
+      recurrence_relation: "dp[i] = min(dp[i], dp[i - coin] + 1)"
+      base_case: "dp[0] = 0"
+      objective: "Minimize number of coins"
+    applications:
+      - "Vending machines"
+      - "Financial systems"
+      - "Optimization problems"
+    related_algorithms:
+      - "fibonacci"
+      - "knapsack"
+      - "longest-common-subsequence"
+
+  knapsack:
+    name: "0/1 Knapsack Problem"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "Resource allocation with constraint optimization"
+    overview: "The 0/1 knapsack problem is a classic optimization problem where items must be selected to maximize value while respecting weight constraints. Each item can only be chosen once (0/1 decision)."
+    complexity:
+      time: "O(n × W)"
+      space: "O(n × W)"
+      notes: "n = number of items, W = knapsack capacity"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "optimization"
+      - "knapsack"
+      - "constraint-satisfaction"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/knapsack.py"
+      test_file: "tests/dynamic_programming/test_knapsack.py"
+      approaches:
+        - "Dynamic Programming (2D array)"
+        - "Space-optimized (1D array)"
+        - "Branch and bound"
+    mathematical_formulation:
+      objective: "Maximize Σ(v_i × x_i)"
+      constraint: "Σ(w_i × x_i) ≤ W"
+      variables: "x_i ∈ {0,1} for each item i"
+    applications:
+      - "Resource allocation"
+      - "Portfolio optimization"
+      - "Cutting stock problems"
+    related_algorithms:
+      - "coin-change"
+      - "fibonacci"
+      - "longest-common-subsequence"
+
+  longest-common-subsequence:
+    name: "Longest Common Subsequence"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "String comparison algorithm for sequence analysis"
+    overview: "The Longest Common Subsequence (LCS) problem finds the longest subsequence that appears in both strings in the same order. This algorithm is fundamental to bioinformatics and text analysis."
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+      notes: "m, n = lengths of input strings"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "string-processing"
+      - "bioinformatics"
+      - "sequence-alignment"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/longest_common_subsequence.py"
+      test_file: "tests/dynamic_programming/test_longest_common_subsequence.py"
+      approaches:
+        - "Dynamic Programming (2D array)"
+        - "Space-optimized (1D array)"
+        - "Recursive with memoization"
+    mathematical_formulation:
+      recurrence_relation: "dp[i][j] = max(dp[i-1][j], dp[i][j-1], dp[i-1][j-1] + 1 if match)"
+      base_case: "dp[0][j] = dp[i][0] = 0"
+      objective: "Maximize subsequence length"
+    applications:
+      - "Bioinformatics"
+      - "Text analysis"
+      - "Version control"
+      - "DNA sequence comparison"
+    related_algorithms:
+      - "edit-distance"
+      - "fibonacci"
+      - "coin-change"
+
+  edit-distance:
+    name: "Edit Distance (Levenshtein)"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "String similarity measurement for NLP applications"
+    overview: "Edit distance measures the minimum number of operations (insert, delete, substitute) required to transform one string into another. This algorithm is essential for natural language processing and spell checking."
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+      notes: "m, n = lengths of input strings"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "string-processing"
+      - "nlp"
+      - "spell-checking"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/edit_distance.py"
+      test_file: "tests/dynamic_programming/test_edit_distance.py"
+      approaches:
+        - "Dynamic Programming (2D array)"
+        - "Space-optimized (1D array)"
+        - "Recursive with memoization"
+    mathematical_formulation:
+      recurrence_relation: "dp[i][j] = min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost)"
+      base_case: "dp[0][j] = j, dp[i][0] = i"
+      objective: "Minimize edit operations"
+    applications:
+      - "Spell checking"
+      - "DNA analysis"
+      - "Natural language processing"
+      - "Fuzzy string matching"
+    related_algorithms:
+      - "longest-common-subsequence"
+      - "fibonacci"
+      - "coin-change"
+
+  matrix-chain-multiplication:
+    name: "Matrix Chain Multiplication"
+    family: "dynamic-programming"
+    status: "complete"
+    description: "Optimal parenthesization for computational efficiency"
+    overview: "Matrix chain multiplication finds the optimal way to parenthesize a sequence of matrices to minimize the total number of scalar multiplications. This is crucial for computational efficiency in linear algebra."
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+      notes: "n = number of matrices"
+    tags:
+      - "dynamic-programming"
+      - "algorithms"
+      - "linear-algebra"
+      - "optimization"
+      - "matrix-operations"
+    implementation:
+      source_file: "src/algokit/dynamic_programming/matrix_chain_multiplication.py"
+      test_file: "tests/dynamic_programming/test_matrix_chain_multiplication.py"
+      approaches:
+        - "Dynamic Programming (2D array)"
+        - "Recursive with memoization"
+        - "Bottom-up construction"
+    mathematical_formulation:
+      recurrence_relation: "dp[i][j] = min(dp[i][k] + dp[k+1][j] + p[i-1]×p[k]×p[j])"
+      base_case: "dp[i][i] = 0"
+      objective: "Minimize scalar multiplications"
+    applications:
+      - "Linear algebra"
+      - "Compiler optimization"
+      - "Graphics processing"
+      - "Scientific computing"
+    related_algorithms:
+      - "fibonacci"
+      - "longest-common-subsequence"
+      - "edit-distance"
+
+  # Reinforcement Learning Family (Planned)
+  q-learning:
+    name: "Q-Learning"
+    family: "reinforcement-learning"
+    status: "planned"
+    description: "Model-free, off-policy reinforcement learning algorithm for learning optimal action-value functions"
+    overview: "Q-Learning is a model-free, off-policy reinforcement learning algorithm that learns the optimal action-value function (Q-function) for a Markov Decision Process (MDP). It's one of the most fundamental and widely-used algorithms in reinforcement learning."
+    complexity:
+      time: "O(|S| × |A|)"
+      space: "O(|S| × |A|)"
+      notes: "|S| = number of states, |A| = number of actions"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "q-learning"
+      - "temporal-difference"
+      - "value-based"
+      - "markov-decision-process"
+    implementation:
+      source_file: "src/algokit/reinforcement_learning/q_learning.py"
+      test_file: "tests/reinforcement_learning/test_q_learning.py"
+      approaches:
+        - "Standard Q-Learning"
+        - "Experience Replay Q-Learning"
+        - "Double Q-Learning"
+    mathematical_formulation:
+      update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_t + γ max_a' Q(s_{t+1}, a') - Q(s_t, a_t)]"
+      parameters:
+        - "α: learning rate"
+        - "γ: discount factor"
+        - "r_t: immediate reward"
+    applications:
+      - "Game playing"
+      - "Robotics"
+      - "Trading systems"
+      - "Autonomous vehicles"
+    related_algorithms:
+      - "sarsa"
+      - "dqn"
+      - "actor-critic"
+
+# Cross-references and relationships
+relationships:
+  family_hierarchy:
+    - name: "Core Algorithms"
+      families: ["dynamic-programming", "reinforcement-learning", "control"]
+    - name: "Advanced Control"
+      families: ["mpc", "real-time-control"]
+    - name: "Learning Systems"
+      families: ["hierarchical-rl", "gaussian-process"]
+    - name: "Planning & Movement"
+      families: ["planning", "dmps"]
+
+  algorithm_dependencies:
+    fibonacci:
+      prerequisites: []
+      builds_on: []
+      leads_to: ["coin-change", "longest-common-subsequence"]
+    coin_change:
+      prerequisites: ["fibonacci"]
+      builds_on: ["dynamic-programming-concepts"]
+      leads_to: ["knapsack", "edit-distance"]
+    q_learning:
+      prerequisites: ["reinforcement-learning-basics"]
+      builds_on: ["temporal-difference-learning"]
+      leads_to: ["dqn", "actor-critic"]
+
+  learning_paths:
+    beginner:
+      - "fibonacci"
+      - "coin-change"
+      - "basic-control-concepts"
+    intermediate:
+      - "knapsack"
+      - "longest-common-subsequence"
+      - "q-learning"
+      - "pid-control"
+    advanced:
+      - "matrix-chain-multiplication"
+      - "edit-distance"
+      - "hierarchical-rl"
+      - "mpc"
+
+# Implementation progress tracking
+progress:
+  overall:
+    total_algorithms: 40
+    implemented: 6
+    planned: 34
+    percentage: 15.0
+  by_family:
+    dynamic-programming:
+      total: 6
+      implemented: 6
+      planned: 0
+      percentage: 100.0
+    reinforcement-learning:
+      total: 6
+      implemented: 0
+      planned: 6
+      percentage: 0.0
+    control:
+      total: 5
+      implemented: 0
+      planned: 5
+      percentage: 0.0
+    mpc:
+      total: 7
+      implemented: 0
+      planned: 7
+      percentage: 0.0
+    hierarchical-rl:
+      total: 6
+      implemented: 0
+      planned: 6
+      percentage: 0.0
+    planning:
+      total: 4
+      implemented: 0
+      planned: 4
+      percentage: 0.0
+    gaussian-process:
+      total: 6
+      implemented: 0
+      planned: 6
+      percentage: 0.0
+    dmps:
+      total: 5
+      implemented: 0
+      planned: 5
+      percentage: 0.0
+    real-time-control:
+      total: 3
+      implemented: 0
+      planned: 3
+      percentage: 0.0
+
+# Configuration for macro generation
+macro_config:
+  navigation:
+    show_family_overview: true
+    show_related_algorithms: true
+    show_learning_paths: true
+    show_implementation_status: true
+  content:
+    include_mathematical_formulation: true
+    include_complexity_analysis: true
+    include_implementation_details: true
+    include_applications: true
+  display:
+    max_related_algorithms: 5
+    show_progress_bars: true
+    show_complexity_badges: true
+    show_status_indicators: true
