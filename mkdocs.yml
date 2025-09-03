@@ -42,15 +42,14 @@ markdown_extensions:
   - md_in_html
   - pymdownx.arithmatex:
       generic: true
+      preview: false
   - pymdownx.caret
-  - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
-  - pymdownx.magiclink
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets
@@ -88,17 +87,59 @@ plugins:
 nav:
   - Overview: index.md
   - Algorithm Families:
-      - Classic Dynamic Programming: classic-dp.md
-      - Reinforcement Learning (Model-Free): reinforcement-learning.md
-      - Hierarchical Reinforcement Learning: hrl.md
-      - Dynamic Movement Primitives: dmps.md
-      - Gaussian Process Modeling: gaussian-process.md
-      - Real-Time Control: real-time-control.md
-      - Model Predictive Control: mpc.md
-      - Classical Planning Algorithms: classical-planning.md
+      - Dynamic Programming: families/dynamic-programming.md
+      - Reinforcement Learning: families/reinforcement-learning.md
+      - Hierarchical RL: families/hierarchical-rl.md
+      - Control: families/control.md
+      - Model Predictive Control: families/mpc.md
+      - Planning: families/planning.md
+      - Gaussian Process: families/gaussian-process.md
+      - Dynamic Movement Primitives: families/dmps.md
+      - Real-Time Control: families/real-time-control.md
+  - Algorithms:
+      - Dynamic Programming:
+          - Fibonacci: algorithms/dynamic-programming/fibonacci.md
+          - Coin Change: algorithms/dynamic-programming/coin-change.md
+          - 0/1 Knapsack: algorithms/dynamic-programming/knapsack.md
+          - Longest Common Subsequence: algorithms/dynamic-programming/longest-common-subsequence.md
+          - Edit Distance: algorithms/dynamic-programming/edit-distance.md
+          - Matrix Chain Multiplication: algorithms/dynamic-programming/matrix-chain-multiplication.md
+      - Reinforcement Learning:
+          - Q-Learning: algorithms/reinforcement-learning/q-learning.md
+          - DQN: algorithms/reinforcement-learning/dqn.md
+          - PPO: algorithms/reinforcement-learning/ppo.md
+          - Actor-Critic: algorithms/reinforcement-learning/actor-critic.md
+          - Policy Gradient: algorithms/reinforcement-learning/policy-gradient.md
+          - SARSA: algorithms/reinforcement-learning/sarsa.md
+      - Control:
+          - PID Control: algorithms/control/pid-control.md
+          - Adaptive Control: algorithms/control/adaptive-control.md
+          - Robust Control: algorithms/control/robust-control.md
+          - H-Infinity Control: algorithms/control/h-infinity-control.md
+          - Sliding Mode Control: algorithms/control/sliding-mode-control.md
+      - MPC:
+          - Linear MPC: algorithms/mpc/linear-mpc.md
+          - Nonlinear MPC: algorithms/mpc/nonlinear-mpc.md
+          - Robust MPC: algorithms/mpc/robust-mpc.md
+          - Economic MPC: algorithms/mpc/economic-mpc.md
+          - Learning MPC: algorithms/mpc/learning-mpc.md
+          - Distributed MPC: algorithms/mpc/distributed-mpc.md
+          - Model Predictive Control: algorithms/mpc/model-predictive-control.md
+      - Hierarchical RL:
+          - Feudal Networks: algorithms/hierarchical-rl/feudal-networks.md
+          - Hierarchical Actor-Critic: algorithms/hierarchical-rl/hierarchical-actor-critic.md
+          - Hierarchical Policy Gradient: algorithms/hierarchical-rl/hierarchical-policy-gradient.md
+          - Hierarchical Q-Learning: algorithms/hierarchical-rl/hierarchical-q-learning.md
+          - Hierarchical Task Networks: algorithms/hierarchical-rl/hierarchical-task-networks.md
+          - Option Critic: algorithms/hierarchical-rl/option-critic.md
   - API Reference: api.md
   - Contributing: contributing.md
   - Security: SECURITY.md
 
 extra_css:
   - styles/custom.css
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/mathjax-config.js

@@ -100,14 +100,53 @@
 
 /* Custom table styles */
 .md-typeset table {
-    border-radius: 8px;
+    border-radius: 8px !important;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e4e8;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .md-typeset table th {
-    background-color: #f8f9fa;
+    background-color: #667eea !important;
+    color: white !important;
     font-weight: 600;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #5a6fd8;
+}
+
+.md-typeset table th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.md-typeset table th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.md-typeset table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: top;
+}
+
+.md-typeset table tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+/* Dark mode table support */
+[data-md-color-scheme="slate"] .md-typeset table th {
+    background-color: #4a5568 !important;
+    color: white !important;
+    border-bottom-color: #2d3748;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table td {
+    border-bottom-color: #4a5568;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table tr:hover {
+    background-color: rgba(102, 126, 234, 0.1);
 }
 
 /* Custom navigation styles */
@@ -124,6 +163,45 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
+/* Back to Family Link Styling */
+.back-to-family {
+    display: inline-block;
+    margin-bottom: 2rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #667eea;
+    color: white !important;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid #667eea;
+}
+
+.back-to-family:hover {
+    background-color: #5a6fd8;
+    transform: translateY(-1px);
+    color: white !important;
+    text-decoration: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-color: #5a6fd8;
+}
+
+.back-to-family::before {
+    content: "← ";
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+
+/* Ensure the link is always readable */
+.back-to-family:visited {
+    color: white !important;
+}
+
+.back-to-family:active {
+    color: white !important;
+}
+
 /* Responsive design improvements */
 @media (max-width: 768px) {
     .grid.cards {
@@ -137,4 +215,67 @@
     .quote-widget blockquote {
         font-size: 1.25rem;
     }
+}
+
+/* Family Link Admonition Styling */
+.admonition.family-link {
+    border-left-color: #667eea;
+    background-color: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.admonition.family-link .admonition-title {
+    background-color: #667eea;
+    color: white;
+    font-weight: 600;
+}
+
+.admonition.family-link .admonition-title::before {
+    content: "🏠";
+    margin-right: 0.5rem;
+}
+
+.admonition.family-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.admonition.family-link a:hover {
+    color: #5a6fd8;
+    text-decoration: underline;
+}
+
+/* Grid Layout Improvements */
+.md-typeset .grid {
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.md-typeset .grid > * {
+    min-height: auto;
+}
+
+.md-typeset .grid > *:first-child {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background-color: rgba(102, 126, 234, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.md-typeset .grid > *:not(:first-child) {
+    margin-bottom: 0.5rem;
+}
+
+/* Dark mode grid support */
+[data-md-color-scheme="slate"] .md-typeset .grid > *:first-child {
+    background-color: rgba(102, 126, 234, 0.15);
+    border-color: rgba(102, 126, 234, 0.3);
 }

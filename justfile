@@ -23,11 +23,11 @@ docs-linkcheck: install-docs
 
 # Serve documentation locally
 docs-serve: install-docs
-    mkdocs serve
+    uv run mkdocs serve
 
 # Serve documentation with live reload for development
 docs-dev: install-docs
-    mkdocs serve --livereload --watch docs/
+    uv run mkdocs serve --livereload --watch docs/
 
 # Run all quality checks
 quality: install-dev install-docs

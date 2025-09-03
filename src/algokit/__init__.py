@@ -5,6 +5,6 @@ __author__ = "Jeff Richley"
 __email__ = "jeffrichley@gmail.com"
 
 
-from algokit.classic_dp import fibonacci
+from algokit.dynamic_programming import fibonacci
 
 __all__ = ["fibonacci"]

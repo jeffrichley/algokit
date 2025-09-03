@@ -1,1 +1,0 @@
-"""Dynamic Movement Primitives package."""

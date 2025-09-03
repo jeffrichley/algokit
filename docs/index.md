@@ -13,14 +13,15 @@ Explore the algorithm landscapes covered by Algorithm Kit.
 
 | Family | Highlighted Algorithms | Status |
 | --- | --- | --- |
-| [Classic Dynamic Programming](classic-dp.md) | Fibonacci, LIS, Knapsack | :material-code-tags: Code |
-| [Reinforcement Learning (Model-Free)](reinforcement-learning.md) | Q-Learning, SARSA, DQN | :material-progress-clock: Coming Soon |
-| [Hierarchical Reinforcement Learning](hrl.md) | Options, Feudal RL, MAXQ, HIRO | :material-progress-clock: Coming Soon |
-| [Dynamic Movement Primitives](dmps.md) | DMP Encoding, Imitation Learning | :material-progress-clock: Coming Soon |
-| [Gaussian Process Modeling](gaussian-process.md) | Regression, Bayesian Optimization | :material-progress-clock: Coming Soon |
-| [Real-Time Control](real-time-control.md) | PID, Bang-bang, Kalman Filter | :material-progress-clock: Coming Soon |
-| [Model Predictive Control](mpc.md) | Finite Horizon, Nonlinear, Learning-based | :material-progress-clock: Coming Soon |
-| [Classical Planning Algorithms](classical-planning.md) | A*, Dijkstra, RRT, STRIPS | :material-progress-clock: Coming Soon |
+| [Dynamic Programming](families/dynamic-programming.md) | [Fibonacci](algorithms/dynamic-programming/fibonacci.md), Coin Change, Knapsack | :material-code-tags: Code |
+| [Reinforcement Learning](families/reinforcement-learning.md) | Q-Learning, SARSA, DQN | :material-progress-clock: Coming Soon |
+| [Hierarchical RL](families/hierarchical-rl.md) | Options, Feudal RL, MAXQ, HIRO | :material-progress-clock: Coming Soon |
+| [Control](families/control.md) | PID, Adaptive, Sliding Mode | :material-progress-clock: Coming Soon |
+| [Model Predictive Control](families/mpc.md) | Linear, Nonlinear, Robust | :material-progress-clock: Coming Soon |
+| [Planning](families/planning.md) | A*, GraphPlan, Partial Order | :material-progress-clock: Coming Soon |
+| [Gaussian Process](families/gaussian-process.md) | Regression, Classification, Optimization | :material-progress-clock: Coming Soon |
+| [Dynamic Movement Primitives](families/dmps.md) | DMP Encoding, Imitation Learning | :material-progress-clock: Coming Soon |
+| [Real-Time Control](families/real-time-control.md) | PID, Bang-bang, Kalman Filter | :material-progress-clock: Coming Soon |
 
 **Status legend**: :material-code-tags: Code available · :material-progress-clock: Coming Soon
 
@@ -28,29 +29,35 @@ Explore the algorithm landscapes covered by Algorithm Kit.
 
 Get a feel for the types of problems each family tackles before diving in.
 
-#### Classic Dynamic Programming
+#### Dynamic Programming
 Break complex problems into overlapping subproblems with optimal substructure. Ideal for tasks like path finding, resource allocation, and sequence analysis.
 
-#### Reinforcement Learning (Model-Free)
+**Available Algorithms:**
+- [Fibonacci Sequence](algorithms/dynamic-programming/fibonacci.md) - Complete implementation with multiple approaches
+
+#### Reinforcement Learning
 Learn policies through trial and error when environment dynamics are unknown. Useful for game playing, robotics, and other sequential decision-making tasks.
 
-#### Hierarchical Reinforcement Learning
+#### Hierarchical RL
 Introduce temporal abstraction via options or subgoals to manage long-horizon tasks more efficiently.
 
-#### Dynamic Movement Primitives
-Encode smooth, reusable motion trajectories as stable dynamical systems, enabling robots to adapt motions to new goals and timings.
-
-#### Gaussian Process Modeling
-Model functions with quantified uncertainty using Bayesian regression—great for surrogate modeling, regression, and Bayesian optimization.
-
-#### Real-Time Control
-Design fast, feedback-driven controllers such as PID or Kalman filters for systems with tight latency requirements.
+#### Control
+Design feedback-driven controllers for dynamic systems, including PID, adaptive, and sliding mode approaches.
 
 #### Model Predictive Control
 Solve constrained optimization problems over a moving horizon to compute control actions, balancing performance and safety.
 
-#### Classical Planning Algorithms
+#### Planning
 Search state spaces for action sequences that achieve goals in robotics and AI planning domains.
+
+#### Gaussian Process Modeling
+Model functions with quantified uncertainty using Bayesian regression—great for surrogate modeling, regression, and Bayesian optimization.
+
+#### Dynamic Movement Primitives
+Encode smooth, reusable motion trajectories as stable dynamical systems, enabling robots to adapt motions to new goals and timings.
+
+#### Real-Time Control
+Design fast, feedback-driven controllers such as PID or Kalman filters for systems with tight latency requirements.
 
 ## Quick Start
 
