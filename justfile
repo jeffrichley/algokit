@@ -80,11 +80,13 @@ install-core:
 
 # Install development dependencies (dev group - includes testing)
 install-dev:
-    uv sync --extra dev
+    uv sync --group dev
+    # uv sync --extra dev
 
 # Install documentation dependencies (docs group)
 install-docs:
-    uv sync --extra docs
+    uv sync --group docs
+    # uv sync --extra docs
 
 # Install all dependencies including docs for full development
 install-full:

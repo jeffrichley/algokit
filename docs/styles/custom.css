@@ -98,6 +98,7 @@
     border: 1px solid #e1e4e8;
 }
 
+
 /* Custom table styles */
 .md-typeset table {
     border-radius: 8px !important;
@@ -330,4 +331,86 @@
 .md-typeset .references ul li {
     margin-bottom: 0.8rem;
     line-height: 1.6;
+}
+
+/* Enhanced References & Further Reading styling */
+.references-container {
+    margin: 24px 0;
+}
+
+.reference-category {
+    margin-bottom: 32px;
+    padding: 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--md-default-bg-color--lightest) 0%, var(--md-default-bg-color--light) 100%);
+    border-left: 4px solid var(--md-primary-fg-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reference-category:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.reference-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--md-default-bg-color);
+    border: 1px solid var(--md-default-fg-color--lightest);
+    transition: all 0.2s ease;
+}
+
+.reference-item:hover {
+    background: var(--md-default-bg-color--lightest);
+    border-color: var(--md-primary-fg-color--light);
+    transform: translateX(4px);
+}
+
+.reference-icon {
+    margin-right: 12px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: var(--md-primary-fg-color);
+}
+
+.reference-content {
+    flex: 1;
+}
+
+.reference-title a {
+    color: var(--md-primary-fg-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05em;
+    transition: color 0.2s ease;
+}
+
+.reference-title a:hover {
+    color: var(--md-accent-fg-color);
+    text-decoration: underline;
+}
+
+.reference-meta {
+    color: var(--md-default-fg-color--light);
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.reference-meta span:first-child {
+    color: var(--md-accent-fg-color);
+    font-weight: 500;
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] .reference-category {
+    background: linear-gradient(135deg, var(--md-default-bg-color--lightest) 0%, var(--md-default-bg-color--light) 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+[data-md-color-scheme="slate"] .reference-category:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }

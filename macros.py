@@ -6,9 +6,52 @@ from YAML data using Jinja2 templates.
 """
 
 import yaml
+import re
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from typing import Dict, List, Any, Optional
+
+
+def load_bibtex_references(bib_file: Path) -> dict:
+    """Load BibTeX references from a .bib file and return as dict."""
+    references = {}
+
+    if not bib_file.exists():
+        print(f"DEBUG: BibTeX file not found: {bib_file}")
+        return references
+
+    with open(bib_file, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Parse BibTeX entries - split by @ entries
+    entries = re.split(r"@(\w+)\s*\{", content)[1:]  # Skip first empty element
+
+    for i in range(0, len(entries), 2):
+        if i + 1 >= len(entries):
+            break
+
+        entry_type = entries[i].strip()
+        entry_content = entries[i + 1]
+
+        # Find the key (first part before comma)
+        key_match = re.match(r"([^,]+),", entry_content)
+        if not key_match:
+            continue
+
+        key = key_match.group(1).strip()
+
+        # Parse fields - look for field = {value} patterns
+        field_dict = {}
+        field_pattern = r"(\w+)\s*=\s*\{([^}]+)\}"
+        field_matches = re.findall(field_pattern, entry_content, re.DOTALL)
+
+        for field_name, field_value in field_matches:
+            # Clean up the field value
+            cleaned_value = re.sub(r"\s+", " ", field_value.strip())
+            field_dict[field_name.strip()] = cleaned_value
+
+        references[key] = {"type": entry_type, "key": key, **field_dict}
+    return references
 
 
 def load_family_data(family_id: str) -> dict:
@@ -19,7 +62,7 @@ def load_family_data(family_id: str) -> dict:
     if not family_file.exists():
         return {}
 
-    with open(family_file, "r") as f:
+    with open(family_file, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
@@ -33,7 +76,7 @@ def load_algorithm_data(family_id: str) -> list:
 
     algorithms = []
     for algo_file in algorithms_dir.glob("*.yaml"):
-        with open(algo_file, "r") as f:
+        with open(algo_file, "r", encoding="utf-8") as f:
             algo_data = yaml.safe_load(f)
             if algo_data:
                 # Add slug from filename if not present
@@ -173,6 +216,46 @@ def render_family_page(family_id: str) -> str:
 
     algorithms = load_algorithm_data(family_id)
 
+    # Load shared data for references and tags
+    data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
+    shared_dir = data_dir / "shared"
+    
+    # Load tags
+    tags_file = shared_dir / "tags.yaml"
+    tags_dict = {}
+    if tags_file.exists():
+        with open(tags_file, "r", encoding="utf-8") as f:
+            tags_data = yaml.safe_load(f) or {}
+            # Convert tags list to dict for easy lookup
+            tags_dict = {tag["id"]: tag for tag in tags_data.get("tags", [])}
+
+    # Load references
+    refs_file = shared_dir / "refs.bib"
+    references_dict = {}
+    if refs_file.exists():
+        references_dict = load_bibtex_references(refs_file)
+
+    # Process family references - convert bib_key list to full reference objects
+    processed_references = []
+    family_references = family_data.get("references", [])
+    for ref_item in family_references:
+        if isinstance(ref_item, dict) and "bib_key" in ref_item:
+            bib_key = ref_item["bib_key"]
+            if bib_key in references_dict:
+                processed_references.append(references_dict[bib_key])
+        elif isinstance(ref_item, str):
+            # Handle case where references is just a list of bib_key strings
+            if ref_item in references_dict:
+                processed_references.append(references_dict[ref_item])
+
+    # Process family tags - convert tag ID list to full tag objects
+    processed_tags = []
+    family_tags = family_data.get("tags", [])
+    for tag_item in family_tags:
+        if isinstance(tag_item, str):
+            if tag_item in tags_dict:
+                processed_tags.append(tags_dict[tag_item])
+
     # Set up Jinja2 environment
     template_dir = Path(__file__).parent / "mkdocs_plugins" / "templates"
     env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=False)
@@ -180,7 +263,12 @@ def render_family_page(family_id: str) -> str:
     # Load and render template
     try:
         template = env.get_template("family_page.md")
-        return template.render(family=family_data, algorithms=algorithms)
+        return template.render(
+            family=family_data, 
+            algorithms=algorithms,
+            references=processed_references,
+            tags=processed_tags
+        )
     except Exception as e:
         return f"**Error:** Template rendering error: {str(e)}"
 
@@ -209,7 +297,13 @@ def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
 
     # Load and render template
     try:
-        template = env.get_template("algorithm_page.md")
+        # Read template content directly to avoid MkDocs macros processing it
+        template_file = template_dir / "algorithm_page.md"
+        with open(template_file, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+        
+        # Create template from string content
+        template = env.from_string(template_content)
         return template.render(
             algo=algorithm_data, family=family_data, algorithms=algorithms
         )
@@ -369,6 +463,46 @@ def define_env(env):
 
         algorithms = load_algorithm_data(family_id)
 
+        # Load shared data for references and tags
+        data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
+        shared_dir = data_dir / "shared"
+        
+        # Load tags
+        tags_file = shared_dir / "tags.yaml"
+        tags_dict = {}
+        if tags_file.exists():
+            with open(tags_file, "r", encoding="utf-8") as f:
+                tags_data = yaml.safe_load(f) or {}
+                # Convert tags list to dict for easy lookup
+                tags_dict = {tag["id"]: tag for tag in tags_data.get("tags", [])}
+
+        # Load references
+        refs_file = shared_dir / "refs.bib"
+        references_dict = {}
+        if refs_file.exists():
+            references_dict = load_bibtex_references(refs_file)
+
+        # Process family references - convert bib_key list to full reference objects
+        processed_references = []
+        family_references = family_data.get("references", [])
+        for ref_item in family_references:
+            if isinstance(ref_item, dict) and "bib_key" in ref_item:
+                bib_key = ref_item["bib_key"]
+                if bib_key in references_dict:
+                    processed_references.append(references_dict[bib_key])
+            elif isinstance(ref_item, str):
+                # Handle case where references is just a list of bib_key strings
+                if ref_item in references_dict:
+                    processed_references.append(references_dict[ref_item])
+
+        # Process family tags - convert tag ID list to full tag objects
+        processed_tags = []
+        family_tags = family_data.get("tags", [])
+        for tag_item in family_tags:
+            if isinstance(tag_item, str):
+                if tag_item in tags_dict:
+                    processed_tags.append(tags_dict[tag_item])
+
         # Set up Jinja2 environment
         template_dir = Path(__file__).parent / "mkdocs_plugins" / "templates"
         env_jinja = Environment(
@@ -378,7 +512,12 @@ def define_env(env):
         # Load and render template
         try:
             template = env_jinja.get_template("family_page.md")
-            return template.render(family=family_data, algorithms=algorithms)
+            return template.render(
+                family=family_data, 
+                algorithms=algorithms,
+                references=processed_references,
+                tags=processed_tags
+            )
         except Exception as e:
             return f"**Error:** Template rendering error: {str(e)}"
 
@@ -416,12 +555,64 @@ def define_env(env):
             loader=FileSystemLoader(str(template_dir)), autoescape=False
         )
 
+        # Load shared data for references
+        data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
+        shared_dir = data_dir / "shared"
+
+        # Load references
+        refs_file = shared_dir / "refs.bib"
+        references_dict = {}
+        if refs_file.exists():
+            references_dict = load_bibtex_references(refs_file)
+
+        # Process algorithm references - convert bib_key list to full reference objects
+        processed_references = []
+        algorithm_references = algorithm_data.get("references", [])
+        for ref_category in algorithm_references:
+            if "items" in ref_category:
+                processed_items = []
+                for item in ref_category["items"]:
+                    if isinstance(item, dict) and "bib_key" in item:
+                        bib_key = item["bib_key"]
+                        if bib_key in references_dict:
+                            processed_items.append(references_dict[bib_key])
+                    elif isinstance(item, str):
+                        if item in references_dict:
+                            processed_items.append(references_dict[item])
+                    else:
+                        processed_items.append(item)
+                ref_category["items"] = processed_items
+            processed_references.append(ref_category)
+
         # Load and render template
         try:
             template = env_jinja.get_template("algorithm_page.md")
-            return template.render(algo=algorithm_data, family=family_data)
+            return template.render(
+                algo=algorithm_data, 
+                family=family_data,
+                env={"get": lambda key, default=None: {"AMAZON_AFFILIATE_ID": "your-affiliate-id"}.get(key, default)}
+            )
         except Exception as e:
             return f"**Error:** Template rendering error: {str(e)}"
+
+    @env.macro
+    def isbn_link(isbn: str, text: str = None, tag: str = "mathybits-20") -> str:
+        """
+        Generate an Amazon affiliate link from an ISBN.
+        
+        Args:
+            isbn: The ISBN number of the book (e.g., '0-201-89683-4' or '9780134685991').
+            text: Optional display text. Defaults to the ISBN itself.
+            tag: Amazon Associates tag. Defaults to 'mathybits-20'.
+        
+        Returns:
+            HTML anchor tag that opens the affiliate link in a new tab.
+        """
+        # Strip hyphens and spaces from ISBN for Amazon /dp/ format
+        clean_isbn = isbn.replace('-', '').replace(' ', '')
+        url = f"https://www.amazon.com/dp/{clean_isbn}/?tag={tag}"
+        label = text or isbn
+        return f'<a href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>'
 
     # Add a simple test variable
     env.variables["current_date"] = "January 4, 2025"

@@ -18,7 +18,7 @@ def load_family_data(family_id: str) -> dict:
     if not family_file.exists():
         return {}
 
-    with open(family_file, "r") as f:
+    with open(family_file, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
@@ -32,7 +32,7 @@ def load_algorithm_data(family_id: str) -> list:
 
     algorithms = []
     for algo_file in algorithms_dir.glob("*.yaml"):
-        with open(algo_file, "r") as f:
+        with open(algo_file, "r", encoding="utf-8") as f:
             algo_data = yaml.safe_load(f)
             if algo_data:
                 # Add slug from filename if not present
@@ -53,7 +53,7 @@ def load_shared_data() -> dict:
     # Load tags
     tags_file = shared_dir / "tags.yaml"
     if tags_file.exists():
-        with open(tags_file, "r") as f:
+        with open(tags_file, "r", encoding="utf-8") as f:
             shared_data["tags"] = yaml.safe_load(f) or {}
 
     # Load references

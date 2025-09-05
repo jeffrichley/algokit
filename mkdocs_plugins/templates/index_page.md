@@ -4,7 +4,7 @@
 
 Each algorithm is carefully implemented with modern software engineering practices, comprehensive testing, and extensive documentation to serve as both a learning tool and a reliable reference for students and researchers.
 
-[:material-book-open: Documentation](api.md) · [:material-code-braces: Source Code](https://github.com/jeffrichley/algokit) · [:material-github: GitHub](https://github.com/jeffrichley/algokit)
+[:material-book-open: Documentation](api.md) · [:material-code-braces: Source Code](https://github.com/jeffrichley/algokit){:target="_blank" rel="noopener noreferrer"} · [:material-github: GitHub](https://github.com/jeffrichley/algokit){:target="_blank" rel="noopener noreferrer"}
 
 ## Algorithm Families
 

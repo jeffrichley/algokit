@@ -129,13 +129,9 @@
 ## References
 
 {% if references %}
-<ol>
 {% for ref in references %}
-<li>
-{% if ref.author %}{{ ref.author }}{% endif %}{% if ref.year %} ({{ ref.year }}){% endif %}{% if ref.title %}. {% if ref.url %}[{{ ref.title }}]({{ ref.url }}){:target="_blank"}{% else %}{{ ref.title }}{% endif %}{% endif %}{% if ref.publisher %}. {{ ref.publisher }}{% endif %}{% if ref.note %}. {{ ref.note }}{% endif %}
-</li>
+1. {% if ref.author %}{{ ref.author }}{% if ref.year %} ({{ ref.year }}){% endif %}{% if ref.title %}. {% if ref.url %}[{{ ref.title }}]({{ ref.url }}){:target="_blank"}{% else %}{{ ref.title }}{% endif %}{% endif %}{% if ref.publisher %}. {{ ref.publisher }}{% endif %}{% if ref.note %}. {{ ref.note }}{% endif %}{% else %}{% if ref.title %}{% if ref.url %}[{{ ref.title }}]({{ ref.url }}){:target="_blank"}{% else %}{{ ref.title }}{% endif %}{% endif %}{% if ref.publisher %}. {{ ref.publisher }}{% endif %}{% if ref.note %}. {{ ref.note }}{% endif %}{% endif %}
 {% endfor %}
-</ol>
 {% else %}
 !!! info "No References"
     No references available for this algorithm family.

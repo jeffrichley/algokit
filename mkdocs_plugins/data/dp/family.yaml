@@ -129,8 +129,8 @@ domain_sections:
 
 # References and resources - point to refs.bib entries
 references:
-  - bib_key: "cormen_dp"  # Points to entry in shared/refs.bib
-  - bib_key: "wikipedia_dp"  # Points to entry in shared/refs.bib
+  - bib_key: "cormen2009"  # Points to entry in shared/refs.bib
+  - bib_key: "geeksforgeeks_dp"  # Points to entry in shared/refs.bib
   - bib_key: "leetcode_dp_patterns"  # Points to entry in shared/refs.bib
 
 # Tags for categorization and search - point to tags.yaml entries
