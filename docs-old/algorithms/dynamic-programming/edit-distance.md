@@ -17,15 +17,15 @@ family: "dynamic-programming"
 !!! math "Problem Definition"
     Given:
     - Two strings: $X = x_1, x_2, ..., x_m$ and $Y = y_1, y_2, ..., y_n$
-    
+
     Find the minimum number of operations to transform $X$ into $Y$:
     - **Insert**: Add a character
-    - **Delete**: Remove a character  
+    - **Delete**: Remove a character
     - **Substitute**: Replace a character with another
-    
+
     The edit distance can be computed using the recurrence relation:
-    
-    $$ED(i,j) = \begin{cases} 
+
+    $$ED(i,j) = \begin{cases}
     j & \text{if } i = 0 \\
     i & \text{if } j = 0 \\
     ED(i-1,j-1) & \text{if } x_i = y_j \\
@@ -44,14 +44,14 @@ family: "dynamic-programming"
     def edit_distance(word1: str, word2: str) -> int:
         """
         Calculate the minimum edit distance between two strings.
-        
+
         Args:
             word1: First input string
             word2: Second input string
-            
+
         Returns:
             Minimum number of operations to transform word1 to word2
-            
+
         Example:
             >>> edit_distance("horse", "ros")
             3  # horse -> rorse -> rose -> ros
@@ -59,18 +59,18 @@ family: "dynamic-programming"
             5  # Multiple operations needed
         """
         m, n = len(word1), len(word2)
-        
+
         # Initialize DP table: dp[i][j] = edit distance for word1[:i] and word2[:j]
         dp = [[0] * (n + 1) for _ in range(m + 1)]
-        
+
         # Base cases: empty string to string of length j requires j insertions
         for j in range(n + 1):
             dp[0][j] = j
-        
+
         # Base cases: string of length i to empty string requires i deletions
         for i in range(m + 1):
             dp[i][0] = i
-        
+
         # Fill the DP table
         for i in range(1, m + 1):
             for j in range(1, n + 1):
@@ -84,7 +84,7 @@ family: "dynamic-programming"
                         dp[i][j-1],    # Insert character into word1
                         dp[i-1][j-1]   # Substitute character
                     )
-        
+
         return dp[m][n]
     ```
 
@@ -95,23 +95,23 @@ family: "dynamic-programming"
         Space-optimized version using only two rows of DP table.
         """
         m, n = len(word1), len(word2)
-        
+
         # Use only two rows to save space
         prev = list(range(n + 1))
         curr = [0] * (n + 1)
-        
+
         for i in range(1, m + 1):
             curr[0] = i  # Base case for empty string2
-            
+
             for j in range(1, n + 1):
                 if word1[i-1] == word2[j-1]:
                     curr[j] = prev[j-1]
                 else:
                     curr[j] = 1 + min(prev[j], curr[j-1], prev[j-1])
-            
+
             # Swap rows for next iteration
             prev, curr = curr, prev
-        
+
         return prev[n]
     ```
 
@@ -124,16 +124,16 @@ family: "dynamic-programming"
         """
         if memo is None:
             memo = {}
-        
+
         if (i, j) in memo:
             return memo[(i, j)]
-        
+
         if i == 0:
             return j  # Insert j characters
-        
+
         if j == 0:
             return i  # Delete i characters
-        
+
         if word1[i-1] == word2[j-1]:
             result = edit_distance_memoized(word1, word2, i-1, j-1, memo)
         else:
@@ -142,7 +142,7 @@ family: "dynamic-programming"
                 edit_distance_memoized(word1, word2, i, j-1, memo),    # Insert
                 edit_distance_memoized(word1, word2, i-1, j-1, memo)   # Substitute
             )
-        
+
         memo[(i, j)] = result
         return result
     ```

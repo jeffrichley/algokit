@@ -7,7 +7,7 @@ This directory contains the Cursor rules that define development standards, work
 ### 🔄 **Core Workflow Rules**
 - **`agent-os.mdc`** - Agent OS documentation and workflow instructions
 - **`archon.mdc`** - Archon integration and task-driven development workflow ⭐ **NEW**
-- **`stuffit.mdc`** - Git + quality workflow with just/nox/uv commands
+- **`stuffit.mdc`** - Git + quality workflow with just/uv commands
 
 ### 🧪 **Testing & Quality Rules**
 - **`testing-rules.mdc`** - Comprehensive testing standards and best practices ⭐ **ENHANCED**
@@ -56,4 +56,4 @@ These rules are automatically applied by Cursor when working in this project. Th
 
 - **Project Documentation**: `docs/`
 - **Contributing Guide**: `CONTRIBUTING.md`
-- **Quality Commands**: `justfile` and `noxfile.py`
+- **Quality Commands**: `justfile`

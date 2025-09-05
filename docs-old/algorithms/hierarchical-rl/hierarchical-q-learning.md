@@ -18,9 +18,9 @@ family: "hierarchical-rl"
 
 !!! math "Hierarchical Q-Function Decomposition"
     The hierarchical Q-function can be decomposed into:
-    
+
     $$Q_h(s_t, g_t, a_t) = Q_{meta}(s_t, g_t) + Q_{low}(s_t, g_t, a_t)$$
-    
+
     Where:
     - $Q_h$ is the hierarchical Q-function
     - $Q_{meta}$ is the meta Q-function that estimates subgoal values
@@ -28,11 +28,11 @@ family: "hierarchical-rl"
     - $s_t$ is the current state
     - $g_t$ is the current subgoal
     - $a_t$ is the action taken
-    
+
     The hierarchical Q-Learning update rule is:
-    
+
     $$Q_h(s_t, g_t, a_t) \leftarrow Q_h(s_t, g_t, a_t) + \alpha \left[ r_t + \gamma \max_{g'} Q_{meta}(s_{t+1}, g') - Q_h(s_t, g_t, a_t) \right]$$
-    
+
     Where $\alpha$ is the learning rate and $\gamma$ is the discount factor.
 
 !!! success "Key Properties"
@@ -48,11 +48,11 @@ family: "hierarchical-rl"
     ```python
     import numpy as np
     from typing import Dict, Tuple, Any
-    
+
     class HierarchicalQLearningAgent:
         """
         Hierarchical Q-Learning agent implementation.
-        
+
         Args:
             state_size: Number of possible states
             subgoal_size: Number of possible subgoals
@@ -62,11 +62,11 @@ family: "hierarchical-rl"
             epsilon: Exploration rate for epsilon-greedy (default: 0.1)
             subgoal_horizon: Maximum steps to achieve subgoal (default: 50)
         """
-        
+
         def __init__(self, state_size: int, subgoal_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1, subgoal_horizon: int = 50):
-            
+
             self.state_size = state_size
             self.subgoal_size = subgoal_size
             self.action_size = action_size
@@ -74,15 +74,15 @@ family: "hierarchical-rl"
             self.gamma = discount_factor
             self.epsilon = epsilon
             self.subgoal_horizon = subgoal_horizon
-            
+
             # Q-tables
             self.meta_q_table = np.zeros((state_size, subgoal_size))
             self.low_q_table = np.zeros((state_size, subgoal_size, action_size))
-            
+
             # Current subgoal tracking
             self.current_subgoal = None
             self.subgoal_steps = 0
-        
+
         def get_subgoal(self, state: int) -> int:
             """Select subgoal using epsilon-greedy policy on meta Q-function."""
             if np.random.random() < self.epsilon:
@@ -91,7 +91,7 @@ family: "hierarchical-rl"
             else:
                 # Exploitation: best subgoal according to meta Q-table
                 return np.argmax(self.meta_q_table[state])
-        
+
         def get_action(self, state: int, subgoal: int) -> int:
             """Choose action using epsilon-greedy policy on low-level Q-function."""
             if np.random.random() < self.epsilon:
@@ -100,71 +100,71 @@ family: "hierarchical-rl"
             else:
                 # Exploitation: best action according to low-level Q-table
                 return np.argmax(self.low_q_table[state, subgoal])
-        
-        def step(self, state: int, action: int, reward: float, 
+
+        def step(self, state: int, action: int, reward: float,
                 next_state: int, done: bool) -> None:
             """Process one step and potentially update subgoal."""
             # Update low-level Q-function
             if self.current_subgoal is not None:
                 self.update_low_level_q(state, self.current_subgoal, action, reward, next_state, done)
-            
+
             # Check if subgoal should be updated
             self.subgoal_steps += 1
-            if (self.subgoal_steps >= self.subgoal_horizon or 
+            if (self.subgoal_steps >= self.subgoal_horizon or
                 self.is_subgoal_achieved(state, next_state) or done):
-                
+
                 # Update meta Q-function
                 if self.current_subgoal is not None:
                     total_reward = reward  # Simplified - in practice, sum rewards over subgoal period
                     self.update_meta_q(state, self.current_subgoal, total_reward, next_state, done)
-                
+
                 # Select new subgoal
                 if not done:
                     new_subgoal = self.get_subgoal(next_state)
                     self.current_subgoal = new_subgoal
                     self.subgoal_steps = 0
-                
+
                 # Reset subgoal tracking
                 self.subgoal_steps = 0
-        
+
         def is_subgoal_achieved(self, state: int, next_state: int) -> bool:
             """Check if current subgoal has been achieved."""
             # Simple state-based subgoal achievement
             # In practice, this would be domain-specific
             return state != next_state
-        
-        def update_low_level_q(self, state: int, subgoal: int, action: int, 
+
+        def update_low_level_q(self, state: int, subgoal: int, action: int,
                               reward: float, next_state: int, done: bool) -> None:
             """Update low-level Q-function using Q-Learning update rule."""
             current_q = self.low_q_table[state, subgoal, action]
-            
+
             if done:
                 # Terminal state: no future rewards
                 max_next_q = 0
             else:
                 # Non-terminal state: maximum Q-value of next state for current subgoal
                 max_next_q = np.max(self.low_q_table[next_state, subgoal])
-            
+
             # Q-Learning update rule
             new_q = current_q + self.alpha * (reward + self.gamma * max_next_q - current_q)
             self.low_q_table[state, subgoal, action] = new_q
-        
-        def update_meta_q(self, state: int, subgoal: int, reward: float, 
+
+        def update_meta_q(self, state: int, subgoal: int, reward: float,
                          next_state: int, done: bool) -> None:
             """Update meta Q-function using Q-Learning update rule."""
             current_q = self.meta_q_table[state, subgoal]
-            
+
             if done:
                 # Terminal state: no future rewards
                 max_next_q = 0
             else:
                 # Non-terminal state: maximum Q-value of next state for any subgoal
                 max_next_q = np.max(self.meta_q_table[next_state])
-            
+
             # Q-Learning update rule
             new_q = current_q + self.alpha * (reward + self.gamma * max_next_q - current_q)
             self.meta_q_table[state, subgoal] = new_q
-        
+
         def get_policy(self) -> Tuple[np.ndarray, np.ndarray]:
             """Extract greedy policies from Q-tables."""
             meta_policy = np.argmax(self.meta_q_table, axis=1)
@@ -178,60 +178,60 @@ family: "hierarchical-rl"
         """
         Hierarchical Q-Learning agent with experience replay.
         """
-        
+
         def __init__(self, state_size: int, subgoal_size: int, action_size: int, **kwargs):
             super().__init__(state_size, subgoal_size, action_size, **kwargs)
-            
+
             # Experience replay buffers
             self.meta_buffer = []
             self.low_buffer = []
             self.batch_size = 32
-        
-        def store_meta_experience(self, state: int, subgoal: int, reward: float, 
+
+        def store_meta_experience(self, state: int, subgoal: int, reward: float,
                                 next_state: int, done: bool) -> None:
             """Store meta-level experience in replay buffer."""
             self.meta_buffer.append((state, subgoal, reward, next_state, done))
-            
+
             # Update when buffer is full
             if len(self.meta_buffer) >= self.batch_size:
                 self.replay_meta()
-        
-        def store_low_experience(self, state: int, subgoal: int, action: int, 
+
+        def store_low_experience(self, state: int, subgoal: int, action: int,
                                reward: float, next_state: int, done: bool) -> None:
             """Store low-level experience in replay buffer."""
             self.low_buffer.append((state, subgoal, action, reward, next_state, done))
-            
+
             # Update when buffer is full
             if len(self.low_buffer) >= self.batch_size:
                 self.replay_low()
-        
+
         def replay_meta(self) -> None:
             """Update meta Q-function using experience replay."""
             if len(self.meta_buffer) < self.batch_size:
                 return
-            
+
             # Sample batch from meta buffer
             batch = np.random.choice(len(self.meta_buffer), self.batch_size, replace=False)
-            
+
             for idx in batch:
                 state, subgoal, reward, next_state, done = self.meta_buffer[idx]
                 self.update_meta_q(state, subgoal, reward, next_state, done)
-            
+
             # Clear buffer
             self.meta_buffer.clear()
-        
+
         def replay_low(self) -> None:
             """Update low-level Q-function using experience replay."""
             if len(self.low_buffer) < self.batch_size:
                 return
-            
+
             # Sample batch from low buffer
             batch = np.random.choice(len(self.low_buffer), self.batch_size, replace=False)
-            
+
             for idx in batch:
                 state, subgoal, action, reward, next_state, done = self.low_buffer[idx]
                 self.update_low_level_q(state, subgoal, action, reward, next_state, done)
-            
+
             # Clear buffer
             self.low_buffer.clear()
     ```
@@ -242,29 +242,29 @@ family: "hierarchical-rl"
         """
         Hierarchical Q-Learning agent with function approximation for large state spaces.
         """
-        
+
         def __init__(self, state_size: int, subgoal_size: int, action_size: int, **kwargs):
             super().__init__(state_size, subgoal_size, action_size, **kwargs)
-            
+
             # Function approximators (simplified linear models)
             self.meta_weights = np.random.randn(state_size, subgoal_size) * 0.01
             self.low_weights = np.random.randn(state_size + subgoal_size, action_size) * 0.01
-        
+
         def get_meta_q_value(self, state: int, subgoal: int) -> float:
             """Get Q-value using function approximation."""
             return self.meta_weights[state, subgoal]
-        
+
         def get_low_q_value(self, state: int, subgoal: int, action: int) -> float:
             """Get Q-value using function approximation."""
             features = np.concatenate([np.eye(self.state_size)[state], np.eye(self.subgoal_size)[subgoal]])
             return np.dot(features, self.low_weights[:, action])
-        
+
         def update_meta_weights(self, state: int, subgoal: int, target: float) -> None:
             """Update meta Q-function weights."""
             current_q = self.get_meta_q_value(state, subgoal)
             error = target - current_q
             self.meta_weights[state, subgoal] += self.alpha * error
-        
+
         def update_low_weights(self, state: int, subgoal: int, action: int, target: float) -> None:
             """Update low-level Q-function weights."""
             current_q = self.get_low_q_value(state, subgoal, action)

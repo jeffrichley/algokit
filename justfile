@@ -1,25 +1,35 @@
 # Development shortcuts for Algorithm Kit
-# Generated from the Seedling Copier template
+
 
 # Run tests
 test: install-dev
-    nox -s "tests-3.12(mode='full')"
+    uv run pytest tests
 
-# Run linting
+# Run tests with coverage
+test-cov: install-dev
+    uv run pytest tests --cov=src/algokit --cov-report=term-missing --cov-report=html
+
+# Run linting and formatting
 lint: install-dev
-    nox -s lint
+    uv run ruff check src tests --fix
+    uv run ruff format src tests --check
+
+# Format code
+format: install-dev
+    uv run ruff format src tests
 
 # Run type checking
 type-check: install-dev
-    nox -s type_check
+    uv run mypy src tests
 
 # Build documentation
 docs: install-docs
-    nox -s docs
+    uv run mkdocs build
 
 # Check documentation links
 docs-linkcheck: install-docs
-    nox -s docs_linkcheck
+    uv run mkdocs build
+    uv run python -m linkcheckmd docs
 
 # Serve documentation locally
 docs-serve: install-docs
@@ -31,34 +41,37 @@ docs-dev: install-docs
 
 # Run all quality checks
 quality: install-dev install-docs
-    nox -s lint
-    nox -s type_check
-    nox -s docs_linkcheck
-    nox -s spellcheck
+    uv run ruff check src tests --fix
+    uv run ruff format src tests --check
+    uv run mypy src tests
+    uv run mkdocs build
+    uv run python -m linkcheckmd docs
+    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
 
 # Generate coverage report
 coverage: install-dev
-    nox -s coverage_html
+    uv run coverage html
+    @echo "Generated coverage HTML at htmlcov/index.html"
 
 # Run security audit
 security: install-dev
-    nox -s security
+    uv run pip-audit --progress-spinner=off
 
 # Run complexity analysis
 complexity: install-dev
-    nox -s complexity
+    uv run xenon --max-absolute B src
 
 # Validate pyproject.toml
 pyproject: install-dev
-    nox -s pyproject
+    uv run validate-pyproject pyproject.toml
 
 # Run spell checking
 spellcheck: install-dev
-    nox -s spellcheck
+    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
 
 # Run pre-commit hooks
 pre-commit: install-dev
-    nox -s pre-commit
+    uv run pre-commit run --all-files
 
 # Create a release PR
 release:
@@ -90,7 +103,7 @@ install-docs:
 
 # Install all dependencies including docs for full development
 install-full:
-    nox -s dev_full
+    uv sync --group dev --group docs
 
 # Install minimal dependencies (core only)
 install-minimal:
@@ -98,7 +111,6 @@ install-minimal:
 
 # Clean up generated files
 clean:
-    rm -rf .nox
     rm -rf htmlcov
     rm -rf site
     rm -rf .pytest_cache

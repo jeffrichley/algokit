@@ -18,18 +18,18 @@ family: "dynamic-programming"
     Given:
     - A sequence of $n$ matrices: $A_1, A_2, ..., A_n$
     - Matrix $A_i$ has dimensions $p_{i-1} \times p_i$
-    
+
     Find the optimal parenthesization that minimizes the total number of scalar multiplications:
-    
+
     $$\min \sum_{k=1}^{n-1} \text{scalar\_multiplications}(A_k, A_{k+1})$$
-    
+
     The recurrence relation for the optimal solution:
-    
-    $$m[i,j] = \begin{cases} 
+
+    $$m[i,j] = \begin{cases}
     0 & \text{if } i = j \\
     \min_{i \leq k < j} \{m[i,k] + m[k+1,j] + p_{i-1} \times p_k \times p_j\} & \text{if } i < j
     \end{cases}$$
-    
+
     Where $m[i,j]$ represents the minimum cost of multiplying matrices $A_i$ through $A_j$.
 
 !!! success "Key Properties"
@@ -44,13 +44,13 @@ family: "dynamic-programming"
     def matrix_chain_multiplication(dimensions: list[int]) -> tuple[int, list[list[int]]]:
         """
         Find optimal parenthesization for matrix chain multiplication.
-        
+
         Args:
             dimensions: List of dimensions where matrix i has size dimensions[i] × dimensions[i+1]
-            
+
         Returns:
             Tuple of (minimum cost, parenthesization table)
-            
+
         Example:
             >>> dimensions = [10, 30, 5, 60]
             >>> cost, parens = matrix_chain_multiplication(dimensions)
@@ -58,26 +58,26 @@ family: "dynamic-programming"
             Minimum cost: 4500
         """
         n = len(dimensions) - 1  # Number of matrices
-        
+
         # Initialize DP tables
         # m[i][j] = minimum cost of multiplying matrices i through j
         m = [[0] * n for _ in range(n)]
         # s[i][j] = optimal split point for matrices i through j
         s = [[0] * n for _ in range(n)]
-        
+
         # Fill the DP table diagonally
         for length in range(2, n + 1):  # length of matrix chain
             for i in range(n - length + 1):
                 j = i + length - 1
                 m[i][j] = float('inf')
-                
+
                 # Try all possible split points
                 for k in range(i, j):
                     cost = m[i][k] + m[k+1][j] + dimensions[i] * dimensions[k+1] * dimensions[j+1]
                     if cost < m[i][j]:
                         m[i][j] = cost
                         s[i][j] = k
-        
+
         return m[0][n-1], s
     ```
 
@@ -88,21 +88,21 @@ family: "dynamic-programming"
         Space-optimized version that only returns the minimum cost.
         """
         n = len(dimensions) - 1
-        
+
         # Use only one row of the DP table
         dp = [0] * n
-        
+
         for length in range(2, n + 1):
             for i in range(n - length + 1):
                 j = i + length - 1
                 min_cost = float('inf')
-                
+
                 for k in range(i, j):
                     cost = dp[k] + dp[j] + dimensions[i] * dimensions[k+1] * dimensions[j+1]
                     min_cost = min(min_cost, cost)
-                
+
                 dp[j] = min_cost
-        
+
         return dp[n-1]
     ```
 
@@ -115,20 +115,20 @@ family: "dynamic-programming"
         """
         if memo is None:
             memo = {}
-        
+
         if (i, j) in memo:
             return memo[(i, j)]
-        
+
         if i == j:
             return 0  # Single matrix, no multiplication needed
-        
+
         min_cost = float('inf')
         for k in range(i, j):
-            cost = (matrix_chain_memoized(dimensions, i, k, memo) + 
-                   matrix_chain_memoized(dimensions, k+1, j, memo) + 
+            cost = (matrix_chain_memoized(dimensions, i, k, memo) +
+                   matrix_chain_memoized(dimensions, k+1, j, memo) +
                    dimensions[i] * dimensions[k+1] * dimensions[j+1])
             min_cost = min(min_cost, cost)
-        
+
         memo[(i, j)] = min_cost
         return min_cost
     ```

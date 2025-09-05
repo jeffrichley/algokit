@@ -1,21 +1,19 @@
-"""
-Navigation macros for AlgoKit documentation.
+"""Navigation macros for AlgoKit documentation.
 
 This module provides functions that generate dynamic navigation content
 from the algorithms.yaml data structure, including navigation grids,
 family overviews, and related content links.
 """
 
-from typing import Any
 from .data_loader import (
+    get_algorithm,
+    get_algorithms,
+    get_algorithms_by_family,
     get_families,
     get_family,
-    get_algorithms,
-    get_algorithm,
-    get_algorithms_by_family,
+    get_macro_config,
     get_progress,
     get_relationships,
-    get_macro_config,
 )
 
 

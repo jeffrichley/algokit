@@ -18,42 +18,42 @@ family: "control"
 
 !!! math "Sliding Mode Control Framework"
     **1. Sliding Surface Definition:**
-    
+
     The sliding surface $s(x,t)$ is defined as:
-    
+
     $$s(x,t) = \left( \frac{d}{dt} + \lambda \right)^{n-1} e(t)$$
-    
+
     Where:
     - $e(t) = x_d(t) - x(t)$ is the tracking error
     - $x_d(t)$ is the desired trajectory
     - $x(t)$ is the current state
     - $\lambda > 0$ is a design parameter
     - $n$ is the system order
-    
+
     **2. Sliding Mode Condition:**
-    
+
     The sliding mode occurs when $s(x,t) = 0$, which implies:
-    
+
     $$\dot{s}(x,t) = 0$$
-    
+
     **3. Control Law:**
-    
+
     The control input $u(t)$ consists of two components:
-    
+
     $$u(t) = u_{eq}(t) + u_{sw}(t)$$
-    
+
     Where:
     - $u_{eq}(t)$ is the equivalent control (continuous part)
     - $u_{sw}(t)$ is the switching control (discontinuous part)
-    
+
     **4. Equivalent Control:**
-    
+
     $$u_{eq}(t) = -B^{-1}(x) \left[ f(x) + \lambda \dot{e}(t) \right]$$
-    
+
     **5. Switching Control:**
-    
+
     $$u_{sw}(t) = -K \text{sign}(s(x,t))$$
-    
+
     Where $K > 0$ is the switching gain and $\text{sign}(\cdot)$ is the signum function.
 
 !!! success "Key Properties"
@@ -69,60 +69,60 @@ family: "control"
     ```python
     import numpy as np
     from typing import Tuple, Callable, Optional
-    
+
     class SlidingModeController:
         """
         Basic Sliding Mode Controller implementation.
-        
+
         Args:
             lambda_param: Sliding surface parameter (default: 1.0)
             switching_gain: Switching control gain (default: 10.0)
             boundary_layer: Boundary layer thickness for chattering reduction (default: 0.1)
             sampling_time: Controller sampling time (default: 0.01)
         """
-        
+
         def __init__(self, lambda_param: float = 1.0, switching_gain: float = 10.0,
                      boundary_layer: float = 0.1, sampling_time: float = 0.01):
-            
+
             self.lambda_param = lambda_param
             self.K = switching_gain
             self.boundary_layer = boundary_layer
             self.dt = sampling_time
-            
+
             # State tracking
             self.prev_error = 0.0
             self.prev_error_derivative = 0.0
-            
+
             # History for analysis
             self.sliding_surface_history = []
             self.control_history = []
             self.error_history = []
-        
+
         def compute_sliding_surface(self, error: float, error_derivative: float) -> float:
             """
             Compute the sliding surface value.
-            
+
             Args:
                 error: Current tracking error
                 error_derivative: Derivative of tracking error
-                
+
             Returns:
                 Sliding surface value
             """
             # For second-order system: s = e_dot + lambda * e
             sliding_surface = error_derivative + self.lambda_param * error
             return sliding_surface
-        
-        def compute_equivalent_control(self, desired_acceleration: float, 
+
+        def compute_equivalent_control(self, desired_acceleration: float,
                                      system_dynamics: Callable, current_state: np.ndarray) -> float:
             """
             Compute the equivalent control component.
-            
+
             Args:
                 desired_acceleration: Desired second derivative
                 system_dynamics: Function describing system dynamics
                 current_state: Current system state
-                
+
             Returns:
                 Equivalent control value
             """
@@ -130,14 +130,14 @@ family: "control"
             # In practice, this would use the actual system model
             u_eq = desired_acceleration - system_dynamics(current_state)
             return u_eq
-        
+
         def compute_switching_control(self, sliding_surface: float) -> float:
             """
             Compute the switching control component with boundary layer.
-            
+
             Args:
                 sliding_surface: Current sliding surface value
-                
+
             Returns:
                 Switching control value
             """
@@ -148,70 +148,70 @@ family: "control"
             else:
                 # Outside boundary layer: use signum function
                 u_sw = -self.K * np.sign(sliding_surface)
-            
+
             return u_sw
-        
-        def compute_control(self, setpoint: float, current_output: float, 
+
+        def compute_control(self, setpoint: float, current_output: float,
                           current_derivative: float, system_dynamics: Callable,
                           current_state: np.ndarray) -> float:
             """
             Compute the total control input.
-            
+
             Args:
                 setpoint: Desired output value
                 current_output: Current system output
                 current_derivative: Current output derivative
                 system_dynamics: System dynamics function
                 current_state: Current system state
-                
+
             Returns:
                 Total control input
             """
             # Calculate tracking error and its derivative
             error = setpoint - current_output
             error_derivative = -current_derivative  # Assuming setpoint is constant
-            
+
             # Compute sliding surface
             sliding_surface = self.compute_sliding_surface(error, error_derivative)
-            
+
             # Compute equivalent control
             desired_acceleration = -self.lambda_param * error_derivative
             u_eq = self.compute_equivalent_control(desired_acceleration, system_dynamics, current_state)
-            
+
             # Compute switching control
             u_sw = self.compute_switching_control(sliding_surface)
-            
+
             # Total control input
             control_input = u_eq + u_sw
-            
+
             # Store history
             self.sliding_surface_history.append(sliding_surface)
             self.control_history.append(control_input)
             self.error_history.append(error)
-            
+
             # Update previous values
             self.prev_error = error
             self.prev_error_derivative = error_derivative
-            
+
             return control_input
-        
+
         def get_sliding_surface(self) -> float:
             """Get current sliding surface value."""
             if self.sliding_surface_history:
                 return self.sliding_surface_history[-1]
             return 0.0
-        
+
         def get_control_components(self) -> dict:
             """Get control components for analysis."""
             if not self.control_history:
                 return {}
-            
+
             return {
                 'sliding_surface': self.get_sliding_surface(),
                 'total_control': self.control_history[-1],
                 'error': self.error_history[-1] if self.error_history else 0.0
             }
-        
+
         def reset(self) -> None:
             """Reset the controller state."""
             self.prev_error = 0.0
@@ -227,66 +227,66 @@ family: "control"
         """
         Higher-Order Sliding Mode Controller for systems with relative degree > 1.
         """
-        
+
         def __init__(self, relative_degree: int = 2, **kwargs):
             super().__init__(**kwargs)
             self.relative_degree = relative_degree
-            
+
             # Higher-order sliding surface parameters
             self.alpha = 1.0
             self.beta = 1.0
-            
+
             # State history for higher-order derivatives
             self.error_history = []
             self.error_derivatives = []
-        
+
         def compute_higher_order_surface(self, error: float, error_derivatives: list) -> float:
             """
             Compute higher-order sliding surface.
-            
+
             Args:
                 error: Current tracking error
                 error_derivatives: List of error derivatives
-                
+
             Returns:
                 Higher-order sliding surface value
             """
             if len(error_derivatives) < self.relative_degree - 1:
                 return error
-            
+
             # For relative degree 2: s = e_ddot + alpha * e_dot + beta * e
             if self.relative_degree == 2:
                 e_dot = error_derivatives[0]
                 return error_derivatives[1] + self.alpha * e_dot + self.beta * error
-            
+
             # For relative degree 3: s = e_ddot_dot + alpha * e_ddot + beta * e_dot + gamma * e
             elif self.relative_degree == 3:
                 e_dot = error_derivatives[0]
                 e_ddot = error_derivatives[1]
                 return error_derivatives[2] + self.alpha * e_ddot + self.beta * e_dot + self.beta * error
-            
+
             # Default to basic sliding surface
             return super().compute_sliding_surface(error, error_derivatives[0] if error_derivatives else 0.0)
-        
-        def compute_super_twisting_control(self, sliding_surface: float, 
+
+        def compute_super_twisting_control(self, sliding_surface: float,
                                         sliding_surface_derivative: float) -> float:
             """
             Implement super-twisting algorithm for chattering reduction.
-            
+
             Args:
                 sliding_surface: Current sliding surface value
                 sliding_surface_derivative: Derivative of sliding surface
-                
+
             Returns:
                 Super-twisting control value
             """
             # Super-twisting parameters
             k1 = 1.5
             k2 = 1.1
-            
+
             # Super-twisting control law
             u_st = -k1 * np.sign(sliding_surface) * np.sqrt(abs(sliding_surface)) - k2 * np.sign(sliding_surface_derivative)
-            
+
             return u_st
     ```
 
@@ -296,24 +296,24 @@ family: "control"
         """
         Sliding Mode Controller with adaptive switching gain.
         """
-        
+
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            
+
             # Adaptive parameters
             self.adaptive_gain = self.K
             self.adaptation_rate = 0.1
             self.min_gain = 1.0
             self.max_gain = 100.0
-            
+
             # Performance tracking
             self.surface_norm_history = []
-        
-        def adapt_switching_gain(self, sliding_surface: float, 
+
+        def adapt_switching_gain(self, sliding_surface: float,
                                surface_derivative: float) -> None:
             """
             Adaptively adjust the switching gain.
-            
+
             Args:
                 sliding_surface: Current sliding surface value
                 surface_derivative: Derivative of sliding surface
@@ -321,59 +321,59 @@ family: "control"
             # Surface norm for adaptation
             surface_norm = np.sqrt(sliding_surface**2 + surface_derivative**2)
             self.surface_norm_history.append(surface_norm)
-            
+
             # Adaptive law: increase gain when surface norm is large
             if len(self.surface_norm_history) >= 10:
                 recent_norm = np.mean(self.surface_norm_history[-10:])
-                
+
                 # Adaptation rule
                 if recent_norm > 0.1:  # Threshold for adaptation
                     self.adaptive_gain += self.adaptation_rate * recent_norm
                 else:
                     self.adaptive_gain -= self.adaptation_rate * 0.01  # Gradual decrease
-                
+
                 # Bound the adaptive gain
                 self.adaptive_gain = np.clip(self.adaptive_gain, self.min_gain, self.max_gain)
-        
+
         def compute_switching_control(self, sliding_surface: float) -> float:
             """Compute switching control with adaptive gain."""
             # Use adaptive gain instead of fixed gain
             K_adaptive = self.adaptive_gain
-            
+
             # Boundary layer approach
             if abs(sliding_surface) <= self.boundary_layer:
                 u_sw = -K_adaptive * (sliding_surface / self.boundary_layer)
             else:
                 u_sw = -K_adaptive * np.sign(sliding_surface)
-            
+
             return u_sw
-        
-        def compute_control(self, setpoint: float, current_output: float, 
+
+        def compute_control(self, setpoint: float, current_output: float,
                           current_derivative: float, system_dynamics: Callable,
                           current_state: np.ndarray) -> float:
             """Compute control with adaptive gain adjustment."""
             # Calculate error and sliding surface
             error = setpoint - current_output
             error_derivative = -current_derivative
-            
+
             sliding_surface = self.compute_sliding_surface(error, error_derivative)
-            
+
             # Adapt switching gain
             self.adapt_switching_gain(sliding_surface, error_derivative)
-            
+
             # Compute control components
             desired_acceleration = -self.lambda_param * error_derivative
             u_eq = self.compute_equivalent_control(desired_acceleration, system_dynamics, current_state)
             u_sw = self.compute_switching_control(sliding_surface)
-            
+
             # Total control
             control_input = u_eq + u_sw
-            
+
             # Store history
             self.sliding_surface_history.append(sliding_surface)
             self.control_history.append(control_input)
             self.error_history.append(error)
-            
+
             return control_input
     ```
 

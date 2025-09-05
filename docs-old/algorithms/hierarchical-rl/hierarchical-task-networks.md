@@ -18,17 +18,17 @@ family: "hierarchical-rl"
 
 !!! math "Task Decomposition Framework"
     A hierarchical task network can be represented as:
-    
+
     $$T = \{T_1, T_2, \ldots, T_n\}$$
-    
+
     Where each task $T_i$ can be decomposed into subtasks:
-    
+
     $$T_i = \{t_{i1}, t_{i2}, \ldots, t_{im}\}$$
-    
+
     The value function for a composite task is:
-    
+
     $$V(T_i) = \max_{\pi} \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \gamma^t r_t \right]$$
-    
+
     Where $\pi$ is the policy for executing the task decomposition, and $H$ is the horizon.
 
 !!! success "Key Properties"
@@ -45,7 +45,7 @@ family: "hierarchical-rl"
     import numpy as np
     from typing import Dict, List, Tuple, Any
     from dataclasses import dataclass
-    
+
     @dataclass
     class Task:
         """Represents a task in the hierarchy."""
@@ -53,39 +53,39 @@ family: "hierarchical-rl"
         subtasks: List['Task']
         policy: Any = None
         value: float = 0.0
-        
+
         def is_primitive(self) -> bool:
             """Check if this is a primitive task (no subtasks)."""
             return len(self.subtasks) == 0
-    
+
     class HierarchicalTaskNetworkAgent:
         """
         Hierarchical Task Networks agent implementation.
-        
+
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
             learning_rate: Learning rate for policies (default: 0.001)
             discount_factor: Discount factor gamma (default: 0.99)
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.001, discount_factor: float = 0.99):
-            
+
             self.state_size = state_size
             self.action_size = action_size
             self.alpha = learning_rate
             self.gamma = discount_factor
-            
+
             # Task hierarchy
             self.task_hierarchy = self.build_task_hierarchy()
-            
+
             # Policies for each task
             self.task_policies = {}
-            
+
             # Experience buffers for each task
             self.task_buffers = {}
-        
+
         def build_task_hierarchy(self) -> Task:
             """Build the hierarchical task structure."""
             # Example: Navigation task with subgoals
@@ -94,9 +94,9 @@ family: "hierarchical-rl"
                 Task("avoid_obstacles", []),
                 Task("reach_destination", [])
             ])
-            
+
             return navigate
-        
+
         def get_action(self, state: np.ndarray, current_task: Task) -> int:
             """Get action for current task."""
             if current_task.is_primitive():
@@ -105,26 +105,26 @@ family: "hierarchical-rl"
             else:
                 # Select next subtask
                 return self.select_subtask(state, current_task)
-        
+
         def execute_primitive_task(self, state: np.ndarray, task: Task) -> int:
             """Execute a primitive task."""
             if task.name not in self.task_policies:
                 # Initialize random policy for new task
                 self.task_policies[task.name] = np.random.rand(self.state_size, self.action_size)
                 self.task_buffers[task.name] = []
-            
+
             # Epsilon-greedy action selection
             if np.random.random() < 0.1:
                 return np.random.randint(self.action_size)
             else:
                 return np.argmax(self.task_policies[task.name][state])
-        
+
         def select_subtask(self, state: np.ndarray, task: Task) -> int:
             """Select next subtask to execute."""
             # Simple heuristic: select subtask with highest value
             subtask_values = [self.get_task_value(subtask) for subtask in task.subtasks]
             return np.argmax(subtask_values)
-        
+
         def get_task_value(self, task: Task) -> float:
             """Get the value of a task."""
             if task.is_primitive():
@@ -133,39 +133,39 @@ family: "hierarchical-rl"
                 # Recursively compute value from subtasks
                 subtask_values = [self.get_task_value(subtask) for subtask in task.subtasks]
                 return max(subtask_values) if subtask_values else 0.0
-        
-        def update_task_policy(self, task_name: str, state: int, action: int, 
+
+        def update_task_policy(self, task_name: str, state: int, action: int,
                              reward: float, next_state: int) -> None:
             """Update policy for a specific task."""
             if task_name not in self.task_policies:
                 return
-            
+
             current_q = self.task_policies[task_name][state, action]
-            
+
             # Q-Learning update
             max_next_q = np.max(self.task_policies[task_name][next_state])
             new_q = current_q + self.alpha * (reward + self.gamma * max_next_q - current_q)
             self.task_policies[task_name][state, action] = new_q
-        
-        def store_experience(self, task_name: str, state: int, action: int, 
+
+        def store_experience(self, task_name: str, state: int, action: int,
                            reward: float, next_state: int) -> None:
             """Store experience for a specific task."""
             if task_name not in self.task_buffers:
                 self.task_buffers[task_name] = []
-            
+
             self.task_buffers[task_name].append((state, action, reward, next_state))
-            
+
             # Update policy when buffer is full
             if len(self.task_buffers[task_name]) >= 10:
                 self.update_from_buffer(task_name)
-        
+
         def update_from_buffer(self, task_name: str) -> None:
             """Update task policy from experience buffer."""
             buffer = self.task_buffers[task_name]
-            
+
             for state, action, reward, next_state in buffer:
                 self.update_task_policy(task_name, state, action, reward, next_state)
-            
+
             # Clear buffer
             self.task_buffers[task_name].clear()
     ```
@@ -176,26 +176,26 @@ family: "hierarchical-rl"
         """
         HTN agent with dynamic task decomposition.
         """
-        
+
         def __init__(self, state_size: int, action_size: int, **kwargs):
             super().__init__(state_size, action_size, **kwargs)
-            
+
             # Task decomposition network
             self.decomposition_network = np.random.randn(state_size, 10) * 0.01
-        
+
         def decompose_task_dynamically(self, state: np.ndarray, task: Task) -> List[Task]:
             """Dynamically decompose tasks based on current state."""
             if task.is_primitive():
                 return [task]
-            
+
             # Use decomposition network to determine subtask priorities
             state_features = state / np.linalg.norm(state)
             decomposition_scores = np.dot(state_features, self.decomposition_network)
-            
+
             # Sort subtasks by decomposition scores
             subtask_scores = list(zip(task.subtasks, decomposition_scores[:len(task.subtasks)]))
             subtask_scores.sort(key=lambda x: x[1], reverse=True)
-            
+
             return [subtask for subtask, _ in subtask_scores]
     ```
 
@@ -205,13 +205,13 @@ family: "hierarchical-rl"
         """
         HTN agent with transfer learning capabilities.
         """
-        
+
         def __init__(self, state_size: int, action_size: int, **kwargs):
             super().__init__(state_size, action_size, **kwargs)
-            
+
             # Transfer learning mappings
             self.transfer_mappings = {}
-        
+
         def transfer_task_policy(self, source_task: str, target_task: str) -> None:
             """Transfer policy from source task to target task."""
             if source_task in self.task_policies and target_task not in self.task_policies:
@@ -220,7 +220,7 @@ family: "hierarchical-rl"
                 noise = np.random.normal(0, 0.1, source_policy.shape)
                 self.task_policies[target_task] = source_policy + noise
                 self.task_buffers[target_task] = []
-        
+
         def adapt_transferred_policy(self, task_name: str, adaptation_rate: float = 0.1) -> None:
             """Adapt transferred policy to new task."""
             if task_name in self.task_policies:

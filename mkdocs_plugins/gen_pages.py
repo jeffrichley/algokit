@@ -1,5 +1,4 @@
-"""
-MkDocs Gen Files Script for Algorithm Documentation
+"""MkDocs Gen Files Script for Algorithm Documentation
 
 This script generates virtual pages for algorithm families and algorithms
 from YAML data using mkdocs-gen-files. It implements comprehensive discovery
@@ -7,11 +6,11 @@ logic that scans data/families/*/family.yaml and algorithms/*.yaml files,
 applying family-level filtering and ordering rules.
 """
 
-import os
-import yaml
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
+
 import mkdocs_gen_files
+import yaml
 
 
 class DataDiscovery:
@@ -29,11 +28,11 @@ class DataDiscovery:
         self.shared_dir = self.data_dir / "shared"
 
         # Cache for loaded data
-        self._families_cache: Dict[str, Dict[str, Any]] = {}
-        self._algorithms_cache: Dict[str, List[Dict[str, Any]]] = {}
-        self._shared_cache: Dict[str, Any] = {}
+        self._families_cache: dict[str, dict[str, Any]] = {}
+        self._algorithms_cache: dict[str, list[dict[str, Any]]] = {}
+        self._shared_cache: dict[str, Any] = {}
 
-    def load_shared_data(self) -> Dict[str, Any]:
+    def load_shared_data(self) -> dict[str, Any]:
         """Load shared data (tags, references) from the shared directory.
 
         Returns:
@@ -47,7 +46,7 @@ class DataDiscovery:
         # Load tags
         tags_file = self.shared_dir / "tags.yaml"
         if tags_file.exists():
-            with open(tags_file, "r", encoding="utf-8") as f:
+            with open(tags_file, encoding="utf-8") as f:
                 shared_data["tags"] = yaml.safe_load(f)
         else:
             shared_data["tags"] = {"tags": []}
@@ -55,7 +54,7 @@ class DataDiscovery:
         # Load references (BibTeX format)
         refs_file = self.shared_dir / "refs.bib"
         if refs_file.exists():
-            with open(refs_file, "r", encoding="utf-8") as f:
+            with open(refs_file, encoding="utf-8") as f:
                 shared_data["refs"] = f.read()
         else:
             shared_data["refs"] = ""
@@ -63,7 +62,7 @@ class DataDiscovery:
         self._shared_cache = shared_data
         return shared_data
 
-    def discover_families(self) -> List[str]:
+    def discover_families(self) -> list[str]:
         """Discover all algorithm families by scanning the families directory.
 
         Returns:
@@ -79,7 +78,7 @@ class DataDiscovery:
 
         return sorted(families)
 
-    def load_family(self, family_id: str) -> Optional[Dict[str, Any]]:
+    def load_family(self, family_id: str) -> dict[str, Any] | None:
         """Load a specific family's metadata from its family.yaml file.
 
         Args:
@@ -96,16 +95,16 @@ class DataDiscovery:
             return None
 
         try:
-            with open(family_file, "r", encoding="utf-8") as f:
+            with open(family_file, encoding="utf-8") as f:
                 family_data = yaml.safe_load(f)
                 family_data["_source_file"] = str(family_file)
                 self._families_cache[family_id] = family_data
                 return family_data
-        except (yaml.YAMLError, IOError) as e:
+        except (OSError, yaml.YAMLError) as e:
             print(f"ERROR: Failed to load family {family_id}: {e}")
             return None
 
-    def discover_algorithms(self, family_id: str) -> List[str]:
+    def discover_algorithms(self, family_id: str) -> list[str]:
         """Discover all algorithms in a specific family.
 
         Args:
@@ -127,7 +126,7 @@ class DataDiscovery:
 
     def load_algorithm(
         self, family_id: str, algorithm_slug: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Load a specific algorithm's metadata from its YAML file.
 
         Args:
@@ -148,17 +147,17 @@ class DataDiscovery:
             return None
 
         try:
-            with open(algorithm_file, "r", encoding="utf-8") as f:
+            with open(algorithm_file, encoding="utf-8") as f:
                 algorithm_data = yaml.safe_load(f)
                 algorithm_data["_source_file"] = str(algorithm_file)
                 algorithm_data["_family_id"] = family_id
                 self._algorithms_cache[cache_key] = algorithm_data
                 return algorithm_data
-        except (yaml.YAMLError, IOError) as e:
+        except (OSError, yaml.YAMLError) as e:
             print(f"ERROR: Failed to load algorithm {family_id}/{algorithm_slug}: {e}")
             return None
 
-    def load_family_algorithms(self, family_id: str) -> List[Dict[str, Any]]:
+    def load_family_algorithms(self, family_id: str) -> list[dict[str, Any]]:
         """Load all algorithms for a specific family with filtering and ordering.
 
         Args:
@@ -192,8 +191,8 @@ class DataDiscovery:
         return algorithms
 
     def _apply_family_filtering(
-        self, family_data: Dict[str, Any], algorithms: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, family_data: dict[str, Any], algorithms: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Apply family-level filtering rules to algorithms.
 
         Args:
@@ -225,8 +224,8 @@ class DataDiscovery:
         return algorithms
 
     def _apply_family_ordering(
-        self, family_data: Dict[str, Any], algorithms: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, family_data: dict[str, Any], algorithms: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Apply family-level ordering rules to algorithms.
 
         Args:
@@ -259,7 +258,7 @@ class DataDiscovery:
             # Default to by_algo_order
             return sorted(algorithms, key=lambda x: x.get("order", 999))
 
-    def get_all_data(self) -> Dict[str, Any]:
+    def get_all_data(self) -> dict[str, Any]:
         """Get all discovered data in a structured format.
 
         Returns:
@@ -386,8 +385,8 @@ def main():
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).parent))
-    from gen_families import generate_family_pages
     from gen_algorithms import generate_algorithm_pages
+    from gen_families import generate_family_pages
 
     # Generate family pages
     try:

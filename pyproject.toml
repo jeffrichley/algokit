@@ -46,7 +46,6 @@ readme = {file = "README.md"}
 [dependency-groups]
 dev = [
   # Linting & formatting
-  "black>=24.3.0",
   "ruff>=0.4.0",
   "pre-commit>=3.6",
 
@@ -101,11 +100,15 @@ docs = [
   # Add pymdownx extensions for Material theme functionality
   "pymdown-extensions>=10.16.1",
   "mkdocs-gen-files>=0.5.0",
+  # Link checking for documentation
+  "linkcheckmd>=1.4.0",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ["py312"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.coverage.html]
 directory = "htmlcov"
@@ -273,5 +276,4 @@ version_files = [
 
 [tool.codespell]
 ignore-words-list = "algokit,jeffrichley,pyproject"
-skip = "*.pyc,*.pyo,*.pyd,.git,*.so,*.egg,*.egg-info,.tox,.venv,.nox,htmlcov,site"
-
+skip = "*.pyc,*.pyo,*.pyd,.git,*.so,*.egg,*.egg-info,.tox,.venv,htmlcov,site"

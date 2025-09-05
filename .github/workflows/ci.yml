@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        mode: [minimal, full]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.mode }}" = "minimal" ]; then
+            uv sync
+          else
+            uv sync --group dev
+          fi
+
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.mode }}" = "minimal" ]; then
+            uv pip install pytest pytest-cov
+          fi
+          uv run pytest tests --cov=src/algokit --cov-report=xml
+
+      - name: Run quality gates
+        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
+        run: |
+          uv run ruff check src tests --fix
+          uv run ruff format src tests --check
+          uv run mypy src tests
+          uv run mkdocs build
+          uv run python -m linkcheckmd docs
+          uv run xenon --max-absolute B src
+          uv run pip-audit --progress-spinner=off
+          uv run validate-pyproject pyproject.toml
+          uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
+        uses: codecov/codecov-action@v4

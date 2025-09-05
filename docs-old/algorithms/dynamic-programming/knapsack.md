@@ -18,15 +18,15 @@ family: "dynamic-programming"
     Given:
     - A set of $n$ items, each with weight $w_i$ and value $v_i$
     - A knapsack with maximum weight capacity $W$
-    
+
     Maximize the total value:
-    
+
     $$\max \sum_{i=1}^{n} v_i x_i$$
-    
+
     Subject to the weight constraint:
-    
+
     $$\sum_{i=1}^{n} w_i x_i \leq W$$
-    
+
     Where $x_i \in \{0, 1\}$ represents whether item $i$ is included.
 
 !!! success "Key Properties"
@@ -41,15 +41,15 @@ family: "dynamic-programming"
     def knapsack_01(weights: list[int], values: list[int], capacity: int) -> int:
         """
         Solve 0/1 knapsack problem using dynamic programming.
-        
+
         Args:
             weights: List of item weights
             values: List of item values
             capacity: Maximum weight capacity of knapsack
-            
+
         Returns:
             Maximum value that can be achieved
-            
+
         Example:
             >>> weights = [2, 1, 3, 2]
             >>> values = [12, 10, 20, 15]
@@ -58,10 +58,10 @@ family: "dynamic-programming"
             37  # Items 0, 1, and 3: 12 + 10 + 15 = 37
         """
         n = len(weights)
-        
+
         # Initialize DP table: dp[i][w] = max value using first i items with capacity w
         dp = [[0] * (capacity + 1) for _ in range(n + 1)]
-        
+
         # Fill the DP table
         for i in range(1, n + 1):
             for w in range(capacity + 1):
@@ -74,7 +74,7 @@ family: "dynamic-programming"
                 else:
                     # Cannot include item i due to weight constraint
                     dp[i][w] = dp[i-1][w]
-        
+
         return dp[n][capacity]
     ```
 
@@ -86,41 +86,41 @@ family: "dynamic-programming"
         """
         n = len(weights)
         dp = [0] * (capacity + 1)
-        
+
         for i in range(n):
             # Iterate backwards to avoid overwriting values we need
             for w in range(capacity, weights[i] - 1, -1):
                 dp[w] = max(dp[w], dp[w - weights[i]] + values[i])
-        
+
         return dp[capacity]
     ```
 
 === "Recursive with Memoization"
     ```python
-    def knapsack_01_memoized(weights: list[int], values: list[int], capacity: int, 
+    def knapsack_01_memoized(weights: list[int], values: list[int], capacity: int,
                              memo: dict[tuple[int, int], int] = None) -> int:
         """
         Recursive solution with memoization for 0/1 knapsack.
         """
         if memo is None:
             memo = {}
-        
+
         if (len(weights), capacity) in memo:
             return memo[(len(weights), capacity)]
-        
+
         if len(weights) == 0 or capacity == 0:
             return 0
-        
+
         # Don't include current item
         value_without = knapsack_01_memoized(weights[1:], values[1:], capacity, memo)
-        
+
         # Include current item if possible
         value_with = 0
         if weights[0] <= capacity:
             value_with = values[0] + knapsack_01_memoized(
                 weights[1:], values[1:], capacity - weights[0], memo
             )
-        
+
         result = max(value_without, value_with)
         memo[(len(weights), capacity)] = result
         return result

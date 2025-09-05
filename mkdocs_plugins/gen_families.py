@@ -1,12 +1,10 @@
-"""
-Generate family pages for algorithm documentation.
-"""
+"""Generate family pages for algorithm documentation."""
+
+import re
+from pathlib import Path
 
 import mkdocs_gen_files
 import yaml
-import re
-from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
 
 
 def load_bibtex_references(bib_file: Path) -> dict:
@@ -17,7 +15,7 @@ def load_bibtex_references(bib_file: Path) -> dict:
         print(f"DEBUG: BibTeX file not found: {bib_file}")
         return references
 
-    with open(bib_file, "r", encoding="utf-8") as f:
+    with open(bib_file, encoding="utf-8") as f:
         content = f.read()
 
     # Parse BibTeX entries - split by @ entries
@@ -62,7 +60,7 @@ def generate_family_pages():
     tags_file = shared_dir / "tags.yaml"
     tags = {}
     if tags_file.exists():
-        with open(tags_file, "r", encoding="utf-8") as f:
+        with open(tags_file, encoding="utf-8") as f:
             tags_data = yaml.safe_load(f) or {}
             # Convert tags list to dict for easy lookup
             tags = {tag["id"]: tag for tag in tags_data.get("tags", [])}
@@ -79,7 +77,7 @@ def generate_family_pages():
         if family_dir.is_dir() and family_dir.name != "shared":
             family_file = family_dir / "family.yaml"
             if family_file.exists():
-                with open(family_file, "r", encoding="utf-8") as f:
+                with open(family_file, encoding="utf-8") as f:
                     family_data = yaml.safe_load(f)
                     if family_data:
                         family_data["_source_file"] = str(family_file)
@@ -110,7 +108,7 @@ def generate_family_pages():
         algorithms = []
         if algorithms_dir.exists():
             for algo_file in algorithms_dir.glob("*.yaml"):
-                with open(algo_file, "r", encoding="utf-8") as af:
+                with open(algo_file, encoding="utf-8") as af:
                     algo_data = yaml.safe_load(af)
                     if algo_data:
                         algorithms.append(algo_data)

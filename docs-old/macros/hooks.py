@@ -1,21 +1,18 @@
-"""
-MkDocs hooks for dynamic algorithm page generation.
+"""MkDocs hooks for dynamic algorithm page generation.
 
 This module implements the hooks that generate algorithm pages dynamically
 during the MkDocs build process without requiring static .md files.
 """
 
-import os
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from mkdocs.structure.files import File
 from mkdocs.structure.pages import Page
 
-from .page_generator import load_algorithms_data, generate_algorithm_page_content
+from .page_generator import generate_algorithm_page_content, load_algorithms_data
 
 
-def on_files(files: List[File], config: Dict[str, Any]) -> List[File]:
+def on_files(files: list[File], config: dict[str, Any]) -> list[File]:
     """Add virtual algorithm pages to the MkDocs file collection.
 
     This hook runs during the file discovery phase and injects virtual
@@ -59,7 +56,7 @@ def on_files(files: List[File], config: Dict[str, Any]) -> List[File]:
 
 
 def on_page_markdown(
-    markdown: str, page: Page, config: Dict[str, Any], files: List[File]
+    markdown: str, page: Page, config: dict[str, Any], files: list[File]
 ) -> str:
     """Generate algorithm page content when MkDocs processes the page.
 
@@ -116,7 +113,7 @@ def on_page_markdown(
         return f"# Error Generating Page\n\nError generating content for algorithm '{algorithm_key}': {e}"
 
 
-def on_post_build(config: Dict[str, Any]) -> None:
+def on_post_build(config: dict[str, Any]) -> None:
     """Post-build hook for cleanup or additional processing.
 
     Args:

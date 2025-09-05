@@ -14,7 +14,7 @@ description: |
   problems by breaking them down into simpler subproblems. The key insight is that
   many problems have overlapping subproblems and optimal substructure, allowing us
   to store and reuse solutions to avoid redundant computation.
-  
+
   Dynamic Programming is one of the most important algorithmic paradigms in computer science.
   It provides an elegant way to solve optimization problems by storing solutions to
   subproblems and reusing them, avoiding the exponential time complexity of naive
@@ -69,7 +69,7 @@ algorithms:
   # Algorithm comparison data (will be populated from individual algorithm files)
   comparison:
     enabled: true
-    metrics: ["time_complexity", "space_complexity", "difficulty", "applications"]
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
 
 # Related families and cross-references
 related_families:
@@ -102,16 +102,16 @@ domain_sections:
   - name: "Implementation Approaches"
     content: |
       !!! info "Memoization vs Tabulation"
-          
+
           **Memoization (Top-Down)**:
 
           - Natural recursive approach
           - Only computes needed subproblems
           - Can be memory efficient
           - May cause stack overflow for deep recursion
-          
+
           **Tabulation (Bottom-Up)**:
-          
+
           - Iterative approach
           - Computes all subproblems
           - Better space optimization possible
@@ -120,7 +120,7 @@ domain_sections:
   - name: "Common Patterns"
     content: |
       !!! info "DP Problem Patterns"
-          
+
           1. **1D DP**: Single dimension state (Fibonacci, climbing stairs)
           2. **2D DP**: Two dimensions (LCS, edit distance)
           3. **Interval DP**: Working with intervals (matrix chain multiplication)

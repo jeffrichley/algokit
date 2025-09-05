@@ -13,11 +13,11 @@ summary: "Optimize value within weight constraints using dynamic programming for
 
 # Detailed description (markdown supported) - full overview for the algorithm page
 description: |
-  The 0/1 Knapsack problem is a fundamental optimization problem in computer science. Given a set of items, 
-  each with a weight and value, determine the maximum value that can be obtained by selecting items such that 
+  The 0/1 Knapsack problem is a fundamental optimization problem in computer science. Given a set of items,
+  each with a weight and value, determine the maximum value that can be obtained by selecting items such that
   the total weight does not exceed a given capacity.
-  
-  This problem is a classic example of dynamic programming and has applications in resource allocation, 
+
+  This problem is a classic example of dynamic programming and has applications in resource allocation,
   portfolio optimization, and cutting stock problems.
 
 # Implementation status and development info
@@ -26,7 +26,7 @@ status:
   implementation_quality: "none"
   test_coverage: "none"
   documentation_quality: "planned"
-  
+
   # Source code locations
   source_files: []
 

@@ -11,18 +11,18 @@ family: "planning"
 
 !!! math "A* Evaluation Function"
     The A* algorithm uses the following evaluation function:
-    
+
     $$f(n) = g(n) + h(n)$$
-    
+
     Where:
     - $f(n)$ is the estimated total cost of the cheapest solution through node $n$
     - $g(n)$ is the actual cost from the start node to node $n$
     - $h(n)$ is the heuristic estimate of the cost from node $n$ to the goal
-    
+
     The algorithm is optimal when $h(n)$ is admissible:
-    
+
     $$h(n) \leq h^*(n)$$
-    
+
     Where $h^*(n)$ is the true cost from node $n$ to the goal.
 
 !!! success "Key Properties"
@@ -38,7 +38,7 @@ family: "planning"
     import heapq
     from typing import List, Tuple, Dict, Set, Optional, Callable
     from dataclasses import dataclass
-    
+
     @dataclass
     class Node:
         """Represents a node in the search graph."""
@@ -47,37 +47,37 @@ family: "planning"
         h_cost: float = 0.0
         f_cost: float = float('inf')
         parent: Optional['Node'] = None
-        
+
         def __lt__(self, other):
             return self.f_cost < other.f_cost
-    
+
     class AStarSearch:
         """
         A* search algorithm implementation.
-        
+
         Args:
             heuristic_func: Function that estimates cost from node to goal
             get_neighbors: Function that returns valid neighbors of a node
             get_cost: Function that returns cost between two adjacent nodes
         """
-        
-        def __init__(self, 
+
+        def __init__(self,
                      heuristic_func: Callable[[Tuple[int, int], Tuple[int, int]], float],
                      get_neighbors: Callable[[Tuple[int, int]], List[Tuple[int, int]]],
                      get_cost: Callable[[Tuple[int, int], Tuple[int, int]], float] = lambda a, b: 1.0):
-            
+
             self.heuristic_func = heuristic_func
             self.get_neighbors = get_neighbors
             self.get_cost = get_cost
-        
+
         def search(self, start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
             """
             Find the shortest path from start to goal using A* search.
-            
+
             Args:
                 start: Starting position
                 goal: Target position
-                
+
             Returns:
                 List of positions representing the path, or None if no path exists
             """
@@ -85,36 +85,36 @@ family: "planning"
             open_set = []
             closed_set: Set[Tuple[int, int]] = set()
             nodes: Dict[Tuple[int, int], Node] = {}
-            
+
             # Create start node
             start_node = Node(start, g_cost=0.0)
             start_node.h_cost = self.heuristic_func(start, goal)
             start_node.f_cost = start_node.g_cost + start_node.h_cost
             nodes[start] = start_node
-            
+
             # Add start node to open set
             heapq.heappush(open_set, start_node)
-            
+
             while open_set:
                 # Get node with lowest f_cost
                 current = heapq.heappop(open_set)
                 current_pos = current.position
-                
+
                 # Check if we've reached the goal
                 if current_pos == goal:
                     return self._reconstruct_path(current)
-                
+
                 # Add current node to closed set
                 closed_set.add(current_pos)
-                
+
                 # Explore neighbors
                 for neighbor_pos in self.get_neighbors(current_pos):
                     if neighbor_pos in closed_set:
                         continue
-                    
+
                     # Calculate tentative g_cost
                     tentative_g_cost = current.g_cost + self.get_cost(current_pos, neighbor_pos)
-                    
+
                     # Get or create neighbor node
                     if neighbor_pos not in nodes:
                         neighbor_node = Node(neighbor_pos)
@@ -122,29 +122,29 @@ family: "planning"
                         nodes[neighbor_pos] = neighbor_node
                     else:
                         neighbor_node = nodes[neighbor_pos]
-                    
+
                     # Check if this path to neighbor is better
                     if tentative_g_cost < neighbor_node.g_cost:
                         neighbor_node.g_cost = tentative_g_cost
                         neighbor_node.f_cost = neighbor_node.g_cost + neighbor_node.h_cost
                         neighbor_node.parent = current
-                        
+
                         # Add to open set if not already there
                         if neighbor_pos not in [node.position for node in open_set]:
                             heapq.heappush(open_set, neighbor_node)
-            
+
             # No path found
             return None
-        
+
         def _reconstruct_path(self, goal_node: Node) -> List[Tuple[int, int]]:
             """Reconstruct the path from start to goal."""
             path = []
             current = goal_node
-            
+
             while current is not None:
                 path.append(current.position)
                 current = current.parent
-            
+
             return path[::-1]  # Reverse to get path from start to goal
     ```
 

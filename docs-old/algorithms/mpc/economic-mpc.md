@@ -18,13 +18,13 @@ family: "mpc"
 
 !!! math "Economic MPC Framework"
     **1. Economic System Model:**
-    
+
     The system with economic variables is described by:
-    
+
     $$x(k+1) = f(x(k), u(k), d(k), p(k))$$
     $$y(k) = h(x(k), u(k), p(k))$$
     $$c(k) = g_e(x(k), u(k), p(k))$$
-    
+
     Where:
     - $x(k) \in \mathbb{R}^{n_x}$ is the state vector
     - $u(k) \in \mathbb{R}^{n_u}$ is the control input vector
@@ -32,31 +32,31 @@ family: "mpc"
     - $p(k) \in \mathbb{R}^{n_p}$ is the economic parameter vector (prices, costs)
     - $c(k) \in \mathbb{R}^{n_c}$ is the economic cost/profit vector
     - $f(\cdot)$, $h(\cdot)$, and $g_e(\cdot)$ are system functions
-    
+
     **2. Economic Optimization Problem:**
-    
+
     At each time step $k$, solve:
-    
+
     $$\min_{U_k} J_e(x(k), U_k, P_k) = \sum_{i=0}^{N_p-1} L_e(x(k+i|k), u(k+i), p(k+i))$$
-    
+
     Subject to:
     - $x(k+i+1|k) = f(x(k+i|k), u(k+i), d(k+i), p(k+i))$
     - $y(k+i|k) = h(x(k+i|k), u(k+i), p(k+i))$
     - $g(x(k+i|k), u(k+i)) \leq 0$ (operational constraints)
     - $u_{min} \leq u(k+i) \leq u_{max}$
     - $x_{min} \leq x(k+i|k) \leq x_{max}$
-    
+
     Where:
     - $U_k = [u(k), u(k+1), ..., u(k+N_c-1)]$ is the control sequence
     - $P_k = [p(k), p(k+1), ..., p(k+N_p-1)]$ is the economic parameter sequence
     - $L_e(\cdot)$ is the economic stage cost function
-    
+
     **3. Economic Stage Cost:**
-    
+
     The economic stage cost typically includes:
-    
+
     $$L_e(x, u, p) = c_{op}(x, u, p) + c_{trans}(u) + c_{constraint}(x, u)$$
-    
+
     Where:
     - $c_{op}(x, u, p)$: Operational costs (energy, raw materials, labor)
     - $c_{trans}(u)$: Transition costs (startup, shutdown, changeover)
@@ -76,11 +76,11 @@ family: "mpc"
     import numpy as np
     from scipy.optimize import minimize
     from typing import Callable, Optional, Tuple, Dict, List
-    
+
     class EconomicMPCController:
         """
         Basic Economic MPC Controller implementation.
-        
+
         Args:
             prediction_horizon: Number of prediction steps
             control_horizon: Number of control steps
@@ -92,61 +92,61 @@ family: "mpc"
             Q: State deviation weight matrix (for stability)
             R: Input change weight matrix (for smoothness)
         """
-        
+
         def __init__(self, prediction_horizon: int, control_horizon: int,
                      state_dim: int, input_dim: int, output_dim: int,
                      economic_dim: int, economic_cost_function: Callable,
                      Q: np.ndarray = None, R: np.ndarray = None):
-            
+
             self.Np = prediction_horizon
             self.Nc = min(control_horizon, prediction_horizon)
             self.nx = state_dim
             self.nu = input_dim
             self.ny = output_dim
             self.np = economic_dim
-            
+
             # Economic cost function
             self.economic_cost = economic_cost_function
-            
+
             # Weighting matrices for stability and smoothness
             self.Q = Q if Q is not None else 0.1 * np.eye(state_dim)
             self.R = R if R is not None else 0.01 * np.eye(input_dim)
-            
+
             # System model functions
             self.f = None  # State update function
             self.h = None  # Output function
-            
+
             # Economic parameters (prices, costs)
             self.economic_parameters = []
-            
+
             # Constraints
             self.u_min = -np.inf * np.ones(input_dim)
             self.u_max = np.inf * np.ones(input_dim)
             self.x_min = -np.inf * np.ones(state_dim)
             self.x_max = np.inf * np.ones(state_dim)
-            
+
             # History
             self.control_history = []
             self.state_history = []
             self.economic_cost_history = []
             self.total_cost_history = []
-        
-        def set_system_model(self, state_update_func: Callable, 
+
+        def set_system_model(self, state_update_func: Callable,
                            output_func: Callable) -> None:
             """
             Set the system model functions.
-            
+
             Args:
                 state_update_func: Function that computes next state
                 output_func: Function that computes output
             """
             self.f = state_update_func
             self.h = output_func
-        
+
         def set_economic_parameters(self, parameters: List[np.ndarray]) -> None:
             """
             Set economic parameters over the prediction horizon.
-            
+
             Args:
                 parameters: List of economic parameter vectors
             """
@@ -156,9 +156,9 @@ family: "mpc"
                 extended_params = parameters + [last_param] * (self.Np - len(parameters))
             else:
                 extended_params = parameters[:self.Np]
-            
+
             self.economic_parameters = extended_params
-        
+
         def set_constraints(self, u_min: np.ndarray = None, u_max: np.ndarray = None,
                           x_min: np.ndarray = None, x_max: np.ndarray = None) -> None:
             """
@@ -172,8 +172,8 @@ family: "mpc"
                 self.x_min = np.array(x_min)
             if x_max is not None:
                 self.x_max = np.array(x_max)
-        
-        def compute_control(self, current_state: np.ndarray, 
+
+        def compute_control(self, current_state: np.ndarray,
                           reference_trajectory: np.ndarray = None,
                           current_disturbance: np.ndarray = None) -> np.ndarray:
             """
@@ -181,51 +181,51 @@ family: "mpc"
             """
             if self.f is None or self.h is None:
                 raise ValueError("System model not set")
-            
+
             if not self.economic_parameters:
                 print("Warning: No economic parameters set. Using default values.")
                 self.economic_parameters = [np.zeros(self.np)] * self.Np
-            
+
             # Initial guess for control sequence
             u0 = np.zeros(self.Nc * self.nu)
-            
+
             # Bounds for optimization
             bounds = []
             for i in range(self.Nc):
                 for j in range(self.nu):
                     bounds.append((self.u_min[j], self.u_max[j]))
-            
+
             # Solve economic optimization problem
             result = minimize(
-                fun=lambda u: self._economic_objective_function(u, current_state, 
+                fun=lambda u: self._economic_objective_function(u, current_state,
                                                              reference_trajectory, current_disturbance),
                 x0=u0,
                 bounds=bounds,
                 method='SLSQP',
                 options={'maxiter': 200, 'ftol': 1e-6}
             )
-            
+
             if not result.success:
                 print(f"Economic MPC optimization failed: {result.message}")
                 # Use previous control or zero control as fallback
                 if self.control_history:
                     return self.control_history[-1]
                 return np.zeros(self.nu)
-            
+
             # Extract first control input
             optimal_control = result.x[:self.nu]
-            
+
             # Store history
             self.control_history.append(optimal_control)
             self.state_history.append(current_state)
-            
+
             # Compute and store costs
             economic_cost = self._compute_economic_cost(optimal_control, current_state)
             self.economic_cost_history.append(economic_cost)
             self.total_cost_history.append(result.fun)
-            
+
             return optimal_control
-        
+
         def _economic_objective_function(self, u: np.ndarray, current_state: np.ndarray,
                                        reference: np.ndarray, disturbance: np.ndarray = None) -> float:
             """
@@ -233,15 +233,15 @@ family: "mpc"
             """
             # Reshape control sequence
             U = u.reshape(self.Nc, self.nu)
-            
+
             # Initialize costs
             economic_cost = 0.0
             stability_cost = 0.0
             smoothness_cost = 0.0
-            
+
             x = current_state.copy()
             prev_u = np.zeros(self.nu)
-            
+
             # Prediction loop
             for i in range(self.Np):
                 # Get control input
@@ -249,46 +249,46 @@ family: "mpc"
                     u_i = U[i]
                 else:
                     u_i = U[-1]
-                
+
                 # Get economic parameters
                 p_i = self.economic_parameters[i]
-                
+
                 # Predict next state
                 if disturbance is not None and i < len(disturbance):
                     d_i = disturbance[i]
                 else:
                     d_i = np.zeros_like(current_state)
-                
+
                 x_next = self.f(x, u_i, d_i, p_i)
-                
+
                 # Economic cost
                 stage_economic_cost = self.economic_cost(x, u_i, p_i)
                 economic_cost += stage_economic_cost
-                
+
                 # Stability cost (deviation from reference if provided)
                 if reference is not None and i < len(reference):
                     ref_i = reference[i]
                     state_deviation = x - ref_i
                     stability_cost += state_deviation.T @ self.Q @ state_deviation
-                
+
                 # Smoothness cost (control change penalty)
                 if i > 0:
                     control_change = u_i - prev_u
                     smoothness_cost += control_change.T @ self.R @ control_change
-                
+
                 # State constraints penalty
                 if np.any(x < self.x_min) or np.any(x > self.x_max):
                     economic_cost += 1e6  # Large penalty for constraint violation
-                
+
                 # Update state and previous control
                 x = x_next
                 prev_u = u_i
-            
+
             # Total cost
             total_cost = economic_cost + stability_cost + smoothness_cost
-            
+
             return total_cost
-        
+
         def _compute_economic_cost(self, control: np.ndarray, state: np.ndarray) -> float:
             """
             Compute economic cost for current state and control.
@@ -297,25 +297,25 @@ family: "mpc"
                 p = self.economic_parameters[0]
             else:
                 p = np.zeros(self.np)
-            
+
             return self.economic_cost(state, control, p)
-        
+
         def get_control_history(self) -> np.ndarray:
             """Get control input history."""
             return np.array(self.control_history) if self.control_history else np.array([])
-        
+
         def get_state_history(self) -> np.ndarray:
             """Get state history."""
             return np.array(self.state_history) if self.state_history else np.array([])
-        
+
         def get_economic_cost_history(self) -> np.ndarray:
             """Get economic cost history."""
             return np.array(self.economic_cost_history) if self.economic_cost_history else np.array([])
-        
+
         def get_total_cost_history(self) -> np.ndarray:
             """Get total cost history."""
             return np.array(self.total_cost_history) if self.total_cost_history else np.array([])
-        
+
         def reset(self) -> None:
             """Reset controller state."""
             self.control_history.clear()
@@ -330,18 +330,18 @@ family: "mpc"
         """
         Economic MPC focused on profit maximization.
         """
-        
+
         def __init__(self, revenue_function: Callable, cost_function: Callable, **kwargs):
             super().__init__(**kwargs)
-            
+
             # Economic functions
             self.revenue_function = revenue_function
             self.cost_function = cost_function
-            
+
             # Profit optimization parameters
             self.profit_weight = 1.0
             self.operational_weight = 0.1
-        
+
         def _economic_objective_function(self, u: np.ndarray, current_state: np.ndarray,
                                        reference: np.ndarray, disturbance: np.ndarray = None) -> float:
             """
@@ -349,15 +349,15 @@ family: "mpc"
             """
             # Reshape control sequence
             U = u.reshape(self.Nc, self.nu)
-            
+
             # Initialize costs
             total_profit = 0.0
             operational_cost = 0.0
             stability_cost = 0.0
-            
+
             x = current_state.copy()
             prev_u = np.zeros(self.nu)
-            
+
             # Prediction loop
             for i in range(self.Np):
                 # Get control input
@@ -365,52 +365,52 @@ family: "mpc"
                     u_i = U[i]
                 else:
                     u_i = U[-1]
-                
+
                 # Get economic parameters
                 p_i = self.economic_parameters[i]
-                
+
                 # Predict next state
                 if disturbance is not None and i < len(disturbance):
                     d_i = disturbance[i]
                 else:
                     d_i = np.zeros_like(current_state)
-                
+
                 x_next = self.f(x, u_i, d_i, p_i)
-                
+
                 # Predict output
                 y_i = self.h(x, u_i, p_i)
-                
+
                 # Revenue and cost
                 revenue = self.revenue_function(y_i, p_i)
                 cost = self.cost_function(x, u_i, p_i)
                 profit = revenue - cost
-                
+
                 total_profit += profit
                 operational_cost += cost
-                
+
                 # Stability cost (deviation from reference if provided)
                 if reference is not None and i < len(reference):
                     ref_i = reference[i]
                     state_deviation = x - ref_i
                     stability_cost += state_deviation.T @ self.Q @ state_deviation
-                
+
                 # Smoothness cost
                 if i > 0:
                     control_change = u_i - prev_u
                     smoothness_cost = control_change.T @ self.R @ control_change
                     operational_cost += smoothness_cost
-                
+
                 # State constraints penalty
                 if np.any(x < self.x_min) or np.any(x > self.x_max):
                     total_profit -= 1e6  # Large penalty for constraint violation
-                
+
                 # Update state and previous control
                 x = x_next
                 prev_u = u_i
-            
+
             # Objective: maximize profit while minimizing operational costs
             objective = -self.profit_weight * total_profit + self.operational_weight * operational_cost + stability_cost
-            
+
             return objective
     ```
 
@@ -420,18 +420,18 @@ family: "mpc"
         """
         Economic MPC focused on resource efficiency and sustainability.
         """
-        
+
         def __init__(self, resource_cost_function: Callable, efficiency_function: Callable, **kwargs):
             super().__init__(**kwargs)
-            
+
             # Resource and efficiency functions
             self.resource_cost = resource_cost_function
             self.efficiency = efficiency_function
-            
+
             # Efficiency optimization parameters
             self.efficiency_weight = 1.0
             self.resource_weight = 0.5
-        
+
         def _economic_objective_function(self, u: np.ndarray, current_state: np.ndarray,
                                        reference: np.ndarray, disturbance: np.ndarray = None) -> float:
             """
@@ -439,14 +439,14 @@ family: "mpc"
             """
             # Reshape control sequence
             U = u.reshape(self.Nc, self.nu)
-            
+
             # Initialize costs
             total_efficiency = 0.0
             total_resource_cost = 0.0
             stability_cost = 0.0
-            
+
             x = current_state.copy()
-            
+
             # Prediction loop
             for i in range(self.Np):
                 # Get control input
@@ -454,44 +454,44 @@ family: "mpc"
                     u_i = U[i]
                 else:
                     u_i = U[-1]
-                
+
                 # Get economic parameters
                 p_i = self.economic_parameters[i]
-                
+
                 # Predict next state
                 if disturbance is not None and i < len(disturbance):
                     d_i = disturbance[i]
                 else:
                     d_i = np.zeros_like(current_state)
-                
+
                 x_next = self.f(x, u_i, d_i, p_i)
-                
+
                 # Predict output
                 y_i = self.h(x, u_i, p_i)
-                
+
                 # Efficiency and resource cost
                 efficiency = self.efficiency(y_i, u_i, p_i)
                 resource_cost = self.resource_cost(u_i, p_i)
-                
+
                 total_efficiency += efficiency
                 total_resource_cost += resource_cost
-                
+
                 # Stability cost
                 if reference is not None and i < len(reference):
                     ref_i = reference[i]
                     state_deviation = x - ref_i
                     stability_cost += state_deviation.T @ self.Q @ state_deviation
-                
+
                 # State constraints penalty
                 if np.any(x < self.x_min) or np.any(x > self.x_max):
                     total_efficiency -= 1e6
-                
+
                 # Update state
                 x = x_next
-            
+
             # Objective: maximize efficiency while minimizing resource cost
             objective = -self.efficiency_weight * total_efficiency + self.resource_weight * total_resource_cost + stability_cost
-            
+
             return objective
     ```
 

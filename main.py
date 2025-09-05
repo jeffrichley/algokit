@@ -1,12 +1,12 @@
-"""
-MkDocs Macros Module for Algorithm Documentation
+"""MkDocs Macros Module for Algorithm Documentation
 
 This module provides macros and filters for rendering algorithm documentation
 from YAML data using Jinja2 templates.
 """
 
-import yaml
 from pathlib import Path
+
+import yaml
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -18,7 +18,7 @@ def load_family_data(family_id: str) -> dict:
     if not family_file.exists():
         return {}
 
-    with open(family_file, "r") as f:
+    with open(family_file) as f:
         return yaml.safe_load(f) or {}
 
 
@@ -32,7 +32,7 @@ def load_algorithm_data(family_id: str) -> list:
 
     algorithms = []
     for algo_file in algorithms_dir.glob("*.yaml"):
-        with open(algo_file, "r") as f:
+        with open(algo_file) as f:
             algo_data = yaml.safe_load(f)
             if algo_data:
                 # Add slug from filename if not present
@@ -68,8 +68,7 @@ def render_family_page(family_id: str) -> str:
 
 
 def define_env(env):
-    """
-    Define the environment for MkDocs Macros.
+    """Define the environment for MkDocs Macros.
 
     This function is called by mkdocs-macros to set up the Jinja2 environment
     with custom variables, macros, and filters.
@@ -84,8 +83,7 @@ def define_env(env):
     # Add the family page macro
     @env.macro
     def family_page_macro(family_id: str) -> str:
-        """
-        Render a family page using YAML data and Jinja2 templates.
+        """Render a family page using YAML data and Jinja2 templates.
 
         Args:
             family_id: The ID of the family to render (e.g., 'dp', 'control')

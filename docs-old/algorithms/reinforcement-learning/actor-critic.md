@@ -18,15 +18,15 @@ family: "reinforcement-learning"
 
 !!! math "Actor-Critic Policy Gradient"
     The actor-critic policy gradient is given by:
-    
+
     $$\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \nabla_\theta \log \pi_\theta(a_t|s_t) A^\pi(s_t, a_t) \right]$$
-    
+
     Where the advantage function $A^\pi(s_t, a_t)$ is estimated by the critic:
-    
+
     $$A^\pi(s_t, a_t) = Q^\pi(s_t, a_t) - V^\pi(s_t) \approx r_t + \gamma V^\pi(s_{t+1}) - V^\pi(s_t)$$
-    
+
     The actor network updates the policy parameters $\theta$ using this gradient, while the critic network updates the value function parameters $\phi$ to minimize:
-    
+
     $$L(\phi) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \left( r_t + \gamma V^\pi(s_{t+1}) - V^\pi(s_t) \right)^2 \right]$$
 
 !!! success "Key Properties"
@@ -44,41 +44,41 @@ family: "reinforcement-learning"
     import torch.optim as optim
     import torch.nn.functional as F
     import numpy as np
-    
+
     class ActorNetwork(nn.Module):
         """Actor network that outputs action probabilities."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(ActorNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, action_size)
-        
+
         def forward(self, state: torch.Tensor) -> torch.Tensor:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             action_probs = F.softmax(self.fc3(x), dim=-1)
             return action_probs
-    
+
     class CriticNetwork(nn.Module):
         """Critic network that estimates state values."""
-        
+
         def __init__(self, state_size: int, hidden_size: int = 128):
             super(CriticNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, 1)
-        
+
         def forward(self, state: torch.Tensor) -> torch.Tensor:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             value = self.fc3(x)
             return value
-    
+
     class ActorCriticAgent:
         """
         Basic Actor-Critic agent implementation.
-        
+
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
@@ -86,36 +86,36 @@ family: "reinforcement-learning"
             critic_lr: Learning rate for critic network (default: 0.001)
             discount_factor: Discount factor gamma (default: 0.99)
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      actor_lr: float = 0.001, critic_lr: float = 0.001,
                      discount_factor: float = 0.99):
-            
+
             self.state_size = state_size
             self.action_size = action_size
             self.gamma = discount_factor
-            
+
             # Networks
             self.actor = ActorNetwork(state_size, action_size)
             self.critic = CriticNetwork(state_size)
-            
+
             # Optimizers
             self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
             self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=critic_lr)
-        
+
         def get_action(self, state: np.ndarray) -> tuple[int, float]:
             """Sample action from policy and return action with log probability."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             action_probs = self.actor(state_tensor)
-            
+
             # Sample action from distribution
             action_dist = torch.distributions.Categorical(action_probs)
             action = action_dist.sample()
             log_prob = action_dist.log_prob(action)
-            
+
             return action.item(), log_prob.item()
-        
-        def update(self, states: list, actions: list, rewards: list, 
+
+        def update(self, states: list, actions: list, rewards: list,
                   log_probs: list, next_states: list, dones: list) -> None:
             """Update actor and critic networks."""
             # Convert to tensors
@@ -125,25 +125,25 @@ family: "reinforcement-learning"
             log_probs = torch.stack(log_probs)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Calculate advantages
             current_values = self.critic(states).squeeze()
             next_values = self.critic(next_states).squeeze()
-            
+
             # TD(0) advantage estimation
             advantages = rewards + self.gamma * next_values * ~dones - current_values
-            
+
             # Actor loss (policy gradient)
             actor_loss = -(log_probs * advantages.detach()).mean()
-            
+
             # Critic loss (value function regression)
             critic_loss = F.mse_loss(current_values, rewards + self.gamma * next_values * ~dones)
-            
+
             # Update networks
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
-            
+
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
@@ -155,39 +155,39 @@ family: "reinforcement-learning"
         """
         Advantage Actor-Critic (A2C) agent with n-step returns.
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      actor_lr: float = 0.001, critic_lr: float = 0.001,
                      discount_factor: float = 0.99, n_steps: int = 5):
             super().__init__(state_size, action_size, actor_lr, critic_lr, discount_factor)
             self.n_steps = n_steps
             self.buffer = []
-        
+
         def store_transition(self, state: np.ndarray, action: int, reward: float,
                            next_state: np.ndarray, done: bool, log_prob: float) -> None:
             """Store transition in buffer."""
             self.buffer.append((state, action, reward, next_state, done, log_prob))
-            
+
             # Update when buffer is full or episode ends
             if len(self.buffer) >= self.n_steps or done:
                 self.update_from_buffer()
                 self.buffer.clear()
-        
+
         def update_from_buffer(self) -> None:
             """Update networks using n-step returns from buffer."""
             if len(self.buffer) == 0:
                 return
-            
+
             # Calculate n-step returns
             states, actions, rewards, next_states, dones, log_probs = zip(*self.buffer)
-            
+
             # Bootstrap final value if episode didn't end
             if not dones[-1]:
                 final_state = torch.FloatTensor(next_states[-1]).unsqueeze(0)
                 final_value = self.critic(final_state).item()
             else:
                 final_value = 0
-            
+
             # Calculate n-step returns
             returns = []
             current_return = final_value
@@ -196,28 +196,28 @@ family: "reinforcement-learning"
                     current_return = 0
                 current_return = reward + self.gamma * current_return
                 returns.insert(0, current_return)
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             actions = torch.LongTensor(actions)
             returns = torch.FloatTensor(returns)
             log_probs = torch.stack(log_probs)
-            
+
             # Calculate advantages
             current_values = self.critic(states).squeeze()
             advantages = returns - current_values
-            
+
             # Actor loss
             actor_loss = -(log_probs * advantages.detach()).mean()
-            
+
             # Critic loss
             critic_loss = F.mse_loss(current_values, returns)
-            
+
             # Update networks
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
-            
+
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
@@ -227,26 +227,26 @@ family: "reinforcement-learning"
     ```python
     class ContinuousActorNetwork(nn.Module):
         """Actor network for continuous action spaces."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(ContinuousActorNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, action_size)
             self.fc4 = nn.Linear(hidden_size, action_size)  # For log_std
-        
+
         def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             mean = torch.tanh(self.fc3(x))  # Bound actions to [-1, 1]
             log_std = self.fc4(x)
             return mean, log_std
-    
+
     class ContinuousActorCriticAgent(ActorCriticAgent):
         """
         Actor-Critic agent for continuous action spaces.
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      actor_lr: float = 0.001, critic_lr: float = 0.001,
                      discount_factor: float = 0.99):
@@ -254,20 +254,20 @@ family: "reinforcement-learning"
             # Replace actor with continuous version
             self.actor = ContinuousActorNetwork(state_size, action_size)
             self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
-        
+
         def get_action(self, state: np.ndarray) -> tuple[np.ndarray, float]:
             """Sample continuous action from policy."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             mean, log_std = self.actor(state_tensor)
-            
+
             # Create normal distribution
             std = torch.exp(log_std)
             dist = torch.distributions.Normal(mean, std)
-            
+
             # Sample action
             action = dist.sample()
             log_prob = dist.log_prob(action).sum(dim=-1)
-            
+
             return action.squeeze().numpy(), log_prob.item()
     ```
 

@@ -13,12 +13,12 @@ summary: "Find the minimum number of coins needed to make a given amount using d
 
 # Detailed description (markdown supported) - full overview for the algorithm page
 description: |
-  The Coin Change problem is a classic dynamic programming challenge that asks: given a set of coin denominations 
-  and a target amount, what is the minimum number of coins needed to make up that amount? This problem demonstrates 
+  The Coin Change problem is a classic dynamic programming challenge that asks: given a set of coin denominations
+  and a target amount, what is the minimum number of coins needed to make up that amount? This problem demonstrates
   the power of dynamic programming in solving optimization problems with overlapping subproblems.
-  
-  While a greedy approach might work for some coin sets (like US coins), it fails for arbitrary denominations. 
-  Dynamic programming provides an elegant solution that guarantees the optimal result by building solutions from 
+
+  While a greedy approach might work for some coin sets (like US coins), it fails for arbitrary denominations.
+  Dynamic programming provides an elegant solution that guarantees the optimal result by building solutions from
   smaller subproblems.
 
 # Problem formulation and mathematical details
@@ -27,13 +27,13 @@ formulation:
     Given:
     - A set of coin denominations: C = {c₁, c₂, ..., cₙ}
     - A target amount: A
-    
+
     Find the minimum number of coins needed to make amount A:
-    
+
     min Σᵢ₌₁ⁿ xᵢ subject to Σᵢ₌₁ⁿ cᵢxᵢ = A
-    
+
     Where xᵢ represents the number of coins of denomination cᵢ.
-  
+
   key_properties:
     - name: "Optimal Substructure"
       formula: "The optimal solution for amount A contains optimal solutions for amounts A - cᵢ"
@@ -69,30 +69,30 @@ implementations:
       def coin_change(coins: list[int], amount: int) -> int:
           """
           Find minimum number of coins needed to make the given amount.
-          
+
           Args:
               coins: List of available coin denominations
               amount: Target amount to make
-              
+
           Returns:
               Minimum number of coins needed, or -1 if impossible
           """
           if amount == 0:
               return 0
-          
+
           # Initialize DP array with infinity
           dp = [float('inf')] * (amount + 1)
           dp[0] = 0
-          
+
           # Build solutions for all amounts from 1 to target
           for current_amount in range(1, amount + 1):
               for coin in coins:
                   if coin <= current_amount:
                       dp[current_amount] = min(
-                          dp[current_amount], 
+                          dp[current_amount],
                           dp[current_amount - coin] + 1
                       )
-          
+
           return dp[amount] if dp[amount] != float('inf') else -1
     advantages:
       - "Optimal solution, guaranteed correct"
@@ -115,22 +115,22 @@ implementations:
           """
           if memo is None:
               memo = {}
-          
+
           if amount in memo:
               return memo[amount]
-          
+
           if amount == 0:
               return 0
-          
+
           if amount < 0:
               return -1
-          
+
           min_coins = float('inf')
           for coin in coins:
               result = coin_change_memoized(coins, amount - coin, memo)
               if result != -1:
                   min_coins = min(min_coins, result + 1)
-          
+
           memo[amount] = min_coins if min_coins != float('inf') else -1
           return memo[amount]
     advantages:
@@ -156,13 +156,13 @@ implementations:
           coins.sort(reverse=True)  # Use largest coins first
           total_coins = 0
           remaining = amount
-          
+
           for coin in coins:
               if remaining >= coin:
                   count = remaining // coin
                   total_coins += count
                   remaining -= count * coin
-          
+
           return total_coins if remaining == 0 else -1
     advantages:
       - "Very fast execution"
@@ -187,7 +187,7 @@ complexity:
       time: "O(coins log coins)"
       space: "O(1)"
       notes: "Fast but may not be optimal"
-  
+
   performance_notes:
     - "DP approach is optimal but requires building solutions for all amounts up to target"
     - "Memoization useful when you need solutions for multiple amounts"
@@ -202,21 +202,21 @@ applications:
       - "Cash Registers: Minimum coin change calculation"
       - "Banking: ATM cash withdrawal optimization"
       - "Payment Processing: Efficient change distribution"
-  
+
   - category: "Computer Science"
     examples:
       - "Algorithm Design: Dynamic programming principles"
       - "Optimization Problems: Resource allocation"
       - "Game Development: Score systems and rewards"
       - "Data Structures: Understanding state management"
-  
+
   - category: "Real-World Scenarios"
     examples:
       - "Retail: Cashier change optimization"
       - "Transportation: Fare collection systems"
       - "Gaming: Point systems and achievements"
       - "Manufacturing: Part quantity optimization"
-  
+
   - category: "Educational Value"
     examples:
       - "Dynamic Programming: Understanding optimal substructure"
@@ -233,11 +233,11 @@ educational_value:
 
 # Implementation status and development info
 status:
-  current: "complete"
-  implementation_quality: "production_ready"
-  test_coverage: "comprehensive"
-  documentation_quality: "excellent"
-  
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
   # Source code locations
   source_files:
     - path: "src/algokit/dynamic_programming/coin_change.py"
@@ -259,7 +259,7 @@ references:
         title: "Algorithm Design"
         publisher: "Pearson"
         note: "ISBN 978-0-321-29535-4"
-  
+
   - category: "Dynamic Programming"
     items:
       - author: "Bellman, R."
@@ -270,7 +270,7 @@ references:
         year: "1977"
         title: "The Art and Theory of Dynamic Programming"
         publisher: "Academic Press"
-  
+
   - category: "Online Resources"
     items:
       - title: "Coin Change Problem"
@@ -282,7 +282,7 @@ references:
       - title: "Coin Change"
         url: "https://en.wikipedia.org/wiki/Change-making_problem"
         note: "Wikipedia article on coin change problem"
-  
+
   - category: "Implementation & Practice"
     items:
       - title: "Python Official Documentation"

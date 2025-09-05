@@ -5,34 +5,10 @@ These functions are automatically loaded by MkDocs Macros.
 
 from datetime import datetime
 
-from .navigation import (
-    generate_navigation_grid,
-    generate_family_overview,
-    generate_algorithm_card,
-    generate_progress_summary,
-    generate_learning_paths,
-    generate_complexity_badge,
-    generate_status_indicator,
-)
-
-from .utils import (
-    format_complexity,
-    truncate_text,
-    generate_slug,
-    get_algorithm_metadata,
-    get_family_metadata,
-    validate_algorithm_key,
-    validate_family_key,
-    get_related_content,
-    format_progress_bar,
-    get_status_emoji,
-    sanitize_html,
-)
-
 from .page_generator import (
     get_algorithm_page_content,
-    get_all_algorithm_keys,
     get_algorithms_by_family,
+    get_all_algorithm_keys,
 )
 
 

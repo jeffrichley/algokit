@@ -1,7 +1,7 @@
 ---
 <!-- =============================================================================
 ALGORITHM PAGE TEMPLATE - READ ALL COMMENTS BEFORE MODIFYING!
-============================================================================= 
+=============================================================================
 
 This template creates a professional algorithm documentation page with:
 - YAML frontmatter for metadata and search
@@ -26,7 +26,7 @@ INSTRUCTIONS FOR AI AGENTS:
 
 ---
 <!-- YAML FRONTMATTER - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 TAGS: Use relevant tags for searchability and categorization
 - First tag should always be the algorithm family (e.g., "dynamic-programming")
@@ -58,7 +58,7 @@ complexity: "REPLACE: O(complexity)"
 
 <!-- =============================================================================
 FAMILY LINK SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This creates the navigation breadcrumb back to the family overview
 - Use relative path: ../../families/<family-name>.md (for docs/algorithms/<family>/)
@@ -72,7 +72,7 @@ This creates the navigation breadcrumb back to the family overview
 
 <!-- =============================================================================
 OVERVIEW SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section explains what the algorithm does and why it's important
 - Start with a clear, concise definition
@@ -84,13 +84,13 @@ This section explains what the algorithm does and why it's important
 ============================================================================= -->
 
 !!! abstract "Overview"
-    [REPLACE: Write a clear, concise overview of what this algorithm does. Explain the core concept, 
-    what problem it solves, and why it's important. Use 2-3 paragraphs maximum. Focus on the 
+    [REPLACE: Write a clear, concise overview of what this algorithm does. Explain the core concept,
+    what problem it solves, and why it's important. Use 2-3 paragraphs maximum. Focus on the
     intuition and practical value.]
 
 <!-- =============================================================================
 MATHEMATICAL FORMULATION SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section provides the mathematical foundation
 - Use LaTeX math notation with $$ for display math
@@ -104,7 +104,7 @@ This section provides the mathematical foundation
 ## Mathematical Formulation
 
 !!! math "REPLACE: Mathematical Concept Name"
-    [REPLACE: Write the mathematical formulation using LaTeX. Include the core formula, 
+    [REPLACE: Write the mathematical formulation using LaTeX. Include the core formula,
     recurrence relation, or mathematical definition. Use $$ for display math blocks.]
 
     $$
@@ -118,7 +118,7 @@ This section provides the mathematical foundation
 
 <!-- =============================================================================
 IMPLEMENTATION APPROACHES SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section shows different ways to implement the algorithm
 - Use Material theme tabs for multiple approaches
@@ -137,7 +137,7 @@ This section shows different ways to implement the algorithm
     def [REPLACE: function_name]([REPLACE: parameters]) -> [REPLACE: return_type]:
         """[REPLACE: Clear description of what this function does]."""
         [REPLACE: Implementation code here]
-        
+
         return [REPLACE: return_value]
     ```
 
@@ -146,7 +146,7 @@ This section shows different ways to implement the algorithm
     def [REPLACE: function_name]([REPLACE: parameters]) -> [REPLACE: return_type]:
         """[REPLACE: Clear description of what this function does]."""
         [REPLACE: Implementation code here]
-        
+
         return [REPLACE: return_value]
     ```
 
@@ -155,17 +155,17 @@ This section shows different ways to implement the algorithm
     def [REPLACE: function_name]([REPLACE: parameters]) -> [REPLACE: return_type]:
         """[REPLACE: Clear description of what this function does]."""
         [REPLACE: Implementation code here]
-        
+
         return [REPLACE: return_value]
     ```
 
 !!! tip "Complete Implementation"
-    [REPLACE: Add note about where to find complete implementation with error handling, 
+    [REPLACE: Add note about where to find complete implementation with error handling,
     comprehensive testing, and additional variants. Include links to source code and tests.]
 
 <!-- =============================================================================
 COMPLEXITY ANALYSIS SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section analyzes time and space complexity
 - Use a comparison table for different approaches
@@ -192,7 +192,7 @@ This section analyzes time and space complexity
 
 <!-- =============================================================================
 USE CASES & APPLICATIONS SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section categorizes real-world applications
 - Use a 2x2 grid layout for 4 main categories
@@ -238,7 +238,7 @@ This section categorizes real-world applications
 
 <!-- =============================================================================
 REFERENCES & FURTHER READING SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section provides comprehensive references
 - Use a 2x2 grid layout for 4 reference categories
@@ -273,7 +273,7 @@ This section provides comprehensive references
 
 <!-- =============================================================================
 INTERACTIVE LEARNING SECTION - REQUIRED FOR ALL ALGORITHM PAGES
-============================================================================= 
+=============================================================================
 
 This section encourages hands-on learning
 - Provide a clear learning progression
@@ -285,13 +285,13 @@ This section encourages hands-on learning
 ============================================================================= -->
 
 !!! tip "Interactive Learning"
-    [REPLACE: Write an engaging call-to-action that encourages readers to implement the algorithm 
-    themselves. Suggest a specific learning progression and explain what insights they'll gain. 
+    [REPLACE: Write an engaging call-to-action that encourages readers to implement the algorithm
+    themselves. Suggest a specific learning progression and explain what insights they'll gain.
     Make it motivating and actionable.]
 
 <!-- =============================================================================
 TEMPLATE USAGE INSTRUCTIONS FOR AI AGENTS
-============================================================================= 
+=============================================================================
 
 TO CREATE A NEW ALGORITHM PAGE:
 

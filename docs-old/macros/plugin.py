@@ -1,18 +1,15 @@
-"""
-Custom MkDocs plugin for dynamic algorithm page generation.
+"""Custom MkDocs plugin for dynamic algorithm page generation.
 
 This plugin creates virtual algorithm pages during the MkDocs build process.
 """
 
-import os
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.files import File
 from mkdocs.structure.pages import Page
 
-from .page_generator import load_algorithms_data, generate_algorithm_page_content
+from .page_generator import generate_algorithm_page_content, load_algorithms_data
 
 
 class DynamicAlgorithmPlugin(BasePlugin):
@@ -22,13 +19,13 @@ class DynamicAlgorithmPlugin(BasePlugin):
         self.algorithms_data = None
         self.virtual_files = []
 
-    def on_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def on_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """Load algorithm data when config is processed."""
         print("🚀 Loading algorithm data for dynamic generation...")
         self.algorithms_data = load_algorithms_data()
         return config
 
-    def on_files(self, files: List[File], config: Dict[str, Any]) -> List[File]:
+    def on_files(self, files: list[File], config: dict[str, Any]) -> list[File]:
         """Add virtual algorithm pages to the MkDocs file collection."""
         if not self.algorithms_data:
             return files
@@ -62,7 +59,7 @@ class DynamicAlgorithmPlugin(BasePlugin):
         return files
 
     def on_page_markdown(
-        self, markdown: str, page: Page, config: Dict[str, Any], files: List[File]
+        self, markdown: str, page: Page, config: dict[str, Any], files: list[File]
     ) -> str:
         """Generate algorithm page content when MkDocs processes the page."""
         # Check if this is an algorithm page
@@ -81,7 +78,7 @@ class DynamicAlgorithmPlugin(BasePlugin):
         print(f"🔄 Generating content for algorithm: {algorithm_key}")
 
         if not self.algorithms_data:
-            return f"# Algorithm Not Found\n\nAlgorithm data not loaded."
+            return "# Algorithm Not Found\n\nAlgorithm data not loaded."
 
         algorithms = self.algorithms_data.get("algorithms", {})
         families = self.algorithms_data.get("families", {})
@@ -106,6 +103,6 @@ class DynamicAlgorithmPlugin(BasePlugin):
             print(f"❌ Error generating content for {algorithm_key}: {e}")
             return f"# Error Generating Page\n\nError generating content for algorithm '{algorithm_key}': {e}"
 
-    def on_post_build(self, config: Dict[str, Any]) -> None:
+    def on_post_build(self, config: dict[str, Any]) -> None:
         """Post-build hook for cleanup or additional processing."""
         print("🎉 Dynamic algorithm page generation completed!")

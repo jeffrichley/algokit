@@ -14,18 +14,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Look for all navigation links and filter them
         const allNavLinks = document.querySelectorAll('.md-nav__link');
         console.log('Found', allNavLinks.length, 'total navigation links');
-        
+
         allNavLinks.forEach(link => {
             const href = link.getAttribute('href');
             if (href) {
                 console.log('Checking link with href:', href);
-                
+
                 // Skip page-internal links (anchors, relative paths)
                 if (href.startsWith('#') || href.startsWith('../') || href.startsWith('./') || href === '..' || href === './') {
                     console.log('Skipping page-internal link:', href);
                     return;
                 }
-                
+
                 // Check if this is a family overview link
                 for (const [familySlug, summary] of Object.entries(familySummaries)) {
                     if (href.includes(`/${familySlug}/`) || href === `${familySlug}/index.md` || href === `${familySlug}/`) {

@@ -16,20 +16,20 @@ family: "control"
 
 !!! math "PID Control Law"
     The PID control law is given by:
-    
+
     $$u(t) = K_p e(t) + K_i \int_0^t e(\tau) d\tau + K_d \frac{d}{dt} e(t)$$
-    
+
     Where:
     - $u(t)$ is the control output at time $t$
     - $e(t) = r(t) - y(t)$ is the error (setpoint - process variable)
     - $K_p$ is the proportional gain
     - $K_i$ is the integral gain
     - $K_d$ is the derivative gain
-    
+
     In discrete-time form with sampling period $T_s$:
-    
+
     $$u_k = K_p e_k + K_i T_s \sum_{i=0}^k e_i + K_d \frac{e_k - e_{k-1}}{T_s}$$
-    
+
     Where $k$ represents the discrete time step.
 
 !!! success "Key Properties"
@@ -45,11 +45,11 @@ family: "control"
     ```python
     import numpy as np
     from typing import Tuple, Optional
-    
+
     class PIDController:
         """
         Basic PID Controller implementation.
-        
+
         Args:
             kp: Proportional gain
             ki: Integral gain
@@ -59,81 +59,81 @@ family: "control"
             output_limits: Tuple of (min, max) output limits (default: None)
             anti_windup: Enable anti-windup for integral term (default: True)
         """
-        
+
         def __init__(self, kp: float, ki: float, kd: float, setpoint: float = 0.0,
                      sample_time: float = 0.01, output_limits: Optional[Tuple[float, float]] = None,
                      anti_windup: bool = True):
-            
+
             # PID gains
             self.kp = kp
             self.ki = ki
             self.kd = kd
-            
+
             # Control parameters
             self.setpoint = setpoint
             self.sample_time = sample_time
             self.output_limits = output_limits
             self.anti_windup = anti_windup
-            
+
             # State variables
             self.prev_error = 0.0
             self.integral = 0.0
             self.output = 0.0
-            
+
             # Performance tracking
             self.error_history = []
             self.output_history = []
-        
+
         def set_setpoint(self, setpoint: float) -> None:
             """Update the setpoint value."""
             self.setpoint = setpoint
-        
+
         def compute(self, process_variable: float) -> float:
             """
             Compute the control output.
-            
+
             Args:
                 process_variable: Current measured value
-                
+
             Returns:
                 Control output value
             """
             # Calculate error
             error = self.setpoint - process_variable
-            
+
             # Proportional term
             p_term = self.kp * error
-            
+
             # Integral term
             self.integral += error * self.sample_time
             i_term = self.ki * self.integral
-            
+
             # Derivative term
             derivative = (error - self.prev_error) / self.sample_time
             d_term = self.kd * derivative
-            
+
             # Combine terms
             self.output = p_term + i_term + d_term
-            
+
             # Apply output limits
             if self.output_limits is not None:
                 min_output, max_output = self.output_limits
                 self.output = np.clip(self.output, min_output, max_output)
-                
+
                 # Anti-windup: prevent integral from accumulating when output is limited
                 if self.anti_windup:
                     if self.output == min_output or self.output == max_output:
                         self.integral = self.integral - error * self.sample_time
-            
+
             # Update state for next iteration
             self.prev_error = error
-            
+
             # Store history for analysis
             self.error_history.append(error)
             self.output_history.append(self.output)
-            
+
             return self.output
-        
+
         def reset(self) -> None:
             """Reset the controller state."""
             self.prev_error = 0.0
@@ -141,14 +141,14 @@ family: "control"
             self.output = 0.0
             self.error_history.clear()
             self.output_history.clear()
-        
+
         def get_performance_metrics(self) -> dict:
             """Calculate performance metrics."""
             if not self.error_history:
                 return {}
-            
+
             errors = np.array(self.error_history)
-            
+
             metrics = {
                 'steady_state_error': np.mean(errors[-10:]) if len(errors) >= 10 else np.mean(errors),
                 'max_overshoot': np.max(errors) if np.max(errors) > 0 else 0,
@@ -157,37 +157,37 @@ family: "control"
                 'integral_absolute_error': np.sum(np.abs(errors)) * self.sample_time,
                 'integral_squared_error': np.sum(errors**2) * self.sample_time
             }
-            
+
             return metrics
-        
+
         def _calculate_settling_time(self, errors: np.ndarray, tolerance: float = 0.05) -> float:
             """Calculate settling time (time to reach within tolerance of setpoint)."""
             if len(errors) < 2:
                 return 0.0
-            
+
             # Find when error stays within tolerance
             within_tolerance = np.abs(errors) <= tolerance
             if not np.any(within_tolerance):
                 return float('inf')
-            
+
             # Find first time error enters tolerance and stays there
             for i in range(len(errors)):
                 if np.all(within_tolerance[i:]):
                     return i * self.sample_time
-            
+
             return float('inf')
-        
+
         def _calculate_rise_time(self, errors: np.ndarray, threshold: float = 0.9) -> float:
             """Calculate rise time (time to reach threshold of final value)."""
             if len(errors) < 2:
                 return 0.0
-            
+
             # Find when error reaches threshold of setpoint
             threshold_value = threshold * self.setpoint
             for i, error in enumerate(errors):
                 if abs(error) <= threshold_value:
                     return i * self.sample_time
-            
+
             return float('inf')
     ```
 
@@ -197,64 +197,64 @@ family: "control"
         """
         PID Controller with automatic tuning capabilities.
         """
-        
+
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self.tuning_mode = 'manual'
             self.relay_amplitude = 1.0
             self.critical_gain = 0.0
             self.critical_period = 0.0
-        
+
         def relay_feedback_tuning(self, process_variable: float, relay_amplitude: float = 1.0) -> dict:
             """
             Perform relay feedback tuning to find critical gain and period.
-            
+
             Args:
                 process_variable: Current measured value
                 relay_amplitude: Amplitude of relay signal
-                
+
             Returns:
                 Dictionary with tuning parameters
             """
             self.tuning_mode = 'relay_tuning'
             self.relay_amplitude = relay_amplitude
-            
+
             # Simple relay feedback implementation
             # In practice, this would be more sophisticated
-            
+
             # Simulate relay feedback response
             error = self.setpoint - process_variable
-            
+
             if error > 0:
                 output = relay_amplitude
             else:
                 output = -relay_amplitude
-            
+
             # Estimate critical parameters (simplified)
             self.critical_gain = 4 * relay_amplitude / (np.pi * abs(error)) if abs(error) > 0.01 else 1.0
             self.critical_period = 2 * np.pi / (2 * np.pi / 10)  # Simplified estimation
-            
+
             # Apply Ziegler-Nichols tuning rules
             tuning_params = self._ziegler_nichols_tuning()
-            
+
             self.tuning_mode = 'manual'
             return tuning_params
-        
+
         def _ziegler_nichols_tuning(self) -> dict:
             """Apply Ziegler-Nichols tuning rules."""
             if self.critical_gain <= 0 or self.critical_period <= 0:
                 return {}
-            
+
             # Ziegler-Nichols tuning rules
             kp = 0.6 * self.critical_gain
             ki = 1.2 * self.critical_gain / self.critical_period
             kd = 0.075 * self.critical_gain * self.critical_period
-            
+
             # Update controller gains
             self.kp = kp
             self.ki = ki
             self.kd = kd
-            
+
             return {
                 'kp': kp,
                 'ki': ki,
@@ -270,26 +270,26 @@ family: "control"
         """
         PID Controller with filtering and advanced anti-windup.
         """
-        
+
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            
+
             # Filtering parameters
             self.derivative_filter_alpha = 0.1  # Low-pass filter for derivative
             self.filtered_derivative = 0.0
-            
+
             # Anti-windup parameters
             self.anti_windup_gain = 0.1
             self.saturation_error = 0.0
-        
+
         def compute(self, process_variable: float) -> float:
             """Compute control output with filtering and anti-windup."""
             # Calculate error
             error = self.setpoint - process_variable
-            
+
             # Proportional term
             p_term = self.kp * error
-            
+
             # Integral term with anti-windup
             if self.output_limits is not None:
                 min_output, max_output = self.output_limits
@@ -297,32 +297,32 @@ family: "control"
                     self.saturation_error = self.output - (p_term + self.ki * self.integral + self.kd * self.filtered_derivative)
                 else:
                     self.saturation_error = 0.0
-            
+
             # Update integral with anti-windup correction
             self.integral += error * self.sample_time - self.anti_windup_gain * self.saturation_error
             i_term = self.ki * self.integral
-            
+
             # Derivative term with filtering
             derivative = (error - self.prev_error) / self.sample_time
-            self.filtered_derivative = (self.derivative_filter_alpha * derivative + 
+            self.filtered_derivative = (self.derivative_filter_alpha * derivative +
                                       (1 - self.derivative_filter_alpha) * self.filtered_derivative)
             d_term = self.kd * self.filtered_derivative
-            
+
             # Combine terms
             self.output = p_term + i_term + d_term
-            
+
             # Apply output limits
             if self.output_limits is not None:
                 min_output, max_output = self.output_limits
                 self.output = np.clip(self.output, min_output, max_output)
-            
+
             # Update state
             self.prev_error = error
-            
+
             # Store history
             self.error_history.append(error)
             self.output_history.append(self.output)
-            
+
             return self.output
     ```
 

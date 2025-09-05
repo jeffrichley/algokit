@@ -1,15 +1,15 @@
-"""
-MkDocs Macros Module for Algorithm Documentation
+"""MkDocs Macros Module for Algorithm Documentation
 
 This module provides macros and filters for rendering algorithm documentation
 from YAML data using Jinja2 templates.
 """
 
-import yaml
 import re
 from pathlib import Path
+from typing import Any
+
+import yaml
 from jinja2 import Environment, FileSystemLoader
-from typing import Dict, List, Any, Optional
 
 
 def load_bibtex_references(bib_file: Path) -> dict:
@@ -20,7 +20,7 @@ def load_bibtex_references(bib_file: Path) -> dict:
         print(f"DEBUG: BibTeX file not found: {bib_file}")
         return references
 
-    with open(bib_file, "r", encoding="utf-8") as f:
+    with open(bib_file, encoding="utf-8") as f:
         content = f.read()
 
     # Parse BibTeX entries - split by @ entries
@@ -62,7 +62,7 @@ def load_family_data(family_id: str) -> dict:
     if not family_file.exists():
         return {}
 
-    with open(family_file, "r", encoding="utf-8") as f:
+    with open(family_file, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
@@ -76,7 +76,7 @@ def load_algorithm_data(family_id: str) -> list:
 
     algorithms = []
     for algo_file in algorithms_dir.glob("*.yaml"):
-        with open(algo_file, "r", encoding="utf-8") as f:
+        with open(algo_file, encoding="utf-8") as f:
             algo_data = yaml.safe_load(f)
             if algo_data:
                 # Add slug from filename if not present
@@ -87,7 +87,7 @@ def load_algorithm_data(family_id: str) -> list:
     return algorithms
 
 
-def discover_families() -> List[str]:
+def discover_families() -> list[str]:
     """Discover all algorithm families by scanning the data directory."""
     data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
 
@@ -102,7 +102,7 @@ def discover_families() -> List[str]:
     return sorted(families)
 
 
-def load_all_families() -> List[Dict[str, Any]]:
+def load_all_families() -> list[dict[str, Any]]:
     """Load all family data with algorithms and status information."""
     families = []
 
@@ -219,12 +219,12 @@ def render_family_page(family_id: str) -> str:
     # Load shared data for references and tags
     data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
     shared_dir = data_dir / "shared"
-    
+
     # Load tags
     tags_file = shared_dir / "tags.yaml"
     tags_dict = {}
     if tags_file.exists():
-        with open(tags_file, "r", encoding="utf-8") as f:
+        with open(tags_file, encoding="utf-8") as f:
             tags_data = yaml.safe_load(f) or {}
             # Convert tags list to dict for easy lookup
             tags_dict = {tag["id"]: tag for tag in tags_data.get("tags", [])}
@@ -264,10 +264,10 @@ def render_family_page(family_id: str) -> str:
     try:
         template = env.get_template("family_page.md")
         return template.render(
-            family=family_data, 
+            family=family_data,
             algorithms=algorithms,
             references=processed_references,
-            tags=processed_tags
+            tags=processed_tags,
         )
     except Exception as e:
         return f"**Error:** Template rendering error: {str(e)}"
@@ -299,9 +299,9 @@ def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
     try:
         # Read template content directly to avoid MkDocs macros processing it
         template_file = template_dir / "algorithm_page.md"
-        with open(template_file, 'r', encoding='utf-8') as f:
+        with open(template_file, encoding="utf-8") as f:
             template_content = f.read()
-        
+
         # Create template from string content
         template = env.from_string(template_content)
         return template.render(
@@ -314,8 +314,7 @@ def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
 
 
 def define_env(env):
-    """
-    Define the environment for MkDocs Macros.
+    """Define the environment for MkDocs Macros.
 
     This function is called by mkdocs-macros to set up the Jinja2 environment
     with custom variables, macros, and filters.
@@ -330,8 +329,7 @@ def define_env(env):
     # Add the index page macro
     @env.macro
     def render_index() -> str:
-        """
-        Render the main index page using YAML data and Jinja2 templates.
+        """Render the main index page using YAML data and Jinja2 templates.
 
         Returns:
             Rendered markdown content for the index page
@@ -340,8 +338,7 @@ def define_env(env):
 
     @env.macro
     def algorithm_card(algorithm_key: str) -> str:
-        """
-        Generate an algorithm card with key information.
+        """Generate an algorithm card with key information.
 
         Args:
             algorithm_key: The algorithm identifier
@@ -387,7 +384,7 @@ def define_env(env):
 
 {algo_summary}
 
-**Family:** {family_name}  
+**Family:** {family_name}
 **Status:** {status_text}
 
 </div>
@@ -398,8 +395,7 @@ def define_env(env):
     def nav_grid(
         current_algorithm: str = None, current_family: str = None, max_related: int = 5
     ) -> str:
-        """
-        Generate a navigation grid showing related algorithms.
+        """Generate a navigation grid showing related algorithms.
 
         Args:
             current_algorithm: Current algorithm slug
@@ -448,8 +444,7 @@ def define_env(env):
 
     @env.macro
     def render_family_page(family_id: str) -> str:
-        """
-        Render a family page using YAML data and Jinja2 templates.
+        """Render a family page using YAML data and Jinja2 templates.
 
         Args:
             family_id: The family identifier
@@ -466,12 +461,12 @@ def define_env(env):
         # Load shared data for references and tags
         data_dir = Path(__file__).parent / "mkdocs_plugins" / "data"
         shared_dir = data_dir / "shared"
-        
+
         # Load tags
         tags_file = shared_dir / "tags.yaml"
         tags_dict = {}
         if tags_file.exists():
-            with open(tags_file, "r", encoding="utf-8") as f:
+            with open(tags_file, encoding="utf-8") as f:
                 tags_data = yaml.safe_load(f) or {}
                 # Convert tags list to dict for easy lookup
                 tags_dict = {tag["id"]: tag for tag in tags_data.get("tags", [])}
@@ -513,18 +508,17 @@ def define_env(env):
         try:
             template = env_jinja.get_template("family_page.md")
             return template.render(
-                family=family_data, 
+                family=family_data,
                 algorithms=algorithms,
                 references=processed_references,
-                tags=processed_tags
+                tags=processed_tags,
             )
         except Exception as e:
             return f"**Error:** Template rendering error: {str(e)}"
 
     @env.macro
     def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
-        """
-        Render an algorithm page using YAML data and Jinja2 templates.
+        """Render an algorithm page using YAML data and Jinja2 templates.
 
         Args:
             family_id: The family identifier
@@ -588,28 +582,31 @@ def define_env(env):
         try:
             template = env_jinja.get_template("algorithm_page.md")
             return template.render(
-                algo=algorithm_data, 
+                algo=algorithm_data,
                 family=family_data,
-                env={"get": lambda key, default=None: {"AMAZON_AFFILIATE_ID": "your-affiliate-id"}.get(key, default)}
+                env={
+                    "get": lambda key, default=None: {
+                        "AMAZON_AFFILIATE_ID": "your-affiliate-id"
+                    }.get(key, default)
+                },
             )
         except Exception as e:
             return f"**Error:** Template rendering error: {str(e)}"
 
     @env.macro
     def isbn_link(isbn: str, text: str = None, tag: str = "mathybits-20") -> str:
-        """
-        Generate an Amazon affiliate link from an ISBN.
-        
+        """Generate an Amazon affiliate link from an ISBN.
+
         Args:
             isbn: The ISBN number of the book (e.g., '0-201-89683-4' or '9780134685991').
             text: Optional display text. Defaults to the ISBN itself.
             tag: Amazon Associates tag. Defaults to 'mathybits-20'.
-        
+
         Returns:
             HTML anchor tag that opens the affiliate link in a new tab.
         """
         # Strip hyphens and spaces from ISBN for Amazon /dp/ format
-        clean_isbn = isbn.replace('-', '').replace(' ', '')
+        clean_isbn = isbn.replace("-", "").replace(" ", "")
         url = f"https://www.amazon.com/dp/{clean_isbn}/?tag={tag}"
         label = text or isbn
         return f'<a href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>'

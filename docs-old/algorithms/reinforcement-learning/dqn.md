@@ -18,9 +18,9 @@ family: "reinforcement-learning"
 
 !!! math "DQN Loss Function"
     The core DQN algorithm minimizes the following loss function:
-    
+
     $$L(\theta) = \mathbb{E}_{(s,a,r,s') \sim D} \left[ \left( r + \gamma \max_{a'} Q(s', a'; \theta^-) - Q(s, a; \theta) \right)^2 \right]$$
-    
+
     Where:
     - $\theta$ are the parameters of the main Q-network
     - $\theta^-$ are the parameters of the target network (fixed)
@@ -44,26 +44,26 @@ family: "reinforcement-learning"
     import numpy as np
     from collections import deque
     import random
-    
+
     class DQNNetwork(nn.Module):
         """Deep Q-Network architecture."""
-        
+
         def __init__(self, input_size: int, output_size: int, hidden_size: int = 128):
             super(DQNNetwork, self).__init__()
             self.fc1 = nn.Linear(input_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, output_size)
             self.relu = nn.ReLU()
-        
+
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             x = self.relu(self.fc1(x))
             x = self.relu(self.fc2(x))
             return self.fc3(x)
-    
+
     class DQNAgent:
         """
         Deep Q-Network agent implementation.
-        
+
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
@@ -76,13 +76,13 @@ family: "reinforcement-learning"
             batch_size: Batch size for training (default: 32)
             target_update_freq: Frequency of target network updates (default: 100)
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.001, discount_factor: float = 0.99,
                      epsilon: float = 1.0, epsilon_decay: float = 0.995,
                      epsilon_min: float = 0.01, memory_size: int = 10000,
                      batch_size: int = 32, target_update_freq: int = 100):
-            
+
             self.state_size = state_size
             self.action_size = action_size
             self.gamma = discount_factor
@@ -91,74 +91,74 @@ family: "reinforcement-learning"
             self.epsilon_min = epsilon_min
             self.batch_size = batch_size
             self.target_update_freq = target_update_freq
-            
+
             # Neural networks
             self.q_network = DQNNetwork(state_size, action_size)
             self.target_network = DQNNetwork(state_size, action_size)
             self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
-            
+
             # Experience replay buffer
             self.memory = deque(maxlen=memory_size)
-            
+
             # Training counter
             self.train_count = 0
-            
+
             # Initialize target network
             self.update_target_network()
-        
+
         def get_action(self, state: np.ndarray) -> int:
             """Choose action using epsilon-greedy policy."""
             if np.random.random() <= self.epsilon:
                 return np.random.randint(self.action_size)
-            
+
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             q_values = self.q_network(state_tensor)
             return q_values.argmax().item()
-        
+
         def store_experience(self, state: np.ndarray, action: int, reward: float,
                            next_state: np.ndarray, done: bool) -> None:
             """Store experience in replay buffer."""
             self.memory.append((state, action, reward, next_state, done))
-        
+
         def replay(self) -> None:
             """Train the network using experience replay."""
             if len(self.memory) < self.batch_size:
                 return
-            
+
             # Sample batch from memory
             batch = random.sample(self.memory, self.batch_size)
             states, actions, rewards, next_states, dones = zip(*batch)
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             actions = torch.LongTensor(actions)
             rewards = torch.FloatTensor(rewards)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Current Q-values
             current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
-            
+
             # Next Q-values from target network
             next_q_values = self.target_network(next_states).max(1)[0].detach()
             target_q_values = rewards + (self.gamma * next_q_values * ~dones)
-            
+
             # Compute loss and update
             loss = nn.MSELoss()(current_q_values.squeeze(), target_q_values)
             self.optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
             self.optimizer.step()
-            
+
             # Update target network periodically
             self.train_count += 1
             if self.train_count % self.target_update_freq == 0:
                 self.update_target_network()
-            
+
             # Decay epsilon
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
-        
+
         def update_target_network(self) -> None:
             """Update target network with current Q-network weights."""
             self.target_network.load_state_dict(self.q_network.state_dict())
@@ -170,41 +170,41 @@ family: "reinforcement-learning"
         """
         Double DQN agent that reduces overestimation bias.
         """
-        
+
         def replay(self) -> None:
             """Train using Double DQN update rule."""
             if len(self.memory) < self.batch_size:
                 return
-            
+
             batch = random.sample(self.memory, self.batch_size)
             states, actions, rewards, next_states, dones = zip(*batch)
-            
+
             states = torch.FloatTensor(states)
             actions = torch.LongTensor(actions)
             rewards = torch.FloatTensor(rewards)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Current Q-values
             current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
-            
+
             # Double DQN: use main network to select actions, target network to evaluate
             next_actions = self.q_network(next_states).argmax(1)
             next_q_values = self.target_network(next_states).gather(1, next_actions.unsqueeze(1)).squeeze()
             target_q_values = rewards + (self.gamma * next_q_values * ~dones)
-            
+
             # Compute loss and update
             loss = nn.MSELoss()(current_q_values.squeeze(), target_q_values)
             self.optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
             self.optimizer.step()
-            
+
             # Update target network periodically
             self.train_count += 1
             if self.train_count % self.target_update_freq == 0:
                 self.update_target_network()
-            
+
             # Decay epsilon
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
@@ -214,10 +214,10 @@ family: "reinforcement-learning"
     ```python
     class DuelingDQNNetwork(nn.Module):
         """Dueling DQN architecture with separate value and advantage streams."""
-        
+
         def __init__(self, input_size: int, output_size: int, hidden_size: int = 128):
             super(DuelingDQNNetwork, self).__init__()
-            
+
             # Shared feature layers
             self.feature_layer = nn.Sequential(
                 nn.Linear(input_size, hidden_size),
@@ -225,26 +225,26 @@ family: "reinforcement-learning"
                 nn.Linear(hidden_size, hidden_size),
                 nn.ReLU()
             )
-            
+
             # Value stream
             self.value_stream = nn.Sequential(
                 nn.Linear(hidden_size, hidden_size // 2),
                 nn.ReLU(),
                 nn.Linear(hidden_size // 2, 1)
             )
-            
+
             # Advantage stream
             self.advantage_stream = nn.Sequential(
                 nn.Linear(hidden_size, hidden_size // 2),
                 nn.ReLU(),
                 nn.Linear(hidden_size // 2, output_size)
             )
-        
+
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             features = self.feature_layer(x)
             value = self.value_stream(features)
             advantage = self.advantage_stream(features)
-            
+
             # Combine value and advantage
             q_values = value + (advantage - advantage.mean(dim=1, keepdim=True))
             return q_values

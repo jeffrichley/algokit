@@ -16,9 +16,9 @@ family: "reinforcement-learning"
 
 !!! math "Q-Learning Update Rule"
     The core Q-Learning update rule follows the Bellman optimality equation:
-    
+
     $$Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[ r_t + \gamma \max_{a'} Q(s_{t+1}, a') - Q(s_t, a_t) \right]$$
-    
+
     Where:
     - $Q(s, a)$ is the Q-value for state $s$ and action $a$
     - $\alpha$ is the learning rate (controls update magnitude)
@@ -38,11 +38,11 @@ family: "reinforcement-learning"
     ```python
     import numpy as np
     from typing import Dict, Tuple, Any
-    
+
     class QLearningAgent:
         """
         Q-Learning agent implementation.
-        
+
         Args:
             state_size: Number of possible states
             action_size: Number of possible actions
@@ -50,8 +50,8 @@ family: "reinforcement-learning"
             discount_factor: Discount factor gamma (default: 0.95)
             epsilon: Exploration rate for epsilon-greedy (default: 0.1)
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1):
             self.state_size = state_size
@@ -59,10 +59,10 @@ family: "reinforcement-learning"
             self.alpha = learning_rate
             self.gamma = discount_factor
             self.epsilon = epsilon
-            
+
             # Initialize Q-table with zeros
             self.q_table = np.zeros((state_size, action_size))
-        
+
         def get_action(self, state: int) -> int:
             """Choose action using epsilon-greedy policy."""
             if np.random.random() < self.epsilon:
@@ -71,23 +71,23 @@ family: "reinforcement-learning"
             else:
                 # Exploitation: best action according to Q-table
                 return np.argmax(self.q_table[state])
-        
-        def update(self, state: int, action: int, reward: float, 
+
+        def update(self, state: int, action: int, reward: float,
                   next_state: int, done: bool) -> None:
             """Update Q-value using Q-Learning update rule."""
             current_q = self.q_table[state, action]
-            
+
             if done:
                 # Terminal state: no future rewards
                 max_next_q = 0
             else:
                 # Non-terminal state: maximum Q-value of next state
                 max_next_q = np.max(self.q_table[next_state])
-            
+
             # Q-Learning update rule
             new_q = current_q + self.alpha * (reward + self.gamma * max_next_q - current_q)
             self.q_table[state, action] = new_q
-        
+
         def get_policy(self) -> np.ndarray:
             """Extract greedy policy from Q-table."""
             return np.argmax(self.q_table, axis=1)
@@ -97,13 +97,13 @@ family: "reinforcement-learning"
     ```python
     import random
     from collections import deque
-    
+
     class QLearningWithReplay:
         """
         Q-Learning with experience replay for better sample efficiency.
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1, replay_buffer_size: int = 10000,
                      batch_size: int = 32):
@@ -113,32 +113,32 @@ family: "reinforcement-learning"
             self.gamma = discount_factor
             self.epsilon = epsilon
             self.batch_size = batch_size
-            
+
             # Initialize Q-table and replay buffer
             self.q_table = np.zeros((state_size, action_size))
             self.replay_buffer = deque(maxlen=replay_buffer_size)
-        
+
         def store_experience(self, state: int, action: int, reward: float,
                            next_state: int, done: bool) -> None:
             """Store experience in replay buffer."""
             self.replay_buffer.append((state, action, reward, next_state, done))
-        
+
         def replay(self) -> None:
             """Update Q-values using batch of experiences from replay buffer."""
             if len(self.replay_buffer) < self.batch_size:
                 return
-            
+
             # Sample random batch of experiences
             batch = random.sample(self.replay_buffer, self.batch_size)
-            
+
             for state, action, reward, next_state, done in batch:
                 current_q = self.q_table[state, action]
-                
+
                 if done:
                     max_next_q = 0
                 else:
                     max_next_q = np.max(self.q_table[next_state])
-                
+
                 # Q-Learning update
                 new_q = current_q + self.alpha * (reward + self.gamma * max_next_q - current_q)
                 self.q_table[state, action] = new_q
@@ -147,12 +147,12 @@ family: "reinforcement-learning"
 === "Function Approximation Q-Learning"
     ```python
     from sklearn.linear_model import SGDRegressor
-    
+
     class QLearningFunctionApproximation:
         """
         Q-Learning with function approximation for continuous/large state spaces.
         """
-        
+
         def __init__(self, action_size: int, feature_size: int,
                      learning_rate: float = 0.01, discount_factor: float = 0.95,
                      epsilon: float = 0.1):
@@ -161,34 +161,34 @@ family: "reinforcement-learning"
             self.alpha = learning_rate
             self.gamma = discount_factor
             self.epsilon = epsilon
-            
+
             # Separate Q-function approximator for each action
             self.q_approximators = [
                 SGDRegressor(learning_rate='constant', eta0=learning_rate)
                 for _ in range(action_size)
             ]
-            
+
             # Initialize with dummy data
             for approximator in self.q_approximators:
                 approximator.partial_fit([[0] * feature_size], [0])
-        
+
         def get_q_value(self, state_features: np.ndarray, action: int) -> float:
             """Get Q-value for state-action pair using function approximation."""
             return self.q_approximators[action].predict([state_features])[0]
-        
+
         def update(self, state_features: np.ndarray, action: int, reward: float,
                   next_state_features: np.ndarray, done: bool) -> None:
             """Update Q-function approximator."""
             current_q = self.get_q_value(state_features, action)
-            
+
             if done:
                 target_q = reward
             else:
                 # Find maximum Q-value for next state
-                next_q_values = [self.get_q_value(next_state_features, a) 
+                next_q_values = [self.get_q_value(next_state_features, a)
                                for a in range(self.action_size)]
                 target_q = reward + self.gamma * max(next_q_values)
-            
+
             # Update the approximator for this action
             self.q_approximators[action].partial_fit([state_features], [target_q])
     ```

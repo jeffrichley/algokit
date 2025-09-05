@@ -51,7 +51,7 @@ The family schema supports rich metadata and structured content for algorithm fa
 
 - **`status`**: Inferred from algorithm statuses (no manual field needed)
   - "complete" if all algorithms are complete
-  - "in-progress" if any algorithms are in-progress  
+  - "in-progress" if any algorithms are in-progress
   - "planned" if all algorithms are planned
 - **`complexity`**: Typical time/space complexity information
 

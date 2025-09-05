@@ -1,31 +1,29 @@
-"""
-Dynamic page generator for MkDocs.
+"""Dynamic page generator for MkDocs.
 
 This module generates algorithm pages dynamically during the MkDocs build process,
 eliminating the need for static .md files.
 """
 
-import os
-import yaml
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+import yaml
 
 
-def load_algorithms_data() -> Dict[str, Any]:
+def load_algorithms_data() -> dict[str, Any]:
     """Load algorithms data from YAML file."""
     yaml_path = Path("algorithms.yaml")
     if not yaml_path.exists():
         return {"families": {}, "algorithms": {}}
 
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         return yaml.safe_load(f)
 
 
 def generate_algorithm_page_content(
-    algorithm_key: str, algorithm_data: Dict[str, Any], family_data: Dict[str, Any]
+    algorithm_key: str, algorithm_data: dict[str, Any], family_data: dict[str, Any]
 ) -> str:
     """Generate complete algorithm page content from YAML data."""
-
     # Extract data with defaults
     name = algorithm_data.get("name", algorithm_key.replace("-", " ").title())
     description = algorithm_data.get("description", "Algorithm description")
@@ -98,7 +96,7 @@ complexity: "{time_complexity}"
     {description}
 
     **Recurrence Relation:** {recurrence_relation}
-    
+
     **Base Cases:** {base_cases}
 
 !!! success "Key Properties"
@@ -126,7 +124,7 @@ complexity: "{time_complexity}"
 
 !!! tip "Complete Implementation"
     Find the complete implementation in: `{source_file}`
-    
+
     **Implementation Approaches:**
     - {approaches_list}
 
@@ -175,7 +173,7 @@ complexity: "{time_complexity}"
         6. Complexity analysis guides
 
 !!! tip "Interactive Learning"
-    Try implementing this algorithm yourself! Start with the basic approach, then optimize for better performance. 
+    Try implementing this algorithm yourself! Start with the basic approach, then optimize for better performance.
     Check the source code for complete implementations with error handling and comprehensive testing.
 
 ## Navigation
@@ -200,7 +198,7 @@ complexity: "{time_complexity}"
     return page_content
 
 
-def get_algorithm_page_content(algorithm_key: str) -> Optional[str]:
+def get_algorithm_page_content(algorithm_key: str) -> str | None:
     """Get algorithm page content dynamically from YAML data.
 
     This function is called by MkDocs Macros to generate page content
@@ -220,13 +218,13 @@ def get_algorithm_page_content(algorithm_key: str) -> Optional[str]:
     return generate_algorithm_page_content(algorithm_key, algorithm_data, family_data)
 
 
-def get_all_algorithm_keys() -> List[str]:
+def get_all_algorithm_keys() -> list[str]:
     """Get all algorithm keys from YAML data."""
     data = load_algorithms_data()
     return list(data.get("algorithms", {}).keys())
 
 
-def get_algorithms_by_family(family_key: str) -> List[str]:
+def get_algorithms_by_family(family_key: str) -> list[str]:
     """Get all algorithm keys for a specific family."""
     data = load_algorithms_data()
     algorithms = data.get("algorithms", {})

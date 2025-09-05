@@ -1,8 +1,6 @@
-"""
-Setup script for AlgoKit with MkDocs plugin support.
-"""
+"""Setup script for AlgoKit with MkDocs plugin support."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="algokit",

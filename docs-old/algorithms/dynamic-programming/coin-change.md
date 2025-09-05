@@ -18,11 +18,11 @@ family: "dynamic-programming"
     Given:
     - A set of coin denominations: $C = \{c_1, c_2, ..., c_n\}$
     - A target amount: $A$
-    
+
     Find the minimum number of coins needed to make amount $A$:
-    
+
     $$\min \sum_{i=1}^{n} x_i \text{ subject to } \sum_{i=1}^{n} c_i x_i = A$$
-    
+
     Where $x_i$ represents the number of coins of denomination $c_i$.
 
 !!! success "Key Properties"
@@ -37,34 +37,34 @@ family: "dynamic-programming"
     def coin_change(coins: list[int], amount: int) -> int:
         """
         Find minimum number of coins needed to make the given amount.
-        
+
         Args:
             coins: List of available coin denominations
             amount: Target amount to make
-            
+
         Returns:
             Minimum number of coins needed, or -1 if impossible
-            
+
         Example:
             >>> coin_change([1, 2, 5], 11)
             3  # 5 + 5 + 1 = 11
         """
         if amount == 0:
             return 0
-        
+
         # Initialize DP array with infinity
         dp = [float('inf')] * (amount + 1)
         dp[0] = 0
-        
+
         # Build solutions for all amounts from 1 to target
         for current_amount in range(1, amount + 1):
             for coin in coins:
                 if coin <= current_amount:
                     dp[current_amount] = min(
-                        dp[current_amount], 
+                        dp[current_amount],
                         dp[current_amount - coin] + 1
                     )
-        
+
         return dp[amount] if dp[amount] != float('inf') else -1
     ```
 
@@ -76,22 +76,22 @@ family: "dynamic-programming"
         """
         if memo is None:
             memo = {}
-        
+
         if amount in memo:
             return memo[amount]
-        
+
         if amount == 0:
             return 0
-        
+
         if amount < 0:
             return -1
-        
+
         min_coins = float('inf')
         for coin in coins:
             result = coin_change_memoized(coins, amount - coin, memo)
             if result != -1:
                 min_coins = min(min_coins, result + 1)
-        
+
         memo[amount] = min_coins if min_coins != float('inf') else -1
         return memo[amount]
     ```
@@ -106,13 +106,13 @@ family: "dynamic-programming"
         coins.sort(reverse=True)  # Use largest coins first
         total_coins = 0
         remaining = amount
-        
+
         for coin in coins:
             if remaining >= coin:
                 count = remaining // coin
                 total_coins += count
                 remaining -= count * coin
-        
+
         return total_coins if remaining == 0 else -1
     ```
 

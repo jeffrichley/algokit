@@ -4,72 +4,72 @@ tags:
     name: "Dynamic Programming"
     description: "Algorithms that solve problems by breaking them into overlapping subproblems"
     color: "blue"
-  
+
   - id: "optimization"
     name: "Optimization"
     description: "Algorithms that find optimal solutions to problems"
     color: "green"
-  
+
   - id: "recursion"
     name: "Recursion"
     description: "Algorithms that use recursive problem-solving approaches"
     color: "purple"
-  
+
   - id: "memoization"
     name: "Memoization"
     description: "Technique of storing results of expensive function calls"
     color: "orange"
-  
+
   - id: "algorithms"
     name: "Algorithms"
     description: "General algorithmic concepts and implementations"
     color: "gray"
-  
+
   - id: "sequence"
     name: "Sequence"
     description: "Algorithms that work with sequences and series"
     color: "teal"
-  
+
   - id: "mathematical"
     name: "Mathematical"
     description: "Algorithms with strong mathematical foundations"
     color: "indigo"
-  
+
   - id: "control"
     name: "Control Theory"
     description: "Algorithms for system control and feedback"
     color: "red"
-  
+
   - id: "reinforcement-learning"
     name: "Reinforcement Learning"
     description: "Machine learning algorithms that learn through interaction"
     color: "pink"
-  
+
   - id: "gaussian-process"
     name: "Gaussian Process"
     description: "Probabilistic machine learning methods"
     color: "cyan"
-  
+
   - id: "planning"
     name: "Planning"
     description: "Algorithms for automated planning and decision making"
     color: "amber"
-  
+
   - id: "mpc"
     name: "Model Predictive Control"
     description: "Advanced control algorithms using predictive models"
     color: "lime"
-  
+
   - id: "hierarchical-rl"
     name: "Hierarchical RL"
     description: "Reinforcement learning with hierarchical structure"
     color: "emerald"
-  
+
   - id: "dmps"
     name: "Dynamic Movement Primitives"
     description: "Algorithms for learning and reproducing movements"
     color: "rose"
-  
+
   - id: "real-time-control"
     name: "Real-time Control"
     description: "Control algorithms for real-time systems"

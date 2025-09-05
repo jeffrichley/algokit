@@ -153,8 +153,7 @@ git push origin feature/your-feature-name
 
 ### Python Code Style
 
-- **Black**: Automatic code formatting (line length: 88)
-- **Ruff**: Linting and import sorting
+- **Ruff**: Linting, import sorting, and automatic code formatting (line length: 88)
 - **Type Hints**: Required for all functions and methods
 - **Docstrings**: Google-style docstrings for all public APIs
 
@@ -335,7 +334,7 @@ def process_data_batch(
 
 - **API Documentation**: `docs/api/`
 - **Architecture Guide**: `docs/ARCHITECTURE_PATTERNS.md`
-- **Quality Checks**: Run `nox -s lint type_check complexity security` for comprehensive quality validation
+- **Quality Checks**: Run `just quality` for comprehensive quality validation
 - **Project Status**: `docs/STATUS.md`
 
 ## 🎉 Recognition

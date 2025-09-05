@@ -95,7 +95,7 @@ Get up and running with Algorithm Kit in minutes:
 
 ## Feature Highlights
 
-- **Modern Python Tooling**: Built with uv, nox, and just for optimal development experience
+- **Modern Python Tooling**: Built with uv and just for optimal development experience
 - **Quality Assurance**: Comprehensive testing, linting, and type checking
 - **Documentation**: Automated documentation generation with MkDocs
 - **CI/CD Ready**: Pre-configured GitHub Actions workflows
@@ -122,7 +122,7 @@ graph LR
     D --> E[Deployment]
 
     F[uv] --> A
-    G[nox] --> B
+    G[just] --> B
     H[just] --> C
     I[MkDocs] --> D
 ```

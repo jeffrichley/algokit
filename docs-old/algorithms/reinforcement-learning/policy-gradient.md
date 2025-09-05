@@ -18,18 +18,18 @@ family: "reinforcement-learning"
 
 !!! math "Policy Gradient Theorem"
     The policy gradient theorem states that:
-    
+
     $$\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \nabla_\theta \log \pi_\theta(\tau) R(\tau) \right]$$
-    
+
     Where:
     - $J(\theta)$ is the expected return objective
     - $\pi_\theta(\tau)$ is the probability of trajectory $\tau$ under policy $\pi_\theta$
     - $R(\tau)$ is the return of trajectory $\tau$
-    
+
     For a single timestep, this becomes:
-    
+
     $$\nabla_\theta J(\theta) = \mathbb{E}_{s \sim \rho^\pi, a \sim \pi_\theta} \left[ \nabla_\theta \log \pi_\theta(a|s) Q^\pi(s, a) \right]$$
-    
+
     Where $\rho^\pi$ is the state distribution under policy $\pi$.
 
 !!! success "Key Properties"
@@ -48,98 +48,98 @@ family: "reinforcement-learning"
     import torch.optim as optim
     import torch.nn.functional as F
     import numpy as np
-    
+
     class PolicyNetwork(nn.Module):
         """Policy network that outputs action probabilities."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(PolicyNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, action_size)
-        
+
         def forward(self, state: torch.Tensor) -> torch.Tensor:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             action_probs = F.softmax(self.fc3(x), dim=-1)
             return action_probs
-    
+
     class REINFORCEAgent:
         """
         REINFORCE agent implementation (Monte Carlo Policy Gradient).
-        
+
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
             learning_rate: Learning rate for policy network (default: 0.001)
             discount_factor: Discount factor gamma (default: 0.99)
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.001, discount_factor: float = 0.99):
-            
+
             self.state_size = state_size
             self.action_size = action_size
             self.gamma = discount_factor
-            
+
             # Policy network
             self.policy = PolicyNetwork(state_size, action_size)
             self.optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
-            
+
             # Episode storage
             self.episode_states = []
             self.episode_actions = []
             self.episode_rewards = []
             self.episode_log_probs = []
-        
+
         def get_action(self, state: np.ndarray) -> tuple[int, float]:
             """Sample action from policy and return action with log probability."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             action_probs = self.policy(state_tensor)
-            
+
             # Sample action from distribution
             action_dist = torch.distributions.Categorical(action_probs)
             action = action_dist.sample()
             log_prob = action_dist.log_prob(action)
-            
+
             return action.item(), log_prob.item()
-        
+
         def store_transition(self, state: np.ndarray, action: int, reward: float, log_prob: float) -> None:
             """Store transition for current episode."""
             self.episode_states.append(state)
             self.episode_actions.append(action)
             self.episode_rewards.append(reward)
             self.episode_log_probs.append(log_prob)
-        
+
         def update_policy(self) -> None:
             """Update policy using Monte Carlo policy gradient."""
             if len(self.episode_rewards) == 0:
                 return
-            
+
             # Calculate discounted returns
             returns = []
             discounted_return = 0
             for reward in reversed(self.episode_rewards):
                 discounted_return = reward + self.gamma * discounted_return
                 returns.insert(0, discounted_return)
-            
+
             # Normalize returns for stability
             returns = torch.FloatTensor(returns)
             returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-            
+
             # Convert episode data to tensors
             states = torch.FloatTensor(self.episode_states)
             actions = torch.LongTensor(self.episode_actions)
             log_probs = torch.stack(self.episode_log_probs)
-            
+
             # Calculate policy gradient loss
             policy_loss = -(log_probs * returns).mean()
-            
+
             # Update policy
             self.optimizer.zero_grad()
             policy_loss.backward()
             self.optimizer.step()
-            
+
             # Clear episode data
             self.episode_states.clear()
             self.episode_actions.clear()
@@ -151,72 +151,72 @@ family: "reinforcement-learning"
     ```python
     class BaselineNetwork(nn.Module):
         """Baseline network for variance reduction."""
-        
+
         def __init__(self, state_size: int, hidden_size: int = 128):
             super(BaselineNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, 1)
-        
+
         def forward(self, state: torch.Tensor) -> torch.Tensor:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             baseline = self.fc3(x)
             return baseline
-    
+
     class REINFORCEBaselineAgent(REINFORCEAgent):
         """
         REINFORCE agent with baseline for variance reduction.
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.001, baseline_lr: float = 0.001,
                      discount_factor: float = 0.99):
             super().__init__(state_size, action_size, learning_rate, discount_factor)
-            
+
             # Baseline network
             self.baseline = BaselineNetwork(state_size)
             self.baseline_optimizer = optim.Adam(self.baseline.parameters(), lr=baseline_lr)
-        
+
         def update_policy(self) -> None:
             """Update policy and baseline using baseline-corrected policy gradient."""
             if len(self.episode_rewards) == 0:
                 return
-            
+
             # Calculate discounted returns
             returns = []
             discounted_return = 0
             for reward in reversed(self.episode_rewards):
                 discounted_return = reward + self.gamma * discounted_return
                 returns.insert(0, discounted_return)
-            
+
             # Convert episode data to tensors
             states = torch.FloatTensor(self.episode_states)
             actions = torch.LongTensor(self.episode_actions)
             log_probs = torch.stack(self.episode_log_probs)
             returns = torch.FloatTensor(returns)
-            
+
             # Get baseline values
             baselines = self.baseline(states).squeeze()
-            
+
             # Calculate advantage (return - baseline)
             advantages = returns - baselines.detach()
-            
+
             # Policy gradient loss
             policy_loss = -(log_probs * advantages).mean()
-            
+
             # Baseline loss (MSE regression)
             baseline_loss = F.mse_loss(baselines, returns)
-            
+
             # Update networks
             self.optimizer.zero_grad()
             policy_loss.backward()
             self.optimizer.step()
-            
+
             self.baseline_optimizer.zero_grad()
             baseline_loss.backward()
             self.baseline_optimizer.step()
-            
+
             # Clear episode data
             self.episode_states.clear()
             self.episode_actions.clear()
@@ -228,46 +228,46 @@ family: "reinforcement-learning"
     ```python
     class ContinuousPolicyNetwork(nn.Module):
         """Policy network for continuous action spaces."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(ContinuousPolicyNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, action_size)
             self.fc4 = nn.Linear(hidden_size, action_size)  # For log_std
-        
+
         def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             mean = torch.tanh(self.fc3(x))  # Bound actions to [-1, 1]
             log_std = self.fc4(x)
             return mean, log_std
-    
+
     class ContinuousPolicyGradientAgent(REINFORCEAgent):
         """
         Policy gradient agent for continuous action spaces.
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.001, discount_factor: float = 0.99):
             super().__init__(state_size, action_size, learning_rate, discount_factor)
             # Replace policy with continuous version
             self.policy = ContinuousPolicyNetwork(state_size, action_size)
             self.optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
-        
+
         def get_action(self, state: np.ndarray) -> tuple[np.ndarray, float]:
             """Sample continuous action from policy."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             mean, log_std = self.policy(state_tensor)
-            
+
             # Create normal distribution
             std = torch.exp(log_std)
             dist = torch.distributions.Normal(mean, std)
-            
+
             # Sample action
             action = dist.sample()
             log_prob = dist.log_prob(action).sum(dim=-1)
-            
+
             return action.squeeze().numpy(), log_prob.item()
     ```
 

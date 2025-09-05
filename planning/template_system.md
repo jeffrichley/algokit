@@ -415,4 +415,3 @@ Iris here. I put together a **step-by-step, battle-ready plan** your local gen-A
 5. **(Optional)** render basic references from a YAML list; upgrade to BibTeX later.
 
 That flow gets you end-to-end output quickly. Then layer on validation, tag indexes, and refs pages.
-

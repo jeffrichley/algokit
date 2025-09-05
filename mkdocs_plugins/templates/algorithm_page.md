@@ -7,8 +7,8 @@ family: "{{ family.slug }}"
 
 !!! info "{{ algo.name }}"
     {{ algo.summary }}
-    
-    **Family:** {{ family.name }}  
+
+    **Family:** {{ family.name }}
     **Status:** {% if algo.status and algo.status.current == 'complete' %}✅ Complete{% elif algo.status and algo.status.current == 'in-progress' %}🚧 In Progress{% else %}📋 Planned{% endif %}
 
 !!! abstract "Overview"
@@ -37,11 +37,11 @@ family: "{{ family.slug }}"
 !!! success "Mathematical Properties"
     {% for prop in algo.formulation.mathematical_properties %}
     **{{ prop.name }}**
-    
+
     `{{ prop.formula }}`
-    
+
     {{ prop.description }}
-    
+
     ---
     {% endfor %}
 {% endif %}
@@ -50,11 +50,11 @@ family: "{{ family.slug }}"
 !!! info "Key Properties"
     {% for prop in algo.formulation.key_properties %}
     **{{ prop.name }}**
-    
+
     `{{ prop.formula }}`
-    
+
     {{ prop.description }}
-    
+
     ---
     {% endfor %}
 {% endif %}
@@ -84,26 +84,26 @@ family: "{{ family.slug }}"
     {% if impl.description %}
     {{ impl.description }}
     {% endif %}
-    
+
     {% if impl.complexity %}
     **Complexity:**
     - **Time**: {{ impl.complexity.time }}
     - **Space**: {{ impl.complexity.space }}
     {% endif %}
-    
+
     {% if impl.code %}
     ```python
     {{ impl.code }}
     ```
     {% endif %}
-    
+
     {% if impl.advantages %}
     !!! success "Advantages"
         {% for advantage in impl.advantages %}
         - {{ advantage }}
         {% endfor %}
     {% endif %}
-    
+
     {% if impl.disadvantages %}
     !!! warning "Disadvantages"
         {% for disadvantage in impl.disadvantages %}
@@ -219,7 +219,7 @@ family: "{{ family.slug }}"
 
 !!! success "Interactive Learning"
     Try implementing the different approaches yourself! This progression will give you deep insight into the algorithm's principles and applications.
-    
+
     <span class="twemoji">{% include "icons/lightbulb.svg" %}</span> **Pro Tip**: Start with the simplest implementation and gradually work your way up to more complex variants.
 {% endif %}
 

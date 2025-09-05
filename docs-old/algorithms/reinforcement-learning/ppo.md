@@ -18,15 +18,15 @@ family: "reinforcement-learning"
 
 !!! math "PPO Clipped Surrogate Objective"
     The PPO algorithm optimizes the following clipped surrogate objective:
-    
+
     $$L^{CLIP}(\theta) = \mathbb{E}_t \left[ \min \left( r_t(\theta) A_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]$$
-    
+
     Where:
     - $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ is the probability ratio
     - $A_t$ is the advantage estimate at time $t$
     - $\epsilon$ is the clipping parameter (typically 0.2)
     - $\text{clip}(x, a, b) = \max(a, \min(x, b))$ clamps $x$ to $[a, b]$
-    
+
     The clipping ensures that $r_t(\theta)$ stays within $[1-\epsilon, 1+\epsilon]$, preventing large policy updates.
 
 !!! success "Key Properties"
@@ -46,13 +46,13 @@ family: "reinforcement-learning"
     import torch.nn.functional as F
     import numpy as np
     from collections import deque
-    
+
     class PPONetwork(nn.Module):
         """PPO network with separate policy and value heads."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(PPONetwork, self).__init__()
-            
+
             # Shared feature layers
             self.feature_layer = nn.Sequential(
                 nn.Linear(state_size, hidden_size),
@@ -60,19 +60,19 @@ family: "reinforcement-learning"
                 nn.Linear(hidden_size, hidden_size),
                 nn.ReLU()
             )
-            
+
             # Policy head
             self.policy_head = nn.Linear(hidden_size, action_size)
-            
+
             # Value head
             self.value_head = nn.Linear(hidden_size, 1)
-        
+
         def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
             features = self.feature_layer(state)
             action_probs = F.softmax(self.policy_head(features), dim=-1)
             value = self.value_head(features)
             return action_probs, value
-        
+
         def get_action(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
             """Get action, log probability, and value for given state."""
             action_probs, value = self.forward(state)
@@ -80,11 +80,11 @@ family: "reinforcement-learning"
             action = dist.sample()
             log_prob = dist.log_prob(action)
             return action, log_prob, value
-    
+
     class PPOAgent:
         """
         PPO agent implementation.
-        
+
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
@@ -97,13 +97,13 @@ family: "reinforcement-learning"
             max_grad_norm: Maximum gradient norm for clipping (default: 0.5)
             epochs_per_update: Number of epochs per update (default: 4)
         """
-        
+
         def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.0003, discount_factor: float = 0.99,
                      gae_lambda: float = 0.95, clip_epsilon: float = 0.2,
                      value_coef: float = 0.5, entropy_coef: float = 0.01,
                      max_grad_norm: float = 0.5, epochs_per_update: int = 4):
-            
+
             self.state_size = state_size
             self.action_size = action_size
             self.gamma = discount_factor
@@ -113,50 +113,50 @@ family: "reinforcement-learning"
             self.entropy_coef = entropy_coef
             self.max_grad_norm = max_grad_norm
             self.epochs_per_update = epochs_per_update
-            
+
             # Networks
             self.policy = PPONetwork(state_size, action_size)
             self.optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
-            
+
             # Experience buffer
             self.buffer = []
-        
+
         def get_action(self, state: np.ndarray) -> tuple[int, float, float]:
             """Sample action from policy and return action, log_prob, and value."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             action, log_prob, value = self.policy.get_action(state_tensor)
             return action.item(), log_prob.item(), value.item()
-        
+
         def store_transition(self, state: np.ndarray, action: int, reward: float,
                            next_state: np.ndarray, done: bool, log_prob: float, value: float) -> None:
             """Store transition in buffer."""
             self.buffer.append((state, action, reward, next_state, done, log_prob, value))
-        
+
         def compute_gae(self, rewards: list, values: list, dones: list) -> list:
             """Compute Generalized Advantage Estimation (GAE)."""
             advantages = []
             gae = 0
-            
+
             for i in reversed(range(len(rewards))):
                 if i == len(rewards) - 1:
                     next_value = 0
                 else:
                     next_value = values[i + 1]
-                
+
                 delta = rewards[i] + self.gamma * next_value * (1 - dones[i]) - values[i]
                 gae = delta + self.gamma * self.gae_lambda * (1 - dones[i]) * gae
                 advantages.insert(0, gae)
-            
+
             return advantages
-        
+
         def update_policy(self) -> None:
             """Update policy using PPO algorithm."""
             if len(self.buffer) == 0:
                 return
-            
+
             # Extract data from buffer
             states, actions, rewards, next_states, dones, old_log_probs, values = zip(*self.buffer)
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             actions = torch.LongTensor(actions)
@@ -164,49 +164,49 @@ family: "reinforcement-learning"
             values = torch.FloatTensor(values)
             rewards = torch.FloatTensor(rewards)
             dones = torch.BoolTensor(dones)
-            
+
             # Compute GAE advantages
             advantages = self.compute_gae(rewards, values, dones)
             advantages = torch.FloatTensor(advantages)
-            
+
             # Normalize advantages
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-            
+
             # Compute returns
             returns = advantages + values
-            
+
             # Multiple epochs of updates
             for _ in range(self.epochs_per_update):
                 # Get current policy outputs
                 action_probs, current_values = self.policy(states)
                 dist = torch.distributions.Categorical(action_probs)
                 current_log_probs = dist.log_prob(actions)
-                
+
                 # Compute probability ratio
                 ratio = torch.exp(current_log_probs - old_log_probs)
-                
+
                 # PPO clipped surrogate objective
                 surr1 = ratio * advantages
                 surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
                 policy_loss = -torch.min(surr1, surr2).mean()
-                
+
                 # Value function loss
                 value_loss = F.mse_loss(current_values.squeeze(), returns)
-                
+
                 # Entropy regularization
                 entropy = dist.entropy().mean()
-                
+
                 # Total loss
-                total_loss = (policy_loss + 
-                            self.value_coef * value_loss - 
+                total_loss = (policy_loss +
+                            self.value_coef * value_loss -
                             self.entropy_coef * entropy)
-                
+
                 # Update policy
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
                 self.optimizer.step()
-            
+
             # Clear buffer
             self.buffer.clear()
     ```
@@ -217,22 +217,22 @@ family: "reinforcement-learning"
         """
         PPO agent that can handle multiple environments simultaneously.
         """
-        
+
         def __init__(self, state_size: int, action_size: int, num_envs: int = 4, **kwargs):
             super().__init__(state_size, action_size, **kwargs)
             self.num_envs = num_envs
             self.env_buffers = [[] for _ in range(num_envs)]
-        
+
         def store_transition(self, env_id: int, state: np.ndarray, action: int, reward: float,
                            next_state: np.ndarray, done: bool, log_prob: float, value: float) -> None:
             """Store transition for specific environment."""
             self.env_buffers[env_id].append((state, action, reward, next_state, done, log_prob, value))
-            
+
             # If episode ends, move to main buffer
             if done:
                 self.buffer.extend(self.env_buffers[env_id])
                 self.env_buffers[env_id].clear()
-        
+
         def get_actions(self, states: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
             """Get actions for multiple environments simultaneously."""
             states_tensor = torch.FloatTensor(states)
@@ -244,10 +244,10 @@ family: "reinforcement-learning"
     ```python
     class ContinuousPPONetwork(nn.Module):
         """PPO network for continuous action spaces."""
-        
+
         def __init__(self, state_size: int, action_size: int, hidden_size: int = 128):
             super(ContinuousPPONetwork, self).__init__()
-            
+
             # Shared feature layers
             self.feature_layer = nn.Sequential(
                 nn.Linear(state_size, hidden_size),
@@ -255,36 +255,36 @@ family: "reinforcement-learning"
                 nn.Linear(hidden_size, hidden_size),
                 nn.ReLU()
             )
-            
+
             # Policy head (mean and log_std)
             self.policy_mean = nn.Linear(hidden_size, action_size)
             self.policy_log_std = nn.Linear(hidden_size, action_size)
-            
+
             # Value head
             self.value_head = nn.Linear(hidden_size, 1)
-        
+
         def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
             features = self.feature_layer(state)
-            
+
             # Policy outputs
             mean = torch.tanh(self.policy_mean(features))
             log_std = self.policy_log_std(features)
-            
+
             # Value output
             value = self.value_head(features)
-            
+
             return mean, log_std, value
-        
+
         def get_action(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
             """Get action, log probability, and value for continuous actions."""
             mean, log_std, value = self.forward(state)
             std = torch.exp(log_std)
-            
+
             # Create normal distribution
             dist = torch.distributions.Normal(mean, std)
             action = dist.sample()
             log_prob = dist.log_prob(action).sum(dim=-1)
-            
+
             return action, log_prob, value
     ```
 

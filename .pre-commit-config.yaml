@@ -2,15 +2,14 @@ fail_fast: true
 ci:
   autoupdate_schedule: weekly
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.12.7
     hooks:
       - id: ruff
         args: ["--fix"]
+        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
+      - id: ruff-format
+        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
   - repo: https://github.com/asottile/yesqa
     rev: v1.5.0
     hooks:
@@ -25,23 +24,24 @@ repos:
     hooks:
       - id: codespell
         args: ["--ignore-words-list=algokit,jeffrichley"]
-        exclude: ^(docs/site/|.git/|.nox/|htmlcov/)
+        exclude: ^(docs/site/|.git/|htmlcov/|docs-old/)
   - repo: local
     hooks:
       - id: mypy
         name: mypy
-        entry: nox -s type_check
+        entry: uv run mypy src tests
         language: system
         pass_filenames: false
         types: [python]
+        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
       - id: pip-audit
         name: pip-audit
-        entry: nox -s security
+        entry: uv run pip-audit --progress-spinner=off
         language: system
         pass_filenames: false
       - id: xenon-complexity
         name: Check Code Complexity (Xenon)
-        entry: nox -s complexity
+        entry: uv run xenon --max-absolute B src
         language: system
         pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks

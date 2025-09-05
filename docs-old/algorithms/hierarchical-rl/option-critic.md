@@ -18,15 +18,15 @@ family: "hierarchical-rl"
 
 !!! math "Option-Critic Framework"
     An option consists of three components:
-    
+
     - **Option Policy**: $\pi_\omega(a|s)$ - selects actions given option $\omega$ and state $s$
     - **Option Selection Policy**: $\pi_\Omega(\omega|s)$ - selects options given state $s$
     - **Termination Function**: $\beta_\omega(s)$ - probability of terminating option $\omega$ in state $s$
-    
+
     The option-critic policy gradient theorem states:
-    
+
     $$\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\Omega(\omega_t|s_t) A_\Omega(s_t, \omega_t) + \nabla_\theta \log \pi_\omega(a_t|s_t, \omega_t) A_\omega(s_t, \omega_t, a_t) \right]$$
-    
+
     Where $A_\Omega$ and $A_\omega$ are advantage functions for option selection and action selection respectively.
 
 !!! success "Key Properties"
@@ -45,16 +45,16 @@ family: "hierarchical-rl"
     import torch.optim as optim
     import torch.nn.functional as F
     import numpy as np
-    
+
     class OptionPolicyNetwork(nn.Module):
         """Option policy network that selects actions given an option."""
-        
+
         def __init__(self, state_size: int, option_size: int, action_size: int, hidden_size: int = 128):
             super(OptionPolicyNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size + option_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, action_size)
-        
+
         def forward(self, state: torch.Tensor, option: torch.Tensor) -> torch.Tensor:
             # Concatenate state and option
             combined = torch.cat([state, option], dim=-1)
@@ -62,31 +62,31 @@ family: "hierarchical-rl"
             x = F.relu(self.fc2(x))
             action_probs = F.softmax(self.fc3(x), dim=-1)
             return action_probs
-    
+
     class OptionSelectionNetwork(nn.Module):
         """Network that selects which option to execute."""
-        
+
         def __init__(self, state_size: int, option_size: int, hidden_size: int = 128):
             super(OptionSelectionNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, option_size)
-        
+
         def forward(self, state: torch.Tensor) -> torch.Tensor:
             x = F.relu(self.fc1(state))
             x = F.relu(self.fc2(x))
             option_probs = F.softmax(self.fc3(x), dim=-1)
             return option_probs
-    
+
     class TerminationNetwork(nn.Module):
         """Network that determines when to terminate options."""
-        
+
         def __init__(self, state_size: int, option_size: int, hidden_size: int = 128):
             super(TerminationNetwork, self).__init__()
             self.fc1 = nn.Linear(state_size + option_size, hidden_size)
             self.fc2 = nn.Linear(hidden_size, hidden_size)
             self.fc3 = nn.Linear(hidden_size, 1)
-        
+
         def forward(self, state: torch.Tensor, option: torch.Tensor) -> torch.Tensor:
             # Concatenate state and option
             combined = torch.cat([state, option], dim=-1)
@@ -94,11 +94,11 @@ family: "hierarchical-rl"
             x = F.relu(self.fc2(x))
             termination_prob = torch.sigmoid(self.fc3(x))
             return termination_prob
-    
+
     class OptionCriticAgent:
         """
         Option-Critic agent implementation.
-        
+
         Args:
             state_size: Dimension of state space
             option_size: Number of possible options
@@ -109,114 +109,114 @@ family: "hierarchical-rl"
             discount_factor: Discount factor gamma (default: 0.99)
             option_timeout: Maximum steps per option (default: 100)
         """
-        
+
         def __init__(self, state_size: int, option_size: int, action_size: int,
                      option_lr: float = 0.001, selection_lr: float = 0.001, termination_lr: float = 0.001,
                      discount_factor: float = 0.99, option_timeout: int = 100):
-            
+
             self.state_size = state_size
             self.option_size = option_size
             self.action_size = action_size
             self.gamma = discount_factor
             self.option_timeout = option_timeout
-            
+
             # Networks
             self.option_policy = OptionPolicyNetwork(state_size, option_size, action_size)
             self.option_selection = OptionSelectionNetwork(state_size, option_size)
             self.termination = TerminationNetwork(state_size, option_size)
-            
+
             # Optimizers
             self.option_optimizer = optim.Adam(self.option_policy.parameters(), lr=option_lr)
             self.selection_optimizer = optim.Adam(self.option_selection.parameters(), lr=selection_lr)
             self.termination_optimizer = optim.Adam(self.termination.parameters(), lr=termination_lr)
-            
+
             # Experience buffers
             self.option_buffer = []
             self.selection_buffer = []
             self.termination_buffer = []
-            
+
             # Current option tracking
             self.current_option = None
             self.option_steps = 0
-        
+
         def get_option(self, state: np.ndarray) -> tuple[int, float]:
             """Select option using option selection network."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             option_probs = self.option_selection(state_tensor)
-            
+
             # Sample option
             dist = torch.distributions.Categorical(option_probs)
             option = dist.sample()
             log_prob = dist.log_prob(option)
-            
+
             return option.item(), log_prob.item()
-        
+
         def get_action(self, state: np.ndarray, option: int) -> tuple[int, float]:
             """Get action using option policy given option."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             option_tensor = torch.FloatTensor([option]).unsqueeze(0)
-            
+
             action_probs = self.option_policy(state_tensor, option_tensor)
-            
+
             # Sample action
             dist = torch.distributions.Categorical(action_probs)
             action = dist.sample()
             log_prob = dist.log_prob(action)
-            
+
             return action.item(), log_prob.item()
-        
+
         def should_terminate(self, state: np.ndarray, option: int) -> bool:
             """Determine if current option should terminate."""
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
             option_tensor = torch.FloatTensor([option]).unsqueeze(0)
-            
+
             termination_prob = self.termination(state_tensor, option_tensor)
-            
+
             # Sample termination decision
             return torch.rand(1) < termination_prob
-        
-        def step(self, state: np.ndarray, action: int, reward: float, 
+
+        def step(self, state: np.ndarray, action: int, reward: float,
                 next_state: np.ndarray, done: bool) -> None:
             """Process one step and potentially update option."""
             # Store option transition
             if self.current_option is not None:
                 self.option_buffer.append((state, self.current_option, action, reward, next_state, done))
-            
+
             # Check if option should terminate
             self.option_steps += 1
-            if (self.option_steps >= self.option_timeout or 
+            if (self.option_steps >= self.option_timeout or
                 self.should_terminate(next_state, self.current_option) or done):
-                
+
                 # Store selection transition
                 if len(self.option_buffer) > 0:
                     total_reward = sum(r for _, _, _, r, _, _ in self.option_buffer)
                     self.selection_buffer.append((state, self.current_option, total_reward, next_state, done))
-                
+
                 # Select new option
                 if not done:
                     new_option, _ = self.get_option(next_state)
                     self.current_option = new_option
                     self.option_steps = 0
-                
+
                 # Clear option buffer
                 self.option_buffer.clear()
-        
+
         def update_networks(self) -> None:
             """Update all networks."""
             self.update_option_policy()
             self.update_option_selection()
             self.update_termination()
-        
+
         def update_option_policy(self) -> None:
             """Update option policy using stored experience."""
             if len(self.option_buffer) < 10:
                 return
-            
+
             # Sample batch from option buffer
             batch = np.random.choice(len(self.option_buffer), min(32, len(self.option_buffer)), replace=False)
-            
+
             states, options, actions, rewards, next_states, dones = zip(*[self.option_buffer[i] for i in batch])
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             options = torch.LongTensor(options)
@@ -224,82 +224,82 @@ family: "hierarchical-rl"
             rewards = torch.FloatTensor(rewards)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Compute advantages (simplified)
             advantages = rewards + self.gamma * ~dones - 0.5  # Baseline of 0.5
-            
+
             # Get current action probabilities
             action_probs = self.option_policy(states, F.one_hot(options, self.option_size).float())
             dist = torch.distributions.Categorical(action_probs)
             log_probs = dist.log_prob(actions)
-            
+
             # Policy gradient loss
             policy_loss = -(log_probs * advantages.detach()).mean()
-            
+
             # Update option policy
             self.option_optimizer.zero_grad()
             policy_loss.backward()
             self.option_optimizer.step()
-        
+
         def update_option_selection(self) -> None:
             """Update option selection policy."""
             if len(self.selection_buffer) < 10:
                 return
-            
+
             # Sample batch from selection buffer
             batch = np.random.choice(len(self.selection_buffer), min(32, len(self.selection_buffer)), replace=False)
-            
+
             states, options, rewards, next_states, dones = zip(*[self.selection_buffer[i] for i in batch])
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             options = torch.LongTensor(options)
             rewards = torch.FloatTensor(rewards)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Compute advantages (simplified)
             advantages = rewards + self.gamma * ~dones - 0.5  # Baseline of 0.5
-            
+
             # Get current option probabilities
             option_probs = self.option_selection(states)
             dist = torch.distributions.Categorical(option_probs)
             log_probs = dist.log_prob(options)
-            
+
             # Policy gradient loss
             policy_loss = -(log_probs * advantages.detach()).mean()
-            
+
             # Update option selection
             self.selection_optimizer.zero_grad()
             policy_loss.backward()
             self.selection_optimizer.step()
-        
+
         def update_termination(self) -> None:
             """Update termination function."""
             if len(self.option_buffer) < 10:
                 return
-            
+
             # Sample batch from option buffer
             batch = np.random.choice(len(self.option_buffer), min(32, len(self.option_buffer)), replace=False)
-            
+
             states, options, actions, rewards, next_states, dones = zip(*[self.option_buffer[i] for i in batch])
-            
+
             # Convert to tensors
             states = torch.FloatTensor(states)
             options = torch.LongTensor(options)
             rewards = torch.FloatTensor(rewards)
             next_states = torch.FloatTensor(next_states)
             dones = torch.BoolTensor(dones)
-            
+
             # Termination target: 1 if done, 0 otherwise
             termination_targets = dones.float()
-            
+
             # Get current termination probabilities
             termination_probs = self.termination(states, F.one_hot(options, self.option_size).float()).squeeze()
-            
+
             # Binary cross entropy loss
             termination_loss = F.binary_cross_entropy(termination_probs, termination_targets)
-            
+
             # Update termination network
             self.termination_optimizer.zero_grad()
             termination_loss.backward()

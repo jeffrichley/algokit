@@ -17,14 +17,14 @@ family: "dynamic-programming"
 !!! math "Problem Definition"
     Given:
     - Two sequences: $X = x_1, x_2, ..., x_m$ and $Y = y_1, y_2, ..., y_n$
-    
+
     Find the longest sequence $Z = z_1, z_2, ..., z_k$ such that:
     - $Z$ is a subsequence of both $X$ and $Y$
     - $k$ is maximized
-    
+
     The LCS length can be computed using the recurrence relation:
-    
-    $$LCS(i,j) = \begin{cases} 
+
+    $$LCS(i,j) = \begin{cases}
     0 & \text{if } i = 0 \text{ or } j = 0 \\
     LCS(i-1,j-1) + 1 & \text{if } x_i = y_j \\
     \max(LCS(i-1,j), LCS(i,j-1)) & \text{if } x_i \neq y_j
@@ -42,14 +42,14 @@ family: "dynamic-programming"
     def longest_common_subsequence(text1: str, text2: str) -> int:
         """
         Find the length of the longest common subsequence between two strings.
-        
+
         Args:
             text1: First input string
             text2: Second input string
-            
+
         Returns:
             Length of the longest common subsequence
-            
+
         Example:
             >>> longest_common_subsequence("abcde", "ace")
             3  # "ace" is the LCS
@@ -57,10 +57,10 @@ family: "dynamic-programming"
             5  # "abcba" is the LCS
         """
         m, n = len(text1), len(text2)
-        
+
         # Initialize DP table: dp[i][j] = LCS length for text1[:i] and text2[:j]
         dp = [[0] * (n + 1) for _ in range(m + 1)]
-        
+
         # Fill the DP table
         for i in range(1, m + 1):
             for j in range(1, n + 1):
@@ -70,7 +70,7 @@ family: "dynamic-programming"
                 else:
                     # Characters don't match, take maximum of previous solutions
                     dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-        
+
         return dp[m][n]
     ```
 
@@ -81,40 +81,40 @@ family: "dynamic-programming"
         Space-optimized version using only two rows of DP table.
         """
         m, n = len(text1), len(text2)
-        
+
         # Use only two rows to save space
         prev = [0] * (n + 1)
         curr = [0] * (n + 1)
-        
+
         for i in range(1, m + 1):
             for j in range(1, n + 1):
                 if text1[i-1] == text2[j-1]:
                     curr[j] = prev[j-1] + 1
                 else:
                     curr[j] = max(prev[j], curr[j-1])
-            
+
             # Swap rows for next iteration
             prev, curr = curr, prev
-        
+
         return prev[n]
     ```
 
 === "Recursive with Memoization"
     ```python
-    def lcs_memoized(text1: str, text2: str, i: int, j: int, 
+    def lcs_memoized(text1: str, text2: str, i: int, j: int,
                      memo: dict[tuple[int, int], int] = None) -> int:
         """
         Recursive solution with memoization for LCS.
         """
         if memo is None:
             memo = {}
-        
+
         if (i, j) in memo:
             return memo[(i, j)]
-        
+
         if i == 0 or j == 0:
             return 0
-        
+
         if text1[i-1] == text2[j-1]:
             result = lcs_memoized(text1, text2, i-1, j-1, memo) + 1
         else:
@@ -122,7 +122,7 @@ family: "dynamic-programming"
                 lcs_memoized(text1, text2, i-1, j, memo),
                 lcs_memoized(text1, text2, i, j-1, memo)
             )
-        
+
         memo[(i, j)] = result
         return result
     ```

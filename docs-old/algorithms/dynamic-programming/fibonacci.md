@@ -18,7 +18,7 @@ family: "dynamic-programming"
     The Fibonacci sequence is defined by the recurrence relation:
 
     $$
-    F(n) = \begin{cases} 
+    F(n) = \begin{cases}
     0 & \text{if } n = 0 \\
     1 & \text{if } n = 1 \\
     F(n-1) + F(n-2) & \text{if } n > 1
@@ -38,14 +38,14 @@ family: "dynamic-programming"
         """Calculate the nth Fibonacci number using dynamic programming."""
         if n <= 1:
             return n
-        
+
         # Initialize base cases
         prev, curr = 0, 1
-        
+
         # Build up the sequence iteratively
         for _ in range(2, n + 1):
             prev, curr = curr, prev + curr
-        
+
         return curr
     ```
 
@@ -55,13 +55,13 @@ family: "dynamic-programming"
         """Calculate the nth Fibonacci number using memoization."""
         if memo is None:
             memo = {}
-        
+
         if n in memo:
             return memo[n]
-        
+
         if n <= 1:
             return n
-        
+
         memo[n] = fibonacci_memoized(n - 1, memo) + fibonacci_memoized(n - 2, memo)
         return memo[n]
     ```
@@ -73,7 +73,7 @@ family: "dynamic-programming"
         prev, curr = 0, 1
         yield prev
         yield curr
-        
+
         while True:
             prev, curr = curr, prev + curr
             yield curr

@@ -51,9 +51,9 @@
 ## Complexity Analysis
 
 !!! abstract "Complexity Overview"
-    **Time**: {{ family.complexity.typical_time }}  
+    **Time**: {{ family.complexity.typical_time }}
     **Space**: {{ family.complexity.typical_space }}
-    
+
     {% if family.complexity.notes %}
     *{{ family.complexity.notes }}*
     {% endif %}
@@ -142,7 +142,7 @@
 
 {% if tags %}
 {% for tag in tags %}
-[:material-tag: {{ tag.name }}]({{ tag.id }}){: .md-tag .md-tag--primary } {{ tag.description }}
+:material-tag: **{{ tag.name }}**{: .md-tag .md-tag--primary } {{ tag.description }}
 {% endfor %}
 {% else %}
 !!! info "No Tags"

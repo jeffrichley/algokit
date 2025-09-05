@@ -1,12 +1,12 @@
-"""
-Utility functions for AlgoKit documentation macros.
+"""Utility functions for AlgoKit documentation macros.
 
 This module provides helper functions and utilities used by the navigation
 and content generation macros.
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any
+
 from .data_loader import get_algorithm, get_family
 
 
@@ -68,7 +68,7 @@ def generate_slug(text: str) -> str:
     return slug
 
 
-def get_algorithm_metadata(algorithm_key: str) -> Dict[str, Any]:
+def get_algorithm_metadata(algorithm_key: str) -> dict[str, Any]:
     """Get comprehensive metadata for an algorithm.
 
     Args:
@@ -108,7 +108,7 @@ def get_algorithm_metadata(algorithm_key: str) -> Dict[str, Any]:
     }
 
 
-def get_family_metadata(family_key: str) -> Dict[str, Any]:
+def get_family_metadata(family_key: str) -> dict[str, Any]:
     """Get comprehensive metadata for an algorithm family.
 
     Args:
@@ -168,7 +168,7 @@ def validate_family_key(family_key: str) -> bool:
 
 def get_related_content(
     algorithm_key: str, max_items: int = 5
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> dict[str, list[dict[str, Any]]]:
     """Get related content for an algorithm.
 
     Args:

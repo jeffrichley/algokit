@@ -1,10 +1,8 @@
-"""
-Generate algorithm pages for algorithm documentation.
-"""
+"""Generate algorithm pages for algorithm documentation."""
+
+from pathlib import Path
 
 import mkdocs_gen_files
-import yaml
-from pathlib import Path
 
 
 def generate_algorithm_pages():
@@ -13,10 +11,9 @@ def generate_algorithm_pages():
 
     # Import the macro system to use template rendering
     import sys
-    from pathlib import Path
 
     sys.path.append(str(Path(__file__).parent.parent))
-    from macros import load_family_data, load_algorithm_data, discover_families
+    from macros import discover_families, load_algorithm_data, load_family_data
 
     # Discover and generate algorithm pages
     for family_id in discover_families():

@@ -18,9 +18,9 @@ family: "reinforcement-learning"
 
 !!! math "SARSA Update Rule"
     The core SARSA update rule follows the temporal difference learning equation:
-    
+
     $$Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[ r_t + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t) \right]$$
-    
+
     Where:
     - $Q(s, a)$ is the Q-value for state $s$ and action $a$
     - $\alpha$ is the learning rate (controls update magnitude)
@@ -40,11 +40,11 @@ family: "reinforcement-learning"
     ```python
     import numpy as np
     from typing import Dict, Tuple, Any
-    
+
     class SARSAAgent:
         """
         SARSA agent implementation.
-        
+
         Args:
             state_size: Number of possible states
             action_size: Number of possible actions
@@ -52,8 +52,8 @@ family: "reinforcement-learning"
             discount_factor: Discount factor gamma (default: 0.95)
             epsilon: Exploration rate for epsilon-greedy (default: 0.1)
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1):
             self.state_size = state_size
@@ -61,14 +61,14 @@ family: "reinforcement-learning"
             self.alpha = learning_rate
             self.gamma = discount_factor
             self.epsilon = epsilon
-            
+
             # Initialize Q-table with zeros
             self.q_table = np.zeros((state_size, action_size))
-            
+
             # Store current state and action for SARSA update
             self.current_state = None
             self.current_action = None
-        
+
         def get_action(self, state: int) -> int:
             """Choose action using epsilon-greedy policy."""
             if np.random.random() < self.epsilon:
@@ -77,13 +77,13 @@ family: "reinforcement-learning"
             else:
                 # Exploitation: best action according to Q-table
                 return np.argmax(self.q_table[state])
-        
+
         def start_episode(self, state: int) -> int:
             """Start a new episode and return first action."""
             self.current_state = state
             self.current_action = self.get_action(state)
             return self.current_action
-        
+
         def step(self, reward: float, next_state: int, done: bool) -> int:
             """Take a step in the environment and return next action."""
             if self.current_state is not None and self.current_action is not None:
@@ -95,20 +95,20 @@ family: "reinforcement-learning"
                     # Choose next action for SARSA update
                     next_action = self.get_action(next_state)
                     next_q = self.q_table[next_state, next_action]
-                
+
                 # SARSA update rule
                 current_q = self.q_table[self.current_state, self.current_action]
                 new_q = current_q + self.alpha * (reward + self.gamma * next_q - current_q)
                 self.q_table[self.current_state, self.current_action] = new_q
-                
+
                 # Update current state and action
                 self.current_state = next_state
                 self.current_action = next_action if not done else None
-                
+
                 return next_action if not done else None
-            
+
             return None
-        
+
         def get_policy(self) -> np.ndarray:
             """Extract greedy policy from Q-table."""
             return np.argmax(self.q_table, axis=1)
@@ -120,8 +120,8 @@ family: "reinforcement-learning"
         """
         Expected SARSA agent that uses expected value of next state.
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1):
             self.state_size = state_size
@@ -129,32 +129,32 @@ family: "reinforcement-learning"
             self.alpha = learning_rate
             self.gamma = discount_factor
             self.epsilon = epsilon
-            
+
             # Initialize Q-table with zeros
             self.q_table = np.zeros((state_size, action_size))
-        
+
         def get_action(self, state: int) -> int:
             """Choose action using epsilon-greedy policy."""
             if np.random.random() < self.epsilon:
                 return np.random.randint(self.action_size)
             else:
                 return np.argmax(self.q_table[state])
-        
+
         def update(self, state: int, action: int, reward: float,
                   next_state: int, done: bool) -> None:
             """Update Q-value using Expected SARSA."""
             current_q = self.q_table[state, action]
-            
+
             if done:
                 next_q = 0
             else:
                 # Calculate expected Q-value of next state
                 next_q_values = self.q_table[next_state]
                 max_q = np.max(next_q_values)
-                
+
                 # Expected value considering epsilon-greedy policy
                 next_q = (1 - self.epsilon) * max_q + (self.epsilon / self.action_size) * np.sum(next_q_values)
-            
+
             # Expected SARSA update
             new_q = current_q + self.alpha * (reward + self.gamma * next_q - current_q)
             self.q_table[state, action] = new_q
@@ -166,8 +166,8 @@ family: "reinforcement-learning"
         """
         SARSA with eligibility traces for better credit assignment.
         """
-        
-        def __init__(self, state_size: int, action_size: int, 
+
+        def __init__(self, state_size: int, action_size: int,
                      learning_rate: float = 0.1, discount_factor: float = 0.95,
                      epsilon: float = 0.1, lambda_param: float = 0.9):
             self.state_size = state_size
@@ -176,18 +176,18 @@ family: "reinforcement-learning"
             self.gamma = discount_factor
             self.epsilon = epsilon
             self.lambda_param = lambda_param
-            
+
             # Initialize Q-table and eligibility traces
             self.q_table = np.zeros((state_size, action_size))
             self.eligibility_traces = np.zeros((state_size, action_size))
-        
+
         def get_action(self, state: int) -> int:
             """Choose action using epsilon-greedy policy."""
             if np.random.random() < self.epsilon:
                 return np.random.randint(self.action_size)
             else:
                 return np.argmax(self.q_table[state])
-        
+
         def update(self, state: int, action: int, reward: float,
                   next_state: int, next_action: int, done: bool) -> None:
             """Update Q-values using SARSA(λ)."""
@@ -196,12 +196,12 @@ family: "reinforcement-learning"
                 target = reward
             else:
                 target = reward + self.gamma * self.q_table[next_state, next_action]
-            
+
             td_error = target - self.q_table[state, action]
-            
+
             # Update eligibility traces
             self.eligibility_traces[state, action] += 1
-            
+
             # Update all Q-values based on eligibility traces
             for s in range(self.state_size):
                 for a in range(self.action_size):
