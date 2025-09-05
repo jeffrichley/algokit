@@ -11,11 +11,16 @@ family: "{{ family.slug }}"
     **Family:** {{ family.name }}
     **Status:** {% if algo.status and algo.status.current == 'complete' %}✅ Complete{% elif algo.status and algo.status.current == 'in-progress' %}🚧 In Progress{% else %}📋 Planned{% endif %}
 
+!!! tip "Need Help Understanding This Algorithm?"
+    {{ chatgpt_widget(algo.name, context='Explain the ' + algo.name + ' algorithm, including its definition, intuition, and why it is important in ' + family.name + '.', button_text='🤖 Ask ChatGPT about ' + algo.name) | safe }}
+
 !!! abstract "Overview"
     {{ algo.description }}
 
 {% if algo.formulation %}
 ## Mathematical Formulation
+
+{{ chatgpt_widget(algo.name, context='Walk me through the mathematical formulation of ' + algo.name + ', including its recurrence relation, closed form (if any), and growth rate.', button_text='🧮 Ask ChatGPT about Mathematical Formulation') | safe }}
 
 {% if algo.formulation.recurrence_relation %}
 !!! math "Recurrence Relation"
@@ -63,6 +68,8 @@ family: "{{ family.slug }}"
 {% if algo.properties %}
 ## Key Properties
 
+{{ chatgpt_widget(algo.name, context='What are the key properties of ' + algo.name + ', such as optimal substructure, overlapping subproblems, and any unique mathematical insights?', button_text='🔑 Ask ChatGPT about Key Properties') | safe }}
+
 <div class="grid cards" markdown>
 
 {% for prop in algo.properties %}
@@ -78,6 +85,8 @@ family: "{{ family.slug }}"
 
 {% if algo.implementations %}
 ## Implementation Approaches
+
+{{ chatgpt_widget(algo.name, context='Compare different implementation approaches for ' + algo.name + ' (e.g. naive recursion, memoization, iterative dynamic programming). Discuss pros, cons, and use cases.', button_text='💻 Ask ChatGPT about Implementation') | safe }}
 
 {% for impl in algo.implementations %}
 === "{{ impl.name }}"
@@ -125,6 +134,8 @@ family: "{{ family.slug }}"
 {% if algo.complexity and algo.complexity.analysis %}
 ## Complexity Analysis
 
+{{ chatgpt_widget(algo.name, context='Explain the time and space complexity of ' + algo.name + ' across its common implementations, and describe when each approach is most efficient.', button_text='📊 Ask ChatGPT about Complexity') | safe }}
+
 !!! example "**Time & Space Complexity Comparison**"
     | Approach | Time Complexity | Space Complexity | Notes |
     |----------|-----------------|------------------|-------|
@@ -140,6 +151,8 @@ family: "{{ family.slug }}"
 
 {% if algo.applications %}
 ## Use Cases & Applications
+
+{{ chatgpt_widget(algo.name, context='Give real-world applications of ' + algo.name + ' in fields like computer science, finance, biology, and design. Why does it matter outside of theory?', button_text='🌍 Ask ChatGPT about Applications') | safe }}
 
 !!! grid "Application Categories"
     {% for app in algo.applications %}
@@ -221,6 +234,14 @@ family: "{{ family.slug }}"
     Try implementing the different approaches yourself! This progression will give you deep insight into the algorithm's principles and applications.
 
     <span class="twemoji">{% include "icons/lightbulb.svg" %}</span> **Pro Tip**: Start with the simplest implementation and gradually work your way up to more complex variants.
+
+!!! success "Need More Help? Ask ChatGPT!"
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;">
+        {{ chatgpt_widget(algo.name, context='Explain ' + algo.name + ' like I am 5 years old, using a fun and simple analogy.', button_text='🧒 Explain Simply', style='secondary') | safe }}
+        {{ chatgpt_widget(algo.name, context='Give me practice problems and coding exercises to help me master ' + algo.name + '.', button_text='📝 Practice Problems', style='secondary') | safe }}
+        {{ chatgpt_widget(algo.name, context='Compare ' + algo.name + ' to other algorithms in the ' + family.name + ' family. Highlight similarities, differences, and when to use each.', button_text='🔀 Compare Algorithms', style='secondary') | safe }}
+        {{ chatgpt_widget(algo.name, context='Help me debug a ' + algo.name + ' implementation. What are the most common mistakes students make, and how can I fix them?', button_text='🐛 Debug Help', style='secondary') | safe }}
+    </div>
 {% endif %}
 
 ## Navigation

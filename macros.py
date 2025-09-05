@@ -5,6 +5,7 @@ from YAML data using Jinja2 templates.
 """
 
 import re
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -306,10 +307,34 @@ def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
         with open(template_file, encoding="utf-8") as f:
             template_content = f.read()
 
+        # Create a reference to the global chatgpt_widget macro function
+        def chatgpt_widget(algorithm: str, section: str = None, context: str = None, button_text: str = None, style: str = "primary") -> str:
+            """Generate a complete ChatGPT button widget."""
+            # Build context parts - include algorithm name for better context
+            parts = [f"Algorithm: {algorithm}"]
+            if section:
+                parts.append(f"Section: {section}")
+            if context:
+                parts.append(context)
+
+            # Generate URL with properly structured query
+            query = ' | '.join(parts)
+            url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
+
+            # Default button text
+            if not button_text:
+                button_text = f"🤖 Ask ChatGPT about {algorithm}"
+
+            # Generate markdown link that will be styled by Material theme
+            return f'<a href="{url}" target="_blank" rel="noopener noreferrer" class="md-button md-button--{style}">{button_text}</a>'
+
         # Create template from string content
         template = env.from_string(template_content)
         return template.render(
-            algo=algorithm_data, family=family_data, algorithms=algorithms
+            algo=algorithm_data,
+            family=family_data,
+            algorithms=algorithms,
+            chatgpt_widget=chatgpt_widget
         )
     except Exception as e:
         import traceback
@@ -584,10 +609,36 @@ def define_env(env):
 
         # Load and render template
         try:
+            print(f"DEBUG: Loading template from: {template_dir}")
+            print(f"DEBUG: Template file exists: {(template_dir / 'algorithm_page.md').exists()}")
             template = env_jinja.get_template("algorithm_page.md")
+
+            # Create a reference to the global chatgpt_widget macro function
+            def chatgpt_widget(algorithm: str, section: str = None, context: str = None, button_text: str = None, style: str = "primary") -> str:
+                """Generate a complete ChatGPT button widget."""
+                # Build context parts - include algorithm name for better context
+                parts = [f"Algorithm: {algorithm}"]
+                if section:
+                    parts.append(f"Section: {section}")
+                if context:
+                    parts.append(context)
+
+                # Generate URL with properly structured query
+                query = ' | '.join(parts)
+                url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
+
+                # Default button text
+                if not button_text:
+                    button_text = f"🤖 Ask ChatGPT about {algorithm}"
+
+                # Generate markdown link that will be styled by Material theme
+                return f'<a href="{url}" target="_blank" rel="noopener noreferrer" class="md-button md-button--{style}">{button_text}</a>'
+
             return template.render(
                 algo=algorithm_data,
                 family=family_data,
+                algorithms=algorithms,
+                chatgpt_widget=chatgpt_widget,
                 env={
                     "get": lambda key, default=None: {
                         "AMAZON_AFFILIATE_ID": "your-affiliate-id"
@@ -736,6 +787,44 @@ def define_env(env):
 """
 
         return grid_html
+
+    @env.macro
+    def chatgpt_widget(
+        algorithm: str,
+        section: str = None,
+        context: str = None,
+        button_text: str = None,
+        style: str = "primary"
+    ) -> str:
+        """Generate a complete ChatGPT button widget.
+
+        Args:
+            algorithm: The algorithm name (e.g., 'Fibonacci', 'Dynamic Programming')
+            section: Optional section context (e.g., 'implementation', 'complexity')
+            context: Optional additional context or prompt
+            button_text: Custom button text (defaults to "🤖 Ask ChatGPT about {algorithm}")
+            style: Button style - 'primary', 'secondary', or 'accent'
+
+        Returns:
+            HTML string for the ChatGPT button widget
+        """
+        # Build context parts - include algorithm name for better context
+        parts = [f"Algorithm: {algorithm}"]
+        if section:
+            parts.append(f"Section: {section}")
+        if context:
+            parts.append(context)
+
+        # Generate URL with properly structured query
+        query = ' | '.join(parts)
+        url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
+
+        # Default button text
+        if not button_text:
+            button_text = f"🤖 Ask ChatGPT about {algorithm}"
+
+        # Generate markdown link that will be styled by Material theme
+        return f'<a href="{url}" target="_blank" rel="noopener noreferrer" class="md-button md-button--{style}">{button_text}</a>'
 
     # Add a simple test variable
     env.variables["current_date"] = "January 4, 2025"

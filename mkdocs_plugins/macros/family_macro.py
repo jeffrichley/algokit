@@ -5,6 +5,7 @@ family overview pages using Jinja2 templates and YAML data.
 """
 
 from pathlib import Path
+import urllib.parse
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -91,6 +92,52 @@ def render_family_page(family_id: str) -> str:
         )
     except Exception as e:
         return f"**Error:** Template rendering error: {str(e)}"
+
+
+def chatgpt_widget(
+    algorithm: str,
+    section: str = None,
+    context: str = None,
+    button_text: str = None,
+    style: str = "primary"
+) -> str:
+    """Generate a complete ChatGPT button widget.
+
+    Args:
+        algorithm: The algorithm name (e.g., 'Fibonacci', 'Dynamic Programming')
+        section: Optional section context (e.g., 'implementation', 'complexity')
+        context: Optional additional context or prompt
+        button_text: Custom button text (defaults to "🤖 Ask ChatGPT about {algorithm}")
+        style: Button style - 'primary', 'secondary', or 'accent'
+
+    Returns:
+        HTML string for the ChatGPT button widget
+    """
+    # Build context parts
+    parts = [f"Algorithm: {algorithm}"]
+    if section:
+        parts.append(f"Section: {section}")
+    if context:
+        parts.append(context)
+
+    # Generate URL
+    query = ' | '.join(parts)
+    url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
+
+    # Default button text
+    if not button_text:
+        button_text = f"🤖 Ask ChatGPT about {algorithm}"
+
+    # Generate HTML with proper Material Design styling
+    return f'''
+    <a href="{url}"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="md-button md-button--{style}"
+       style="margin: 8px 4px; text-decoration: none;">
+        {button_text}
+    </a>
+    '''
 
 
 def family_page(family_id: str) -> str:
