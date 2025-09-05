@@ -1,0 +1,314 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: coin-change
+name: Coin Change Problem
+family_id: dp
+aliases: [coin_change, minimum_coins]
+order: 20
+
+# Brief one-sentence summary for cards and navigation
+summary: "Find the minimum number of coins needed to make a given amount using dynamic programming."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  The Coin Change problem is a classic dynamic programming challenge that asks: given a set of coin denominations 
+  and a target amount, what is the minimum number of coins needed to make up that amount? This problem demonstrates 
+  the power of dynamic programming in solving optimization problems with overlapping subproblems.
+  
+  While a greedy approach might work for some coin sets (like US coins), it fails for arbitrary denominations. 
+  Dynamic programming provides an elegant solution that guarantees the optimal result by building solutions from 
+  smaller subproblems.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - A set of coin denominations: C = {c₁, c₂, ..., cₙ}
+    - A target amount: A
+    
+    Find the minimum number of coins needed to make amount A:
+    
+    min Σᵢ₌₁ⁿ xᵢ subject to Σᵢ₌₁ⁿ cᵢxᵢ = A
+    
+    Where xᵢ represents the number of coins of denomination cᵢ.
+  
+  key_properties:
+    - name: "Optimal Substructure"
+      formula: "The optimal solution for amount A contains optimal solutions for amounts A - cᵢ"
+      description: "Each optimal solution builds on smaller optimal solutions"
+    - name: "Overlapping Subproblems"
+      formula: "The same subproblems are solved multiple times"
+      description: "Dynamic programming avoids redundant calculations"
+    - name: "State Transition"
+      formula: "dp[A] = min(dp[A - cᵢ] + 1) for all valid coins cᵢ"
+      description: "Recurrence relation for building solutions"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal Substructure"
+    description: "The optimal solution for amount A contains optimal solutions for amounts A - cᵢ"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "The same subproblems are solved multiple times"
+    importance: "fundamental"
+  - name: "Greedy vs DP"
+    description: "Greedy works for some coin sets but fails for arbitrary denominations"
+    importance: "educational"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "dynamic_programming"
+    name: "Dynamic Programming (Recommended)"
+    description: "Optimal solution using bottom-up DP approach"
+    complexity:
+      time: "O(amount × coins)"
+      space: "O(amount)"
+    code: |
+      def coin_change(coins: list[int], amount: int) -> int:
+          """
+          Find minimum number of coins needed to make the given amount.
+          
+          Args:
+              coins: List of available coin denominations
+              amount: Target amount to make
+              
+          Returns:
+              Minimum number of coins needed, or -1 if impossible
+          """
+          if amount == 0:
+              return 0
+          
+          # Initialize DP array with infinity
+          dp = [float('inf')] * (amount + 1)
+          dp[0] = 0
+          
+          # Build solutions for all amounts from 1 to target
+          for current_amount in range(1, amount + 1):
+              for coin in coins:
+                  if coin <= current_amount:
+                      dp[current_amount] = min(
+                          dp[current_amount], 
+                          dp[current_amount - coin] + 1
+                      )
+          
+          return dp[amount] if dp[amount] != float('inf') else -1
+    advantages:
+      - "Optimal solution, guaranteed correct"
+      - "Handles arbitrary coin denominations"
+      - "Clear and straightforward implementation"
+    disadvantages:
+      - "Requires building solutions for all amounts up to target"
+      - "Can be memory-intensive for large amounts"
+
+  - type: "memoized_recursion"
+    name: "Memoized Recursion (Alternative)"
+    description: "Top-down approach with caching"
+    complexity:
+      time: "O(amount × coins)"
+      space: "O(amount)"
+    code: |
+      def coin_change_memoized(coins: list[int], amount: int, memo: dict[int, int] = None) -> int:
+          """
+          Recursive solution with memoization for coin change problem.
+          """
+          if memo is None:
+              memo = {}
+          
+          if amount in memo:
+              return memo[amount]
+          
+          if amount == 0:
+              return 0
+          
+          if amount < 0:
+              return -1
+          
+          min_coins = float('inf')
+          for coin in coins:
+              result = coin_change_memoized(coins, amount - coin, memo)
+              if result != -1:
+                  min_coins = min(min_coins, result + 1)
+          
+          memo[amount] = min_coins if min_coins != float('inf') else -1
+          return memo[amount]
+    advantages:
+      - "Natural recursive structure"
+      - "Only computes needed subproblems"
+      - "Good for learning memoization"
+    disadvantages:
+      - "Uses more memory for memoization"
+      - "Potential stack overflow for large amounts"
+
+  - type: "greedy"
+    name: "Greedy Approach (Limited Use)"
+    description: "Fast but may not be optimal for arbitrary coin sets"
+    complexity:
+      time: "O(coins log coins)"
+      space: "O(1)"
+    code: |
+      def coin_change_greedy(coins: list[int], amount: int) -> int:
+          """
+          Greedy approach - only works for certain coin sets.
+          WARNING: This may not give optimal results for arbitrary denominations!
+          """
+          coins.sort(reverse=True)  # Use largest coins first
+          total_coins = 0
+          remaining = amount
+          
+          for coin in coins:
+              if remaining >= coin:
+                  count = remaining // coin
+                  total_coins += count
+                  remaining -= count * coin
+          
+          return total_coins if remaining == 0 else -1
+    advantages:
+      - "Very fast execution"
+      - "Simple implementation"
+      - "Works for standard coin sets (US coins)"
+    disadvantages:
+      - "May not give optimal results"
+      - "Fails for arbitrary coin denominations"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Dynamic Programming"
+      time: "O(amount × coins)"
+      space: "O(amount)"
+      notes: "Optimal solution, guaranteed correct"
+    - approach: "Memoized Recursion"
+      time: "O(amount × coins)"
+      space: "O(amount)"
+      notes: "Same complexity, recursive structure"
+    - approach: "Greedy"
+      time: "O(coins log coins)"
+      space: "O(1)"
+      notes: "Fast but may not be optimal"
+  
+  performance_notes:
+    - "DP approach is optimal but requires building solutions for all amounts up to target"
+    - "Memoization useful when you need solutions for multiple amounts"
+    - "Greedy approach only works for coin sets with specific properties (like US coins)"
+    - "Large amounts can make DP memory-intensive"
+
+# Applications and use cases
+applications:
+  - category: "Financial Systems"
+    examples:
+      - "Vending Machines: Optimal coin dispensing"
+      - "Cash Registers: Minimum coin change calculation"
+      - "Banking: ATM cash withdrawal optimization"
+      - "Payment Processing: Efficient change distribution"
+  
+  - category: "Computer Science"
+    examples:
+      - "Algorithm Design: Dynamic programming principles"
+      - "Optimization Problems: Resource allocation"
+      - "Game Development: Score systems and rewards"
+      - "Data Structures: Understanding state management"
+  
+  - category: "Real-World Scenarios"
+    examples:
+      - "Retail: Cashier change optimization"
+      - "Transportation: Fare collection systems"
+      - "Gaming: Point systems and achievements"
+      - "Manufacturing: Part quantity optimization"
+  
+  - category: "Educational Value"
+    examples:
+      - "Dynamic Programming: Understanding optimal substructure"
+      - "State Transitions: Learning recurrence relations"
+      - "Optimization: Comparing greedy vs optimal approaches"
+      - "Problem Solving: Breaking complex problems into subproblems"
+
+# Educational value and learning objectives
+educational_value:
+  - "Dynamic Programming: Perfect example of optimal substructure and overlapping subproblems"
+  - "Algorithm Design: Shows when greedy approaches fail and DP succeeds"
+  - "State Management: Demonstrates building solutions from smaller subproblems"
+  - "Optimization: Illustrates the trade-off between correctness and efficiency"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "production_ready"
+  test_coverage: "comprehensive"
+  documentation_quality: "excellent"
+  
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_programming/coin_change.py"
+      description: "Main implementation with all variants"
+    - path: "tests/unit/dynamic_programming/test_coin_change.py"
+      description: "Comprehensive test suite"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Cormen, T. H., et al."
+        year: "2009"
+        title: "Introduction to Algorithms"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03384-8"
+      - author: "Kleinberg, J., & Tardos, É."
+        year: "2006"
+        title: "Algorithm Design"
+        publisher: "Pearson"
+        note: "ISBN 978-0-321-29535-4"
+  
+  - category: "Dynamic Programming"
+    items:
+      - author: "Bellman, R."
+        year: "1957"
+        title: "Dynamic Programming"
+        publisher: "Princeton University Press"
+      - author: "Dreyfus, S. E., & Law, A. M."
+        year: "1977"
+        title: "The Art and Theory of Dynamic Programming"
+        publisher: "Academic Press"
+  
+  - category: "Online Resources"
+    items:
+      - title: "Coin Change Problem"
+        url: "https://leetcode.com/problems/coin-change/"
+        note: "LeetCode problem on coin change"
+      - title: "Dynamic Programming"
+        url: "https://www.geeksforgeeks.org/dynamic-programming/"
+        note: "GeeksforGeeks tutorial on dynamic programming"
+      - title: "Coin Change"
+        url: "https://en.wikipedia.org/wiki/Change-making_problem"
+        note: "Wikipedia article on coin change problem"
+  
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Official Documentation"
+        url: "https://docs.python.org/3/"
+        note: "Python language reference"
+      - title: "Dynamic Programming Patterns"
+        url: "https://leetcode.com/discuss/general-discussion/458695/dynamic-programming-patterns"
+        note: "LeetCode discussion on DP patterns"
+      - title: "Algorithm Visualization"
+        url: "https://visualgo.net/en/dp"
+        note: "Interactive algorithm visualization"
+
+# Tags for categorization and search
+tags:
+  - "dp"
+  - "optimization"
+  - "coins"
+  - "minimum"
+  - "greedy"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "fibonacci"
+    relationship: "same_family"
+    description: "Another classic DP problem with simpler structure"
+  - slug: "knapsack"
+    relationship: "same_family"
+    description: "More complex DP problem with constraints"

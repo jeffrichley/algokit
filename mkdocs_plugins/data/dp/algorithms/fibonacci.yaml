@@ -1,0 +1,315 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: fibonacci
+name: Fibonacci Sequence
+family_id: dp
+aliases: [fib, fibonacci_sequence]
+order: 10
+
+# Brief one-sentence summary for cards and navigation
+summary: "Classic sequence where each number is the sum of the two preceding ones, demonstrating recursion, memoization, and dynamic programming."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  The Fibonacci sequence is a classic problem in computer science and mathematics that demonstrates the power of dynamic programming. 
+  The sequence is defined as: each number is the sum of the two preceding ones, usually starting with 0 and 1. 
+  The sequence begins: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, ...
+  
+  While this can be solved with simple recursion, the naive approach has exponential time complexity due to repeated calculations. 
+  Dynamic programming provides an elegant solution that reduces this to linear time complexity.
+
+# Problem formulation and mathematical details
+formulation:
+  recurrence_relation: |
+    F(n) = 
+      0 if n = 0
+      1 if n = 1
+      F(n-1) + F(n-2) if n > 1
+  
+  mathematical_properties:
+    - name: "Golden Ratio"
+      formula: "F(n+1)/F(n) ≈ φ = 1.618033988749..."
+      description: "As n approaches infinity, the ratio approaches the golden ratio"
+    - name: "Closed Form (Binet's Formula)"
+      formula: "F(n) = (φ^n - (-φ)^(-n)) / √5"
+      description: "Direct calculation without recursion"
+    - name: "Growth Rate"
+      formula: "F(n) = O(φ^n)"
+      description: "Exponential growth with golden ratio base"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal Substructure"
+    description: "Each Fibonacci number depends on the previous two"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "Same subproblems calculated multiple times in naive recursion"
+    importance: "fundamental"
+  - name: "Mathematical Beauty"
+    description: "Connects to golden ratio, nature, and art"
+    importance: "educational"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "iterative"
+    name: "Iterative Dynamic Programming"
+    description: "Recommended approach - linear time, constant space"
+    complexity:
+      time: "O(n)"
+      space: "O(1)"
+    code: |
+      def fibonacci(n: int) -> int:
+          """Calculate the nth Fibonacci number using dynamic programming."""
+          if n <= 1:
+              return n
+          
+          # Initialize base cases
+          prev, curr = 0, 1
+          
+          # Build up the sequence iteratively
+          for _ in range(2, n + 1):
+              prev, curr = curr, prev + curr
+          
+          return curr
+    advantages:
+      - "Optimal time and space complexity"
+      - "No recursion stack issues"
+      - "Easy to understand and implement"
+    disadvantages:
+      - "Less intuitive than recursive approach"
+
+  - type: "memoized"
+    name: "Memoized Recursion"
+    description: "Top-down approach with caching - demonstrates memoization pattern"
+    complexity:
+      time: "O(n)"
+      space: "O(n)"
+    code: |
+      def fibonacci_memoized(n: int, memo: dict[int, int] = None) -> int:
+          """Calculate the nth Fibonacci number using memoization."""
+          if memo is None:
+              memo = {}
+          
+          if n in memo:
+              return memo[n]
+          
+          if n <= 1:
+              return n
+          
+          memo[n] = fibonacci_memoized(n - 1, memo) + fibonacci_memoized(n - 2, memo)
+          return memo[n]
+    advantages:
+      - "Natural recursive structure"
+      - "Only computes needed subproblems"
+      - "Good for learning memoization"
+    disadvantages:
+      - "Uses more memory"
+      - "Potential stack overflow for large n"
+
+  - type: "generator"
+    name: "Generator Pattern"
+    description: "Produces Fibonacci sequence indefinitely"
+    complexity:
+      time: "O(1) per number"
+      space: "O(1)"
+    code: |
+      def fibonacci_generator():
+          """Generate Fibonacci numbers indefinitely."""
+          prev, curr = 0, 1
+          yield prev
+          yield curr
+          
+          while True:
+              prev, curr = curr, prev + curr
+              yield curr
+    advantages:
+      - "Memory efficient for large sequences"
+      - "Lazy evaluation"
+      - "Can generate infinite sequence"
+    disadvantages:
+      - "Not suitable for random access"
+      - "Requires iteration to get specific numbers"
+
+  - type: "naive_recursive"
+    name: "Naive Recursion"
+    description: "Simple but inefficient recursive approach"
+    complexity:
+      time: "O(2^n)"
+      space: "O(n)"
+    code: |
+      def fibonacci_naive(n: int) -> int:
+          """Calculate the nth Fibonacci number using naive recursion."""
+          if n <= 1:
+              return n
+          return fibonacci_naive(n - 1) + fibonacci_naive(n - 2)
+    advantages:
+      - "Simple and intuitive"
+      - "Direct translation of mathematical definition"
+    disadvantages:
+      - "Exponential time complexity"
+      - "Impractical for n > 40"
+      - "Repeated calculations"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Naive Recursion"
+      time: "O(2^n)"
+      space: "O(n)"
+      notes: "Exponential due to repeated calculations"
+    - approach: "Dynamic Programming (Iterative)"
+      time: "O(n)"
+      space: "O(1)"
+      notes: "Linear time with constant space - optimal"
+    - approach: "Memoization"
+      time: "O(n)"
+      space: "O(n)"
+      notes: "Linear time with space trade-off"
+    - approach: "Generator"
+      time: "O(1) per number"
+      space: "O(1)"
+      notes: "Constant time per number, constant space"
+  
+  performance_notes:
+    - "Naive recursion becomes impractical for n > 40"
+    - "Iterative approach is optimal for most use cases"
+    - "Memoization useful when you need multiple Fibonacci numbers"
+    - "Generator pattern best for sequence generation"
+
+# Applications and use cases
+applications:
+  - category: "Computer Science"
+    examples:
+      - "Algorithm Analysis: Demonstrates dynamic programming concepts"
+      - "Recursion Examples: Teaching recursive vs iterative approaches"
+      - "Performance Testing: Benchmarking different implementation strategies"
+      - "Memory Management: Understanding space-time trade-offs"
+  
+  - category: "Finance & Economics"
+    examples:
+      - "Fibonacci Retracements: Technical analysis in trading"
+      - "Growth Models: Population and economic growth patterns"
+      - "Risk Assessment: Modeling exponential growth scenarios"
+  
+  - category: "Biology & Nature"
+    examples:
+      - "Population Growth: Rabbit breeding models"
+      - "Spiral Patterns: Shells, flowers, and natural structures"
+      - "Genetic Sequences: DNA pattern analysis"
+  
+  - category: "Design & Architecture"
+    examples:
+      - "Golden Ratio: Aesthetic proportions in design"
+      - "Spiral Structures: Architectural and artistic applications"
+      - "Harmonic Balance: Musical scales and compositions"
+
+# Educational value and learning objectives
+educational_value:
+  - "Dynamic Programming: Perfect introduction to memoization"
+  - "Algorithm Design: Shows importance of avoiding repeated work"
+  - "Mathematical Induction: Demonstrates recursive problem-solving"
+  - "Optimization: Illustrates space-time complexity trade-offs"
+  - "Pattern Recognition: Understanding overlapping subproblems"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "production_ready"
+  test_coverage: "comprehensive"
+  documentation_quality: "excellent"
+  
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_programming/fibonacci.py"
+      description: "Main implementation with all variants"
+    - path: "tests/unit/dynamic_programming/test_fibonacci.py"
+      description: "Comprehensive test suite"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Knuth, D. E."
+        year: "1997"
+        title: "The Art of Computer Programming, Volume 1: Fundamental Algorithms"
+        publisher: "Addison-Wesley"
+        note: "ISBN 0-201-89683-4"
+      - author: "Cormen, T. H., et al."
+        year: "2009"
+        title: "Introduction to Algorithms"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03384-8"
+  
+  - category: "Historical & Cultural"
+    items:
+      - author: "Livio, M."
+        year: "2002"
+        title: "The Golden Ratio: The Story of Phi, the World's Most Astonishing Number"
+        publisher: "Broadway Books"
+        note: "ISBN 978-0-7679-0816-0"
+      - author: "Devlin, K."
+        year: "2011"
+        title: "The Man of Numbers: Fibonacci's Arithmetic Revolution"
+        publisher: "Walker & Company"
+        note: "ISBN 978-0-8027-7812-3"
+  
+  - category: "Online Resources"
+    items:
+      - title: "Fibonacci Number"
+        url: "https://en.wikipedia.org/wiki/Fibonacci_number"
+        note: "Wikipedia article on Fibonacci numbers"
+      - title: "Dynamic Programming"
+        url: "https://www.geeksforgeeks.org/dynamic-programming/"
+        note: "GeeksforGeeks tutorial on dynamic programming"
+      - title: "Fibonacci Sequence"
+        url: "https://mathworld.wolfram.com/FibonacciNumber.html"
+        note: "MathWorld entry on Fibonacci numbers"
+  
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Official Documentation"
+        url: "https://docs.python.org/3/"
+        note: "Python language reference"
+      - title: "Python Performance Tips"
+        url: "https://wiki.python.org/moin/PythonSpeed/PerformanceTips"
+        note: "Performance optimization guide"
+      - title: "Dynamic Programming Patterns"
+        url: "https://leetcode.com/discuss/general-discussion/458695/dynamic-programming-patterns"
+        note: "LeetCode discussion on DP patterns"
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "dp"  # Primary family tag
+  - "sequence"
+  - "recursion"
+  - "memoization"
+  - "optimization"
+  - "mathematical"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "coin-change"
+    relationship: "same_family"
+    description: "Another classic DP problem with different optimization focus"
+  - slug: "knapsack"
+    relationship: "same_family"
+    description: "More complex DP problem with constraints"
+
+# Template and rendering options
+template_options:
+  show_complexity_table: true
+  show_implementation_comparison: true
+  show_mathematical_properties: true
+  show_applications: true
+  show_educational_value: true
+  show_source_links: true
+  show_related_algorithms: true
+
+# Metadata for the documentation system
+meta:
+  created: "2025-01-04"
+  # last_updated is automatically managed by git/file system
+  version: "1.0"
+  author: "Jeff Richley"

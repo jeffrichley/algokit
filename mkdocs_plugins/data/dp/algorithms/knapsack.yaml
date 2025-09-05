@@ -1,0 +1,47 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: knapsack
+name: 0/1 Knapsack Problem
+family_id: dp
+aliases: [knapsack, zero_one_knapsack]
+order: 30
+
+# Brief one-sentence summary for cards and navigation
+summary: "Optimize value within weight constraints using dynamic programming for resource allocation."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  The 0/1 Knapsack problem is a fundamental optimization problem in computer science. Given a set of items, 
+  each with a weight and value, determine the maximum value that can be obtained by selecting items such that 
+  the total weight does not exceed a given capacity.
+  
+  This problem is a classic example of dynamic programming and has applications in resource allocation, 
+  portfolio optimization, and cutting stock problems.
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+  
+  # Source code locations
+  source_files: []
+
+# Tags for categorization and search
+tags:
+  - "dp"
+  - "optimization"
+  - "knapsack"
+  - "constraints"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "fibonacci"
+    relationship: "same_family"
+    description: "Simpler DP problem to understand first"
+  - slug: "coin-change"
+    relationship: "same_family"
+    description: "Another optimization DP problem"

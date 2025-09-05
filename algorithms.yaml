@@ -254,12 +254,12 @@ algorithms:
   fibonacci:
     name: "Fibonacci Sequence"
     family: "dynamic-programming"
-    status: "complete"
+    status: "in-progress"
     description: "Classic problem demonstrating dynamic programming with multiple implementation approaches"
     overview: "The Fibonacci sequence is a classic problem in computer science and mathematics that demonstrates the power of dynamic programming. The sequence is defined as: each number is the sum of the two preceding ones, usually starting with 0 and 1."
     complexity:
-      time: "O(n)"
-      space: "O(1)"
+      time: "$O(n)$"
+      space: "$O(1)$"
       notes: "Linear time with constant space using iterative approach"
     tags:
       - "dynamic-programming"
@@ -294,8 +294,8 @@ algorithms:
     description: "Minimum coins optimization problem with greedy vs DP comparison"
     overview: "The coin change problem involves finding the minimum number of coins needed to make up a given amount using coins of specified denominations. This problem demonstrates the difference between greedy and dynamic programming approaches."
     complexity:
-      time: "O(amount × coins)"
-      space: "O(amount)"
+      time: "$O(\\text{amount} \\times \\text{coins})$"
+      space: "$O(\\text{amount})$"
       notes: "Time complexity depends on amount and number of coin denominations"
     tags:
       - "dynamic-programming"
@@ -330,8 +330,8 @@ algorithms:
     description: "Resource allocation with constraint optimization"
     overview: "The 0/1 knapsack problem is a classic optimization problem where items must be selected to maximize value while respecting weight constraints. Each item can only be chosen once (0/1 decision)."
     complexity:
-      time: "O(n × W)"
-      space: "O(n × W)"
+      time: "$O(n \\times W)$"
+      space: "$O(n \\times W)$"
       notes: "n = number of items, W = knapsack capacity"
     tags:
       - "dynamic-programming"
@@ -469,6 +469,39 @@ algorithms:
       - "fibonacci"
       - "longest-common-subsequence"
       - "edit-distance"
+
+  # Planning Family (Planned)
+  a-star-search:
+    name: "A* Search Algorithm"
+    family: "planning"
+    status: "planned"
+    description: "Heuristic search algorithm that finds the shortest path between two points using both actual cost and estimated cost to goal"
+    overview: "A* (A-star) is a widely-used pathfinding and graph traversal algorithm that finds the shortest path between two points in a weighted graph. It combines the benefits of Dijkstra's algorithm (which finds shortest paths) with those of best-first search (which uses heuristics to guide the search)."
+    complexity:
+      time: "O(b^d)"
+      space: "O(b^d)"
+      notes: "b = branching factor, d = depth of solution"
+    tags:
+      - "planning"
+      - "algorithms"
+      - "a-star"
+      - "heuristic-search"
+      - "pathfinding"
+      - "graph-search"
+    implementation:
+      source_file: "src/algokit/planning/a_star_search.py"
+      test_file: "tests/planning/test_a_star_search.py"
+      approaches:
+        - "Basic A* Implementation"
+        - "Grid-based A* with Obstacles"
+        - "Weighted A* with Different Heuristics"
+    mathematical_formulation:
+      evaluation_function: "f(n) = g(n) + h(n)"
+      heuristic_condition: "h(n) ≤ h*(n) (admissible heuristic)"
+    related_algorithms:
+      - "dijkstra"
+      - "best-first-search"
+      - "bidirectional-search"
 
   # Reinforcement Learning Family (Planned)
   q-learning:

@@ -1,0 +1,158 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: dp
+name: Dynamic Programming
+slug: dynamic-programming
+# Brief one-sentence summary for cards and navigation
+summary: "Dynamic Programming solves complex problems by breaking them into overlapping subproblems with optimal substructure."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Dynamic Programming (DP) is a powerful algorithmic paradigm that solves complex
+  problems by breaking them down into simpler subproblems. The key insight is that
+  many problems have overlapping subproblems and optimal substructure, allowing us
+  to store and reuse solutions to avoid redundant computation.
+  
+  Dynamic Programming is one of the most important algorithmic paradigms in computer science.
+  It provides an elegant way to solve optimization problems by storing solutions to
+  subproblems and reusing them, avoiding the exponential time complexity of naive
+  recursive approaches.
+
+# Family characteristics
+key_characteristics:
+  - name: "Optimal Substructure"
+    description: "Optimal solution to the problem contains optimal solutions to subproblems"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "The same subproblems are solved multiple times"
+    importance: "fundamental"
+  - name: "Memoization/Tabulation"
+    description: "Store solutions to avoid recalculating"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Optimization Problems"
+    examples: ["knapsack", "coin change", "resource allocation"]
+  - category: "Sequence Problems"
+    examples: ["Fibonacci", "longest common subsequence", "edit distance"]
+  - category: "Path Finding"
+    examples: ["shortest path", "longest path", "graph algorithms"]
+  - category: "Bioinformatics"
+    examples: ["sequence alignment", "protein folding", "DNA analysis"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Memoization (Top-Down)"
+    description: "Store results of expensive function calls and return cached results"
+    type: "technique"
+  - name: "Tabulation (Bottom-Up)"
+    description: "Build solutions iteratively from base cases up to the target"
+    type: "technique"
+  - name: "State Transition"
+    description: "Define how to move from one state to another"
+    type: "concept"
+  - name: "Base Cases"
+    description: "Define solutions for the smallest subproblems"
+    type: "concept"
+  - name: "Recurrence Relation"
+    description: "Mathematical formula that defines the problem in terms of subproblems"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "greedy"
+    relationship: "alternative"
+    description: "Often provide faster but suboptimal solutions to DP problems"
+  - id: "divide-and-conquer"
+    relationship: "similar"
+    description: "Similar recursive structure but without overlapping subproblems"
+  - id: "backtracking"
+    relationship: "alternative"
+    description: "Alternative approach for some optimization problems"
+  - id: "graph"
+    relationship: "application"
+    description: "Many graph problems can be solved using DP techniques"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(n²) to O(n³)"
+  typical_space: "O(n) to O(n²)"
+  notes: "Complexity varies significantly based on problem structure and implementation approach"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Implementation Approaches"
+    content: |
+      !!! info "Memoization vs Tabulation"
+          
+          **Memoization (Top-Down)**:
+
+          - Natural recursive approach
+          - Only computes needed subproblems
+          - Can be memory efficient
+          - May cause stack overflow for deep recursion
+          
+          **Tabulation (Bottom-Up)**:
+          
+          - Iterative approach
+          - Computes all subproblems
+          - Better space optimization possible
+          - No recursion stack issues
+
+  - name: "Common Patterns"
+    content: |
+      !!! info "DP Problem Patterns"
+          
+          1. **1D DP**: Single dimension state (Fibonacci, climbing stairs)
+          2. **2D DP**: Two dimensions (LCS, edit distance)
+          3. **Interval DP**: Working with intervals (matrix chain multiplication)
+          4. **Tree DP**: On tree structures
+          5. **Digit DP**: On digit sequences
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "cormen_dp"  # Points to entry in shared/refs.bib
+  - bib_key: "wikipedia_dp"  # Points to entry in shared/refs.bib
+  - bib_key: "leetcode_dp_patterns"  # Points to entry in shared/refs.bib
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "dp"  # Primary family tag
+  - "optimization"
+  - "recursive"
+  - "memoization"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true
+
+# Metadata for the documentation system
+meta:
+  created: "2025-01-04"
+  # last_updated is automatically managed by git/file system
+  version: "1.0"
+  author: "Jeff Richley"
