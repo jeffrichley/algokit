@@ -30,6 +30,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.7.0 (2025-09-05)
+
+### Feat
+
+- update mkdocs automation system and documentation structure
+- enhance references section with Amazon affiliate links and improved styling
+- Create comprehensive algorithms.yaml data structure
+- Install and configure MkDocs Macros plugin
+- Restructure documentation with new algorithm organization and navigation fixes
+
+### Fix
+
+- ChatGPT buttons with unique prompts and section-specific button text
+- improve algorithm family status badge logic
+
 ## v0.6.1 (2025-09-02)
 
 ### Fix
