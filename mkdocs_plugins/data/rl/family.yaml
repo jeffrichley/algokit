@@ -1,0 +1,170 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: rl
+name: Reinforcement Learning
+slug: reinforcement-learning
+# Brief one-sentence summary for cards and navigation
+summary: "Reinforcement Learning enables agents to learn optimal behavior through interaction with an environment using rewards and penalties."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Reinforcement Learning (RL) is a machine learning paradigm where an agent learns to make decisions
+  by interacting with an environment. The agent receives rewards or penalties based on its actions
+  and learns to maximize cumulative reward over time through trial and error.
+
+  Unlike supervised learning, RL doesn't require labeled training data. Instead, the agent learns
+  through exploration and exploitation, discovering optimal policies through interaction with the
+  environment. This makes RL particularly powerful for sequential decision-making problems where
+  the consequences of actions unfold over time.
+
+# Family characteristics
+key_characteristics:
+  - name: "Trial and Error Learning"
+    description: "Agent learns through interaction and feedback from the environment"
+    importance: "fundamental"
+  - name: "Delayed Rewards"
+    description: "Actions may have consequences that are only revealed later"
+    importance: "fundamental"
+  - name: "Exploration vs Exploitation"
+    description: "Balance between trying new actions and using known good actions"
+    importance: "fundamental"
+  - name: "Policy Learning"
+    description: "Learn a mapping from states to actions that maximizes reward"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Game Playing"
+    examples: ["chess", "go", "poker", "video games"]
+  - category: "Robotics"
+    examples: ["navigation", "manipulation", "autonomous vehicles"]
+  - category: "Finance"
+    examples: ["trading", "portfolio management", "risk management"]
+  - category: "Recommendation Systems"
+    examples: ["content recommendation", "ad placement", "personalization"]
+  - category: "Resource Management"
+    examples: ["energy management", "traffic control", "cloud computing"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Agent"
+    description: "The learner or decision maker that interacts with the environment"
+    type: "entity"
+  - name: "Environment"
+    description: "The world in which the agent operates and receives feedback"
+    type: "entity"
+  - name: "State"
+    description: "Current situation or configuration of the environment"
+    type: "concept"
+  - name: "Action"
+    description: "Choice made by the agent that affects the environment"
+    type: "concept"
+  - name: "Reward"
+    description: "Immediate feedback signal indicating the quality of an action"
+    type: "concept"
+  - name: "Policy"
+    description: "Strategy or mapping from states to actions"
+    type: "mathematical"
+  - name: "Value Function"
+    description: "Expected cumulative reward from a state or state-action pair"
+    type: "mathematical"
+  - name: "Q-Function"
+    description: "Expected cumulative reward for taking an action in a state"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "dynamic-programming"
+    relationship: "foundation"
+    description: "Many RL algorithms are based on dynamic programming principles"
+  - id: "optimization"
+    relationship: "application"
+    description: "RL can be viewed as an optimization problem for finding optimal policies"
+  - id: "neural-networks"
+    relationship: "integration"
+    description: "Deep RL combines RL with neural networks for function approximation"
+  - id: "control-theory"
+    relationship: "related"
+    description: "RL extends control theory to unknown environments"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(|S|²|A|) to O(|S||A|)"
+  typical_space: "O(|S||A|) to O(|S|)"
+  notes: "Complexity depends on state space size |S|, action space size |A|, and algorithm choice"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Learning Approaches"
+    content: |
+      !!! info "Model-Based vs Model-Free"
+
+          **Model-Based RL**:
+
+          - Learn a model of the environment
+          - Use the model to plan optimal actions
+          - More sample efficient
+          - Requires accurate environment modeling
+
+          **Model-Free RL**:
+
+          - Learn directly from experience
+          - No explicit environment model
+          - More robust to model errors
+          - May require more samples
+
+  - name: "Value vs Policy Methods"
+    content: |
+      !!! info "Learning Approaches"
+
+          1. **Value-Based**: Learn value functions, derive policy (Q-Learning, SARSA)
+          2. **Policy-Based**: Learn policy directly (REINFORCE, Policy Gradient)
+          3. **Actor-Critic**: Combine value and policy learning
+          4. **Model-Based**: Learn environment model, plan with it
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "sutton2018"  # Points to entry in shared/refs.bib
+  - bib_key: "silver2015"  # Points to entry in shared/refs.bib
+  - bib_key: "mnih2015"  # Points to entry in shared/refs.bib
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "rl"  # Primary family tag
+  - "machine-learning"
+  - "optimization"
+  - "decision-making"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true
+
+# Metadata for the documentation system
+meta:
+  created: "2025-01-04"
+  # last_updated is automatically managed by git/file system
+  version: "1.0"
+  author: "Jeff Richley"

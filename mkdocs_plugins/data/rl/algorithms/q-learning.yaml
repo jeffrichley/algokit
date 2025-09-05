@@ -1,0 +1,351 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: q-learning
+name: Q-Learning
+family_id: rl
+aliases: [q_learning, qlearning, q_algorithm]
+order: 10
+
+# Brief one-sentence summary for cards and navigation
+summary: "A model-free reinforcement learning algorithm that learns optimal action-value functions through temporal difference learning."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Q-Learning is a fundamental model-free reinforcement learning algorithm that learns the optimal
+  action-value function (Q-function) through temporal difference learning. It enables an agent
+  to learn optimal policies without requiring a model of the environment, making it widely
+  applicable to various sequential decision-making problems.
+
+  The algorithm uses an off-policy approach, meaning it can learn about the optimal policy
+  while following a different behavior policy. This makes Q-Learning particularly powerful
+  for exploration scenarios where the agent needs to balance learning about the environment
+  with exploiting current knowledge.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Action space: A
+    - Reward function: R(s,a,s')
+    - Discount factor: γ ∈ [0,1]
+    - Learning rate: α ∈ (0,1]
+
+    Find the optimal Q-function Q*(s,a) that maximizes expected cumulative reward:
+
+    Q*(s,a) = max_π E[∑_{t=0}^∞ γ^t R_{t+1} | S_0 = s, A_0 = a, π]
+
+  key_properties:
+    - name: "Temporal Difference Learning"
+      formula: "Q(s,a) ← Q(s,a) + α[r + γ max_{a'} Q(s',a') - Q(s,a)]"
+      description: "Updates Q-values based on the difference between expected and actual returns"
+    - name: "Off-Policy Learning"
+      formula: "Learns Q* while following behavior policy π"
+      description: "Can learn optimal policy while exploring with different policy"
+    - name: "Convergence Guarantee"
+      formula: "Q(s,a) → Q*(s,a) as t → ∞ under certain conditions"
+      description: "Guaranteed to converge to optimal Q-function with proper learning rates"
+
+# Key properties and characteristics
+properties:
+  - name: "Model-Free"
+    description: "Does not require knowledge of environment dynamics"
+    importance: "fundamental"
+  - name: "Off-Policy"
+    description: "Can learn optimal policy while following different behavior policy"
+    importance: "fundamental"
+  - name: "Temporal Difference"
+    description: "Updates estimates based on other estimates (bootstrapping)"
+    importance: "fundamental"
+  - name: "Exploration vs Exploitation"
+    description: "Requires careful balance between trying new actions and using known good actions"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "tabular_q_learning"
+    name: "Tabular Q-Learning (Classic)"
+    description: "Standard Q-Learning with Q-table for discrete state-action spaces"
+    complexity:
+      time: "O(|S| × |A| × episodes)"
+      space: "O(|S| × |A|)"
+    code: |
+      import numpy as np
+      from typing import Dict, Tuple, Any
+      import random
+
+      class QLearning:
+          """
+          Tabular Q-Learning implementation for discrete state-action spaces.
+          """
+
+          def __init__(self, states: int, actions: int, learning_rate: float = 0.1,
+                       discount_factor: float = 0.9, epsilon: float = 0.1):
+              """
+              Initialize Q-Learning agent.
+
+              Args:
+                  states: Number of states in the environment
+                  actions: Number of actions available
+                  learning_rate: Learning rate (alpha)
+                  discount_factor: Discount factor (gamma)
+                  epsilon: Exploration rate for epsilon-greedy policy
+              """
+              self.states = states
+              self.actions = actions
+              self.learning_rate = learning_rate
+              self.discount_factor = discount_factor
+              self.epsilon = epsilon
+
+              # Initialize Q-table with zeros
+              self.q_table = np.zeros((states, actions))
+
+          def choose_action(self, state: int) -> int:
+              """
+              Choose action using epsilon-greedy policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Selected action
+              """
+              if random.random() < self.epsilon:
+                  # Explore: choose random action
+                  return random.randint(0, self.actions - 1)
+              else:
+                  # Exploit: choose best action
+                  return np.argmax(self.q_table[state])
+
+          def update(self, state: int, action: int, reward: float,
+                    next_state: int, done: bool) -> None:
+              """
+              Update Q-value using Q-Learning update rule.
+
+              Args:
+                  state: Current state
+                  action: Action taken
+                  reward: Reward received
+                  next_state: Next state
+                  done: Whether episode is finished
+              """
+              # Current Q-value
+              current_q = self.q_table[state, action]
+
+              # Maximum Q-value for next state
+              if done:
+                  max_next_q = 0
+              else:
+                  max_next_q = np.max(self.q_table[next_state])
+
+              # Q-Learning update rule
+              target = reward + self.discount_factor * max_next_q
+              self.q_table[state, action] = current_q + self.learning_rate * (target - current_q)
+
+          def get_policy(self) -> np.ndarray:
+              """
+              Get the current policy (greedy with respect to Q-values).
+
+              Returns:
+                  Policy array where policy[state] = best_action
+              """
+              return np.argmax(self.q_table, axis=1)
+    advantages:
+      - "Simple and intuitive implementation"
+      - "Guaranteed convergence under proper conditions"
+      - "No model of environment required"
+      - "Works well for discrete state-action spaces"
+    disadvantages:
+      - "Requires discrete state-action spaces"
+      - "Memory requirements grow with state space size"
+      - "Slow learning for large state spaces"
+      - "Requires careful tuning of hyperparameters"
+
+  - type: "epsilon_greedy"
+    name: "Epsilon-Greedy Exploration"
+    description: "Standard exploration strategy for Q-Learning"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      def epsilon_greedy_action_selection(q_values: np.ndarray, epsilon: float) -> int:
+          """
+          Select action using epsilon-greedy policy.
+
+          Args:
+              q_values: Q-values for current state
+              epsilon: Exploration rate
+
+          Returns:
+              Selected action
+          """
+          if random.random() < epsilon:
+              # Explore: choose random action
+              return random.randint(0, len(q_values) - 1)
+          else:
+              # Exploit: choose best action
+              return np.argmax(q_values)
+    advantages:
+      - "Simple exploration strategy"
+      - "Guarantees all actions are tried"
+      - "Easy to implement and understand"
+    disadvantages:
+      - "May explore suboptimal actions even after learning"
+      - "Fixed exploration rate may not be optimal"
+      - "Can be inefficient in large action spaces"
+
+# Complexity analysis
+complexity:
+  time_complexity:
+    best_case: "O(|S| × |A| × episodes)"
+    average_case: "O(|S| × |A| × episodes)"
+    worst_case: "O(|S| × |A| × episodes)"
+    notes: "Time complexity depends on number of episodes and state-action space size"
+
+  space_complexity:
+    best_case: "O(|S| × |A|)"
+    average_case: "O(|S| × |A|)"
+    worst_case: "O(|S| × |A|)"
+    notes: "Space required for Q-table grows quadratically with state and action spaces"
+
+  convergence:
+    conditions: "All state-action pairs visited infinitely often, learning rate satisfies Robbins-Monro conditions"
+    rate: "O(1/√t) where t is the number of updates"
+    notes: "Convergence guaranteed under proper exploration and learning rate schedules"
+
+# Applications and use cases
+applications:
+  - category: "Game Playing"
+    examples:
+      - "Chess: Learning optimal moves in different positions"
+      - "Poker: Learning betting strategies"
+      - "Video Games: Learning to play Atari games"
+      - "Board Games: Mastering game strategies"
+
+  - category: "Robotics"
+    examples:
+      - "Navigation: Learning optimal paths in environments"
+      - "Manipulation: Learning to grasp and manipulate objects"
+      - "Autonomous Vehicles: Learning driving policies"
+      - "Robot Control: Learning control policies for complex tasks"
+
+  - category: "Finance"
+    examples:
+      - "Trading: Learning optimal trading strategies"
+      - "Portfolio Management: Learning asset allocation"
+      - "Risk Management: Learning hedging strategies"
+      - "Algorithmic Trading: Learning market timing"
+
+  - category: "Computer Science"
+    examples:
+      - "Resource Allocation: Learning optimal resource distribution"
+      - "Network Routing: Learning optimal packet routing"
+      - "Cache Management: Learning optimal caching strategies"
+      - "Load Balancing: Learning optimal server distribution"
+
+  - category: "Real-World Scenarios"
+    examples:
+      - "Recommendation Systems: Learning user preferences"
+      - "Ad Placement: Learning optimal ad positioning"
+      - "Energy Management: Learning optimal energy consumption"
+      - "Traffic Control: Learning optimal traffic light timing"
+
+  - category: "Educational Value"
+    examples:
+      - "Reinforcement Learning: Understanding temporal difference learning"
+      - "Exploration vs Exploitation: Learning the exploration-exploitation trade-off"
+      - "Value Functions: Understanding action-value functions"
+      - "Policy Learning: Understanding how policies emerge from value functions"
+
+# Educational value and learning objectives
+educational_value:
+  - "Reinforcement Learning: Perfect introduction to model-free RL algorithms"
+  - "Temporal Difference Learning: Understanding bootstrapping and value function updates"
+  - "Exploration vs Exploitation: Learning the fundamental trade-off in RL"
+  - "Value Functions: Understanding how agents learn to evaluate states and actions"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/reinforcement_learning/q_learning.py"
+      description: "Main implementation with tabular and function approximation variants"
+    - path: "tests/unit/reinforcement_learning/test_q_learning.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+      - author: "Szepesvári, C."
+        year: "2010"
+        title: "Algorithms for Reinforcement Learning"
+        publisher: "Morgan & Claypool"
+        note: "ISBN 978-1-60845-492-1"
+
+  - category: "Q-Learning"
+    items:
+      - author: "Watkins, C. J. C. H."
+        year: "1989"
+        title: "Learning from Delayed Rewards"
+        publisher: "University of Cambridge"
+        note: "PhD Thesis - Original Q-Learning paper"
+      - author: "Watkins, C. J. C. H., & Dayan, P."
+        year: "1992"
+        title: "Q-learning"
+        publisher: "Machine Learning"
+        note: "Volume 8, pages 279-292"
+
+  - category: "Online Resources"
+    items:
+      - title: "Q-Learning"
+        url: "https://en.wikipedia.org/wiki/Q-learning"
+        note: "Wikipedia article on Q-Learning"
+      - title: "Reinforcement Learning Tutorial"
+        url: "https://spinningup.openai.com/en/latest/"
+        note: "OpenAI Spinning Up RL tutorial"
+      - title: "Q-Learning Algorithm"
+        url: "https://www.geeksforgeeks.org/q-learning-in-python/"
+        note: "GeeksforGeeks Q-Learning implementation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Gymnasium (OpenAI Gym)"
+        url: "https://gymnasium.farama.org/"
+        note: "RL environment library for testing algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "rl"
+  - "q-learning"
+  - "temporal-difference"
+  - "model-free"
+  - "off-policy"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "sarsa"
+    relationship: "same_family"
+    description: "On-policy alternative to Q-Learning with similar update rule"
+  - slug: "policy-gradient"
+    relationship: "same_family"
+    description: "Policy-based alternative to value-based Q-Learning"

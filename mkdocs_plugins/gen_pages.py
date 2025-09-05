@@ -376,6 +376,89 @@ def generate_algorithm_pages(discovery: DataDiscovery) -> None:
             mkdocs_gen_files.set_edit_path(algo_path, algo.get("_source_file", ""))
 
 
+def update_mkdocs_navigation(discovery: DataDiscovery) -> None:
+    """Update mkdocs.yml with dynamic navigation from discovered data.
+
+    Args:
+        discovery: DataDiscovery instance with loaded data
+    """
+    families = discovery.discover_families()
+
+    # Build navigation structure
+    nav_lines = [
+        "nav:",
+        "  - Overview: index.md",
+        "  - Algorithm Families: families.md",
+    ]
+
+    # Add algorithm families dynamically
+    for family_id in families:
+        family_data = discovery.load_family(family_id)
+        if not family_data:
+            continue
+
+        family_name = family_data.get("name", family_id.title())
+        family_slug = family_data.get("slug", family_id)
+
+        # Get algorithms for this family
+        algorithms = discovery.load_family_algorithms(family_id)
+
+        # Add family header
+        nav_lines.append(f"  - {family_name}:")
+        nav_lines.append(f"    - Overview: {family_slug}/index.md")
+
+        # Add algorithms
+        for algo in algorithms:
+            algo_name = algo.get("name", algo.get("slug", "").title())
+            algo_slug = algo.get("slug", "")
+            if algo_slug:
+                nav_lines.append(f"    - {algo_name}: {family_slug}/{algo_slug}.md")
+
+    # Add remaining navigation items
+    nav_lines.extend([
+        "  - API Reference: api.md",
+        "  - Contributing: contributing.md",
+        "  - Security: SECURITY.md",
+    ])
+
+    # Read current mkdocs.yml
+    mkdocs_path = Path(__file__).parent.parent / "mkdocs.yml"
+    with open(mkdocs_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Find and replace the nav section
+    lines = content.split('\n')
+    new_lines = []
+    in_nav_section = False
+    nav_indent = 0
+
+    for line in lines:
+        if line.strip().startswith('nav:'):
+            in_nav_section = True
+            nav_indent = len(line) - len(line.lstrip())
+            # Add the new navigation
+            new_lines.extend(nav_lines)
+            new_lines.append('')  # Add blank line after nav
+            continue
+
+        if in_nav_section:
+            # Check if we're still in the nav section
+            if line.strip() and not line.startswith(' ' * (nav_indent + 1)) and not line.startswith(' ' * nav_indent):
+                # We've left the nav section
+                in_nav_section = False
+                new_lines.append(line)  # Add the current line
+            # Skip lines that are part of the old nav section (including comments)
+            continue
+
+        new_lines.append(line)
+
+    # Write the updated content
+    with open(mkdocs_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(new_lines))
+
+    print(f"DEBUG: Updated mkdocs.yml with dynamic navigation")
+
+
 def main():
     """Generate virtual pages for algorithm documentation."""
     print("DEBUG: gen_pages.py is running!")
@@ -387,6 +470,9 @@ def main():
     sys.path.append(str(Path(__file__).parent))
     from gen_algorithms import generate_algorithm_pages
     from gen_families import generate_family_pages
+
+    # Initialize data discovery
+    discovery = DataDiscovery()
 
     # Generate family pages
     try:
@@ -401,6 +487,14 @@ def main():
         print("DEBUG: Generated algorithm pages")
     except Exception as e:
         print(f"ERROR: Failed to generate algorithm pages: {e}")
+
+    # Update mkdocs.yml navigation (disabled for now due to file corruption issues)
+    # try:
+    #     update_mkdocs_navigation(discovery)
+    #     print("DEBUG: Updated mkdocs.yml navigation")
+    # except Exception as e:
+    #     print(f"ERROR: Failed to update mkdocs.yml navigation: {e}")
+    print("DEBUG: Navigation update disabled - using static navigation")
 
     print("DEBUG: gen_pages.py completed!")
 

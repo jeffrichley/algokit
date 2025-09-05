@@ -12,6 +12,8 @@ theme:
     - navigation.sections
     - navigation.tabs
     - navigation.tracking
+    - navigation.breadcrumbs
+    - navigation.top
     - search.highlight
     - search.suggest
     - content.code.copy
@@ -93,11 +95,16 @@ plugins:
 
 nav:
   - Overview: index.md
-  - Dynamic Programming:
-    - Overview: dynamic-programming/index.md
-    - Fibonacci: dynamic-programming/fibonacci.md
-    - Coin Change: dynamic-programming/coin-change.md
-    - Knapsack: dynamic-programming/knapsack.md
+  - Algorithm Families:
+    - Overview: families.md
+    - Dynamic Programming:
+      - Overview: dynamic-programming/index.md
+      - Fibonacci Sequence: dynamic-programming/fibonacci.md
+      - Coin Change Problem: dynamic-programming/coin-change.md
+      - 0/1 Knapsack Problem: dynamic-programming/knapsack.md
+    - Reinforcement Learning:
+      - Overview: reinforcement-learning/index.md
+      - Q-Learning: reinforcement-learning/q-learning.md
   - API Reference: api.md
   - Contributing: contributing.md
   - Security: SECURITY.md

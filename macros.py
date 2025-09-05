@@ -147,13 +147,17 @@ def load_all_families() -> list[dict[str, Any]]:
                 else 0
             )
 
-            # Determine overall family status
-            if complete_count > 0:
+            # Determine overall family status based on completion
+            if complete_count == total_algorithms and total_algorithms > 0:
+                # All algorithms are complete
                 status = "complete"
                 available_algorithms = complete_algorithms
-            elif len(in_progress_algorithms) > 0:
+            elif complete_count > 0 or len(in_progress_algorithms) > 0:
+                # Some algorithms are complete or in progress
                 status = "in-progress"
+                available_algorithms = complete_algorithms + in_progress_algorithms
             else:
+                # No algorithms are complete or in progress
                 status = "planned"
 
             # Create list of all algorithms with status indicators
@@ -610,6 +614,128 @@ def define_env(env):
         url = f"https://www.amazon.com/dp/{clean_isbn}/?tag={tag}"
         label = text or isbn
         return f'<a href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>'
+
+    @env.macro
+    def render_families_grid() -> str:
+        """Render a grid of algorithm family cards for the families landing page.
+
+        Returns:
+            Rendered HTML grid of family cards
+        """
+        families = load_all_families()
+
+        if not families:
+            return "**No algorithm families found.**"
+
+        # Create family cards
+        cards_html = ""
+        for family in families:
+            family_id = family.get("id", "")
+            family_name = family.get("name", "Unknown Family")
+            family_slug = family.get("slug", family_id)
+            family_summary = family.get("summary", "No description available.")
+            family_description = family.get("description", "")
+
+            # Get algorithm count and status
+            algorithms = family.get("all_algorithms", [])
+            algorithm_count = len(algorithms)
+
+            # Determine status and badge
+            status = family.get("status", "planned")
+            completion_percentage = family.get("completion_percentage", 0)
+
+            if status == "complete":
+                status_badge = f"✅ Complete ({completion_percentage}%)"
+                status_class = "status-complete"
+            elif status == "in-progress":
+                status_badge = f"🚧 In Progress ({completion_percentage}%)"
+                status_class = "status-in-progress"
+            else:
+                status_badge = "📋 Planned"
+                status_class = "status-planned"
+
+            # Create the card HTML with clickable link
+            card_html = f"""
+<a href="../{family_slug}/" class="family-card" style="
+    border: 2px solid var(--md-default-fg-color--light);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    background-color: var(--md-default-bg-color--lightest);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+        <h3 style="margin: 0; color: var(--md-primary-fg-color);">{family_name}</h3>
+        <span class="{status_class}" style="
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: bold;
+            background-color: var(--md-default-bg-color--dark);
+        ">{status_badge}</span>
+    </div>
+
+    <p style="margin: 0 0 16px 0; font-style: italic; color: var(--md-default-fg-color--light);">
+        {family_summary}
+    </p>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <span style="color: var(--md-default-fg-color--light); font-size: 0.9em;">
+            {algorithm_count} algorithm{'s' if algorithm_count != 1 else ''}
+        </span>
+        <span style="color: var(--md-primary-fg-color); font-weight: bold;">
+            Explore →
+        </span>
+    </div>
+</a>
+"""
+            cards_html += card_html
+
+        # Wrap cards in a grid container
+        grid_html = f"""
+<div class="families-grid" style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+    margin: 24px 0;
+">
+    {cards_html}
+</div>
+
+<style>
+.family-card:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}}
+
+.status-complete {{
+    background-color: #4caf50 !important;
+    color: white !important;
+}}
+
+.status-in-progress {{
+    background-color: #ff9800 !important;
+    color: white !important;
+}}
+
+.status-planned {{
+    background-color: #9e9e9e !important;
+    color: white !important;
+}}
+
+@media (max-width: 768px) {{
+    .families-grid {{
+        grid-template-columns: 1fr;
+    }}
+}}
+</style>
+"""
+
+        return grid_html
 
     # Add a simple test variable
     env.variables["current_date"] = "January 4, 2025"
