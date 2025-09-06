@@ -1,0 +1,238 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: sparse-gps
+name: Sparse Gaussian Processes
+family_id: gaussian-process
+aliases: ["Sparse GP", "Inducing Point GP", "Pseudo-input GP"]
+order: 5
+
+# Brief one-sentence summary for cards and navigation
+summary: "Scalable Gaussian process methods using inducing points to reduce computational complexity from O(n³) to O(nm²) for large datasets."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Sparse Gaussian Processes address the scalability limitations of standard GPs by introducing a set of
+  inducing points (also called pseudo-inputs) that act as a compressed representation of the training data.
+  This reduces the computational complexity from O(n³) to O(nm²) where m << n is the number of inducing points.
+
+  The key insight is that the full training data can be approximated using a smaller set of representative
+  points, making GPs applicable to large-scale problems while maintaining most of their predictive power
+  and uncertainty quantification capabilities.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Inducing Points"
+      formula: "Z = {z₁, ..., zₘ} where m << n"
+      description: "Small set of pseudo-inputs representing the data"
+    - name: "Variational Lower Bound"
+      formula: "F = log N(y|0, Q + σ²I) - 0.5σ⁻²tr(K - Q)"
+      description: "Lower bound on marginal likelihood"
+    - name: "Approximate Covariance"
+      formula: "Q = KₙₘKₘₘ⁻¹Kₘₙ"
+      description: "Nyström approximation of full covariance"
+    - name: "Predictive Distribution"
+      formula: "μ* = K*ₘKₘₘ⁻¹μₘ, Σ* = K** - K*ₘ(Kₘₘ + σ⁻²KₘₙKₙₘ)⁻¹Kₘ*"
+      description: "Predictive mean and variance using inducing points"
+
+# Key properties and characteristics
+properties:
+  - name: "Scalability"
+    description: "Reduces complexity from O(n³) to O(nm²)"
+    importance: "fundamental"
+  - name: "Memory Efficient"
+    description: "Stores only m×m covariance matrix instead of n×n"
+    importance: "fundamental"
+  - name: "Approximation Quality"
+    description: "Quality depends on inducing point selection"
+    importance: "implementation"
+  - name: "Flexible Framework"
+    description: "Works with any kernel function"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "variational"
+    name: "Variational Sparse GP"
+    description: "Most popular approach using variational inference"
+    complexity:
+      time: "O(nm²)"
+      space: "O(nm + m²)"
+    code: |
+      import numpy as np
+      from scipy.linalg import cho_solve, cho_factor
+      from sklearn.gaussian_process import GaussianProcessRegressor
+      from sklearn.gaussian_process.kernels import RBF
+      from sklearn.cluster import KMeans
+
+      class SparseGP:
+          """Sparse Gaussian Process with inducing points."""
+
+          def __init__(self, kernel=None, n_inducing=100, alpha=1e-10):
+              self.kernel = kernel or RBF()
+              self.n_inducing = n_inducing
+              self.alpha = alpha
+              self.Z = None  # Inducing points
+              self.mu_m = None  # Inducing point mean
+              self.S_m = None  # Inducing point covariance
+
+          def _initialize_inducing_points(self, X):
+              """Initialize inducing points using k-means clustering."""
+              if len(X) <= self.n_inducing:
+                  self.Z = X.copy()
+              else:
+                  kmeans = KMeans(n_clusters=self.n_inducing, random_state=42)
+                  kmeans.fit(X)
+                  self.Z = kmeans.cluster_centers_
+
+          def _compute_kernel_matrices(self, X, Z):
+              """Compute kernel matrices K_nm, K_mm, K_nn."""
+              K_nm = self.kernel(X, Z)  # n × m
+              K_mm = self.kernel(Z) + self.alpha * np.eye(len(Z))  # m × m
+              K_nn = self.kernel(X)  # n × n (diagonal only for efficiency)
+
+              return K_nm, K_mm, K_nn
+
+          def fit(self, X, y):
+              """Fit the sparse GP to training data."""
+              # Initialize inducing points
+              self._initialize_inducing_points(X)
+
+              # Compute kernel matrices
+              K_nm, K_mm, K_nn = self._compute_kernel_matrices(X, self.Z)
+
+              # Cholesky decomposition of K_mm
+              L_mm = cho_factor(K_mm)
+
+              # Compute A = K_nm^T K_mm^{-1} K_nm
+              A = K_nm @ cho_solve(L_mm, K_nm.T)
+
+              # Add noise to diagonal
+              A += self.alpha * np.eye(len(X))
+
+              # Cholesky decomposition of A
+              L_A = cho_factor(A)
+
+              # Solve for inducing point mean: K_mm^{-1} K_mn (A + σ²I)^{-1} y
+              self.mu_m = cho_solve(L_mm, K_nm.T @ cho_solve(L_A, y))
+
+              # Compute inducing point covariance: K_mm^{-1} - K_mm^{-1} K_mn (A + σ²I)^{-1} K_nm K_mm^{-1}
+              B = cho_solve(L_mm, K_nm.T @ cho_solve(L_A, K_nm))
+              self.S_m = cho_solve(L_mm, np.eye(len(self.Z))) - B
+
+          def predict(self, X_test, return_std=True):
+              """Make predictions at test points."""
+              # Compute kernel matrices
+              K_star_m = self.kernel(X_test, self.Z)  # n* × m
+              K_mm = self.kernel(self.Z) + self.alpha * np.eye(len(self.Z))  # m × m
+
+              # Cholesky decomposition
+              L_mm = cho_factor(K_mm)
+
+              # Predictive mean: K_*m K_mm^{-1} μ_m
+              mu = K_star_m @ cho_solve(L_mm, self.mu_m)
+
+              if return_std:
+                  # Predictive variance: K_** - K_*m (K_mm + S_m)^{-1} K_m*
+                  K_star_star = self.kernel(X_test)
+                  C = cho_solve(L_mm, K_star_m.T)
+                  var = np.diag(K_star_star) - np.sum(C * K_star_m.T, axis=0)
+                  std = np.sqrt(np.maximum(var, 0))
+                  return mu, std
+
+              return mu
+
+          def log_marginal_likelihood(self, X, y):
+              """Compute log marginal likelihood."""
+              K_nm, K_mm, K_nn = self._compute_kernel_matrices(X, self.Z)
+
+              # Cholesky decomposition
+              L_mm = cho_factor(K_mm)
+
+              # Compute A = K_nm^T K_mm^{-1} K_nm + σ²I
+              A = K_nm @ cho_solve(L_mm, K_nm.T) + self.alpha * np.eye(len(X))
+              L_A = cho_factor(A)
+
+              # Log determinant term
+              log_det_A = 2 * np.sum(np.log(np.diag(L_A[0])))
+
+              # Quadratic form term
+              quad_form = y.T @ cho_solve(L_A, y)
+
+              # Log marginal likelihood
+              log_ml = -0.5 * (len(y) * np.log(2 * np.pi) + log_det_A + quad_form)
+
+              return log_ml
+    advantages:
+      - "Scalable to large datasets"
+      - "Memory efficient"
+      - "Maintains uncertainty quantification"
+      - "Flexible inducing point selection"
+      - "Works with any kernel"
+    disadvantages:
+      - "Approximation introduces error"
+      - "Quality depends on inducing points"
+      - "Still requires hyperparameter tuning"
+      - "May lose some predictive power"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(nm²)"
+  space_complexity: "O(nm + m²)"
+  notes: "m is number of inducing points, typically m << n"
+
+# Applications and use cases
+applications:
+  - category: "Big Data"
+    examples: ["large-scale regression", "time series analysis", "sensor networks"]
+  - category: "Real-time Systems"
+    examples: ["online learning", "streaming data", "adaptive control"]
+  - category: "Scientific Computing"
+    examples: ["climate modeling", "physics simulations", "computational chemistry"]
+  - category: "Machine Learning"
+    examples: ["hyperparameter optimization", "active learning", "surrogate modeling"]
+
+# Educational value
+educational_value:
+  - "Understanding scalability in machine learning"
+  - "Variational inference concepts"
+  - "Approximation methods"
+  - "Large-scale optimization"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "titsias2009"
+  - bib_key: "hensman2013"
+
+# Related algorithms
+related_algorithms:
+  - slug: "gp-regression"
+    relationship: "scalable_variant"
+    description: "Sparse GP is a scalable version of standard GP regression"
+  - slug: "deep-gps"
+    relationship: "component"
+    description: "Sparse GPs used in each layer of deep GPs"
+
+# Tags for categorization
+tags:
+  - "gaussian-process"
+  - "sparse"
+  - "scalable"
+  - "variational-inference"
+  - "large-scale"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

@@ -1,0 +1,350 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: m-star
+name: M*
+family_id: planning
+aliases: ["M*", "Multi-Agent Pathfinding", "MAPF"]
+order: 7
+
+# Brief one-sentence summary for cards and navigation
+summary: "Multi-agent pathfinding algorithm that finds collision-free paths for multiple agents by resolving conflicts and coordinating their movements."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  M* is a multi-agent pathfinding algorithm that extends A* search to handle multiple agents simultaneously.
+  The algorithm finds collision-free paths for multiple agents by detecting conflicts between their planned
+  paths and resolving them through coordination and replanning.
+
+  The key insight is that agents can plan their paths independently initially, but when conflicts arise
+  (agents occupying the same location at the same time), the algorithm expands the search space to
+  include coordinated movements that resolve these conflicts.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Multi-Agent State"
+      formula: "s = (s₁, s₂, ..., sₙ) where sᵢ is state of agent i"
+      description: "Joint state of all agents"
+    - name: "Conflict Detection"
+      formula: "conflict(s, s') if ∃i,j: sᵢ = s'ⱼ and i ≠ j"
+      description: "Agents occupy same location"
+    - name: "Coordination Graph"
+      formula: "G = (V, E) where V is agents and E is conflicts"
+      description: "Graph showing which agents need coordination"
+    - name: "Expanded Search Space"
+      formula: "S' = S ∪ {coordinated_moves}"
+      description: "Search space including coordinated actions"
+
+# Key properties and characteristics
+properties:
+  - name: "Multi-Agent"
+    description: "Handles multiple agents simultaneously"
+    importance: "fundamental"
+  - name: "Conflict Resolution"
+    description: "Detects and resolves agent conflicts"
+    importance: "fundamental"
+  - name: "Coordination"
+    description: "Coordinates agent movements when needed"
+    importance: "fundamental"
+  - name: "Scalable"
+    description: "Efficient for moderate numbers of agents"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard M*"
+    description: "Classic M* implementation with conflict detection and resolution"
+    complexity:
+      time: "O(b^d * n²)"
+      space: "O(b^d * n)"
+    code: |
+      import heapq
+      from typing import List, Tuple, Dict, Set, Optional, Callable
+      from dataclasses import dataclass
+      from collections import defaultdict
+
+      @dataclass
+      class Agent:
+          """Represents an agent in the multi-agent system."""
+          id: int
+          start: Tuple[int, int]
+          goal: Tuple[int, int]
+          path: List[Tuple[int, int]] = None
+
+      @dataclass
+      class MultiAgentState:
+          """Represents a joint state of all agents."""
+          positions: List[Tuple[int, int]]
+          g_cost: float = 0.0
+          h_cost: float = 0.0
+          f_cost: float = 0.0
+          parent: Optional['MultiAgentState'] = None
+          action: Optional[Tuple[int, Tuple[int, int]]] = None  # (agent_id, new_position)
+
+      class MStar:
+          """M* multi-agent pathfinding algorithm implementation."""
+
+          def __init__(self, grid: List[List[int]], agents: List[Agent]):
+              self.grid = grid
+              self.agents = agents
+              self.n_agents = len(agents)
+              self.rows = len(grid)
+              self.cols = len(grid[0])
+
+          def _get_neighbors(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+              """Get valid neighboring positions for a single agent."""
+              x, y = position
+              neighbors = []
+
+              # Check 4 directions (up, down, left, right)
+              directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+              for dx, dy in directions:
+                  new_x, new_y = x + dx, y + dy
+
+                  # Check bounds and obstacles
+                  if (0 <= new_x < self.rows and 0 <= new_y < self.cols and
+                      self.grid[new_x][new_y] != 1):  # 1 represents obstacle
+                      neighbors.append((new_x, new_y))
+
+              # Add wait action (stay in same position)
+              neighbors.append(position)
+
+              return neighbors
+
+          def _detect_conflicts(self, state1: MultiAgentState, state2: MultiAgentState) -> List[Tuple[int, int]]:
+              """Detect conflicts between two states."""
+              conflicts = []
+
+              for i in range(self.n_agents):
+                  for j in range(i + 1, self.n_agents):
+                      # Vertex conflict: agents occupy same position
+                      if state1.positions[i] == state2.positions[j]:
+                          conflicts.append((i, j))
+
+                      # Edge conflict: agents swap positions
+                      if (state1.positions[i] == state2.positions[j] and
+                          state1.positions[j] == state2.positions[i]):
+                          conflicts.append((i, j))
+
+              return conflicts
+
+          def _compute_heuristic(self, state: MultiAgentState) -> float:
+              """Compute heuristic value for multi-agent state."""
+              total_cost = 0.0
+
+              for i, agent in enumerate(self.agents):
+                  # Manhattan distance from current position to goal
+                  current_pos = state.positions[i]
+                  goal_pos = agent.goal
+                  distance = abs(current_pos[0] - goal_pos[0]) + abs(current_pos[1] - goal_pos[1])
+                  total_cost += distance
+
+              return total_cost
+
+          def _get_coordination_graph(self, state: MultiAgentState) -> Dict[int, Set[int]]:
+              """Get coordination graph for current state."""
+              coord_graph = defaultdict(set)
+
+              # Check for conflicts with current state
+              for i in range(self.n_agents):
+                  for j in range(i + 1, self.n_agents):
+                      if state.positions[i] == state.positions[j]:
+                          coord_graph[i].add(j)
+                          coord_graph[j].add(i)
+
+              return coord_graph
+
+          def _get_successors(self, state: MultiAgentState) -> List[MultiAgentState]:
+              """Get successor states from current state."""
+              successors = []
+
+              # Get coordination graph
+              coord_graph = self._get_coordination_graph(state)
+
+              # Generate all possible combinations of agent moves
+              agent_moves = []
+              for i in range(self.n_agents):
+                  if i in coord_graph:
+                      # Agent needs coordination
+                      moves = self._get_neighbors(state.positions[i])
+                  else:
+                      # Agent can move independently
+                      moves = self._get_neighbors(state.positions[i])
+                  agent_moves.append(moves)
+
+              # Generate all combinations
+              from itertools import product
+              for move_combination in product(*agent_moves):
+                  new_positions = list(move_combination)
+
+                  # Check for conflicts
+                  new_state = MultiAgentState(positions=new_positions)
+                  conflicts = self._detect_conflicts(state, new_state)
+
+                  if not conflicts:
+                      # No conflicts, create successor state
+                      successor = MultiAgentState(
+                          positions=new_positions,
+                          g_cost=state.g_cost + 1.0,
+                          parent=state
+                      )
+                      successor.h_cost = self._compute_heuristic(successor)
+                      successor.f_cost = successor.g_cost + successor.h_cost
+                      successors.append(successor)
+
+              return successors
+
+          def _is_goal_state(self, state: MultiAgentState) -> bool:
+              """Check if state is a goal state."""
+              for i, agent in enumerate(self.agents):
+                  if state.positions[i] != agent.goal:
+                      return False
+              return True
+
+          def _reconstruct_path(self, goal_state: MultiAgentState) -> List[List[Tuple[int, int]]]:
+              """Reconstruct paths for all agents."""
+              paths = [[] for _ in range(self.n_agents)]
+              current = goal_state
+
+              while current is not None:
+                  for i in range(self.n_agents):
+                      paths[i].append(current.positions[i])
+                  current = current.parent
+
+              # Reverse paths
+              for i in range(self.n_agents):
+                  paths[i] = paths[i][::-1]
+
+              return paths
+
+          def plan(self) -> Optional[List[List[Tuple[int, int]]]]:
+              """Find collision-free paths for all agents."""
+              # Initialize start state
+              start_positions = [agent.start for agent in self.agents]
+              start_state = MultiAgentState(positions=start_positions, g_cost=0.0)
+              start_state.h_cost = self._compute_heuristic(start_state)
+              start_state.f_cost = start_state.g_cost + start_state.h_cost
+
+              # Priority queue for open states
+              open_states = [start_state]
+              heapq.heapify(open_states)
+
+              # Set of visited states
+              visited = set()
+
+              while open_states:
+                  current = heapq.heappop(open_states)
+
+                  # Check if goal is reached
+                  if self._is_goal_state(current):
+                      return self._reconstruct_path(current)
+
+                  # Skip if already visited
+                  state_key = tuple(current.positions)
+                  if state_key in visited:
+                      continue
+                  visited.add(state_key)
+
+                  # Get successor states
+                  successors = self._get_successors(current)
+
+                  for successor in successors:
+                      heapq.heappush(open_states, successor)
+
+              return None
+
+      # Example usage
+      def create_multi_agent_example():
+          """Create a multi-agent pathfinding example."""
+          # Create a simple grid
+          grid = [
+              [0, 0, 0, 0, 0],
+              [0, 1, 0, 1, 0],
+              [0, 0, 0, 0, 0],
+              [0, 1, 0, 1, 0],
+              [0, 0, 0, 0, 0]
+          ]
+
+          # Create agents
+          agents = [
+              Agent(0, (0, 0), (4, 4)),  # Agent 0: top-left to bottom-right
+              Agent(1, (4, 0), (0, 4)),  # Agent 1: bottom-left to top-right
+              Agent(2, (2, 0), (2, 4))   # Agent 2: middle-left to middle-right
+          ]
+
+          return grid, agents
+    advantages:
+      - "Handles multiple agents simultaneously"
+      - "Finds collision-free paths"
+      - "Coordinates agent movements"
+      - "Extends A* to multi-agent domain"
+      - "Good for moderate numbers of agents"
+    disadvantages:
+      - "Exponential complexity with number of agents"
+      - "May not scale to many agents"
+      - "Requires coordination graph computation"
+      - "Can be memory intensive"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(b^d * n²)"
+  space_complexity: "O(b^d * n)"
+  notes: "b is branching factor, d is solution depth, n is number of agents"
+
+# Applications and use cases
+applications:
+  - category: "Multi-Robot Systems"
+    examples: ["warehouse robots", "swarm robotics", "autonomous vehicles"]
+  - category: "Game AI"
+    examples: ["strategy games", "real-time strategy", "multi-agent games"]
+  - category: "Logistics"
+    examples: ["delivery systems", "traffic management", "supply chain"]
+  - category: "Simulation"
+    examples: ["crowd simulation", "traffic simulation", "evacuation planning"]
+
+# Educational value
+educational_value:
+  - "Understanding multi-agent systems"
+  - "Conflict resolution strategies"
+  - "Coordination algorithms"
+  - "Extension of single-agent algorithms"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "medium"
+
+# References and resources
+references:
+  - bib_key: "wagner2011"
+  - bib_key: "stern2019"
+
+# Related algorithms
+related_algorithms:
+  - slug: "a-star-search"
+    relationship: "foundation"
+    description: "M* extends A* to multi-agent domain"
+  - slug: "breadth-first-search"
+    relationship: "alternative"
+    description: "Alternative search strategy for multi-agent problems"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "multi-agent"
+  - "pathfinding"
+  - "coordination"
+  - "conflict-resolution"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

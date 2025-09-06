@@ -1,0 +1,310 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: real-time-control
+name: Real-Time Control
+family_id: real-time-control
+aliases: ["RTC", "Time-Critical Control", "Deterministic Control"]
+order: 1
+
+# Brief one-sentence summary for cards and navigation
+summary: "Control algorithms designed to operate within strict timing constraints, providing deterministic and predictable behavior for time-critical systems."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Real-Time Control algorithms are specialized control methods designed to operate within strict timing
+  constraints, providing deterministic and predictable behavior for time-critical systems. These algorithms
+  must guarantee response times and maintain system stability under real-time operating conditions where
+  missing deadlines can lead to system failure or degraded performance.
+
+  Unlike general control algorithms, real-time control systems prioritize timing guarantees over optimal
+  performance, ensuring that control actions are computed and executed within specified time bounds.
+  This makes them essential for safety-critical applications, embedded systems, and any application
+  where predictable timing is more important than optimal control performance.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Timing Constraint"
+      formula: "t_response ≤ t_deadline"
+      description: "Response time must not exceed deadline"
+    - name: "Worst-Case Execution Time"
+      formula: "WCET = max{t_execution} over all possible inputs"
+      description: "Maximum time required for algorithm execution"
+    - name: "Schedulability"
+      formula: "∑(Cᵢ/Tᵢ) ≤ 1 for rate monotonic scheduling"
+      description: "Condition for meeting all timing constraints"
+    - name: "Jitter Bound"
+      formula: "J = max{t_response} - min{t_response}"
+      description: "Maximum variation in response time"
+
+# Key properties and characteristics
+properties:
+  - name: "Timing Guarantees"
+    description: "Algorithms must complete within specified time bounds"
+    importance: "fundamental"
+  - name: "Deterministic Behavior"
+    description: "Predictable execution time and system response"
+    importance: "fundamental"
+  - name: "Priority-based Scheduling"
+    description: "Task scheduling based on timing criticality"
+    importance: "fundamental"
+  - name: "Resource Management"
+    description: "Efficient allocation of computational resources"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "rate-monotonic"
+    name: "Rate Monotonic Scheduling"
+    description: "Static priority scheduling where higher frequency tasks get higher priority"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      import time
+      import threading
+      from typing import List, Dict, Callable, Optional
+      from dataclasses import dataclass
+      from enum import Enum
+      import heapq
+
+      class TaskPriority(Enum):
+          """Task priority levels."""
+          CRITICAL = 1
+          HIGH = 2
+          MEDIUM = 3
+          LOW = 4
+
+      @dataclass
+      class RealTimeTask:
+          """Represents a real-time task."""
+          id: str
+          function: Callable
+          period: float  # Task period in seconds
+          deadline: float  # Relative deadline
+          priority: TaskPriority
+          wcet: float  # Worst-case execution time
+          last_execution: float = 0.0
+          execution_count: int = 0
+
+      class RealTimeController:
+          """Real-time control system implementation."""
+
+          def __init__(self):
+              self.tasks: List[RealTimeTask] = []
+              self.running = False
+              self.scheduler_thread: Optional[threading.Thread] = None
+              self.task_queue = []
+              self.lock = threading.Lock()
+
+          def add_task(self, task: RealTimeTask):
+              """Add a real-time task to the system."""
+              with self.lock:
+                  self.tasks.append(task)
+                  # Sort tasks by priority (rate monotonic)
+                  self.tasks.sort(key=lambda t: t.period)
+
+          def _check_schedulability(self) -> bool:
+              """Check if all tasks are schedulable using rate monotonic analysis."""
+              # Rate monotonic schedulability test
+              utilization = 0.0
+              for task in self.tasks:
+                  utilization += task.wcet / task.period
+
+              # Sufficient condition for rate monotonic scheduling
+              return utilization <= 1.0
+
+          def _schedule_tasks(self):
+              """Main scheduling loop."""
+              while self.running:
+                  current_time = time.time()
+
+                  with self.lock:
+                      # Check for tasks that need to be executed
+                      for task in self.tasks:
+                          time_since_last = current_time - task.last_execution
+
+                          if time_since_last >= task.period:
+                              # Task is ready to execute
+                              heapq.heappush(self.task_queue, (task.priority.value, current_time, task))
+                              task.last_execution = current_time
+
+                      # Execute highest priority task
+                      if self.task_queue:
+                          priority, ready_time, task = heapq.heappop(self.task_queue)
+
+                          # Check if we can still meet deadline
+                          if current_time - ready_time < task.deadline:
+                              # Execute task
+                              start_time = time.time()
+                              try:
+                                  task.function()
+                                  task.execution_count += 1
+                              except Exception as e:
+                                  print(f"Task {task.id} failed: {e}")
+
+                              execution_time = time.time() - start_time
+
+                              # Check if execution time exceeded WCET
+                              if execution_time > task.wcet:
+                                  print(f"Warning: Task {task.id} exceeded WCET")
+
+                  # Small sleep to prevent busy waiting
+                  time.sleep(0.001)
+
+          def start(self):
+              """Start the real-time control system."""
+              if not self._check_schedulability():
+                  raise RuntimeError("Tasks are not schedulable")
+
+              self.running = True
+              self.scheduler_thread = threading.Thread(target=self._schedule_tasks)
+              self.scheduler_thread.start()
+
+          def stop(self):
+              """Stop the real-time control system."""
+              self.running = False
+              if self.scheduler_thread:
+                  self.scheduler_thread.join()
+
+          def get_task_statistics(self) -> Dict[str, Dict]:
+              """Get execution statistics for all tasks."""
+              stats = {}
+              for task in self.tasks:
+                  stats[task.id] = {
+                      'execution_count': task.execution_count,
+                      'period': task.period,
+                      'deadline': task.deadline,
+                      'wcet': task.wcet,
+                      'priority': task.priority.name
+                  }
+              return stats
+
+      # Example usage
+      def create_control_tasks():
+          """Create example real-time control tasks."""
+          controller = RealTimeController()
+
+          # Critical control task (high frequency)
+          def critical_control():
+              # Simulate critical control computation
+              time.sleep(0.001)  # 1ms execution time
+              print("Critical control executed")
+
+          critical_task = RealTimeTask(
+              id="critical_control",
+              function=critical_control,
+              period=0.01,  # 10ms period
+              deadline=0.005,  # 5ms deadline
+              priority=TaskPriority.CRITICAL,
+              wcet=0.002  # 2ms WCET
+          )
+
+          # Sensor reading task (medium frequency)
+          def sensor_reading():
+              # Simulate sensor reading
+              time.sleep(0.005)  # 5ms execution time
+              print("Sensor reading completed")
+
+          sensor_task = RealTimeTask(
+              id="sensor_reading",
+              function=sensor_reading,
+              period=0.05,  # 50ms period
+              deadline=0.03,  # 30ms deadline
+              priority=TaskPriority.MEDIUM,
+              wcet=0.008  # 8ms WCET
+          )
+
+          # Status monitoring task (low frequency)
+          def status_monitoring():
+              # Simulate status monitoring
+              time.sleep(0.01)  # 10ms execution time
+              print("Status monitoring completed")
+
+          status_task = RealTimeTask(
+              id="status_monitoring",
+              function=status_monitoring,
+              period=0.1,  # 100ms period
+              deadline=0.08,  # 80ms deadline
+              priority=TaskPriority.LOW,
+              wcet=0.015  # 15ms WCET
+          )
+
+          controller.add_task(critical_task)
+          controller.add_task(sensor_task)
+          controller.add_task(status_task)
+
+          return controller
+    advantages:
+      - "Guaranteed timing constraints"
+      - "Deterministic behavior"
+      - "Predictable performance"
+      - "Suitable for safety-critical systems"
+      - "Efficient resource utilization"
+    disadvantages:
+      - "Limited to simple control algorithms"
+      - "Requires careful timing analysis"
+      - "May not achieve optimal control performance"
+      - "Complex system design"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(1)"
+  space_complexity: "O(1)"
+  notes: "Constant time complexity for individual control actions, but requires careful timing analysis"
+
+# Applications and use cases
+applications:
+  - category: "Safety-Critical Systems"
+    examples: ["aircraft flight control", "automotive braking", "medical devices"]
+  - category: "Industrial Automation"
+    examples: ["robotic assembly", "process control", "manufacturing lines"]
+  - category: "Embedded Systems"
+    examples: ["microcontrollers", "IoT devices", "sensors"]
+  - category: "Real-time Communication"
+    examples: ["network protocols", "telecommunications", "streaming media"]
+
+# Educational value
+educational_value:
+  - "Understanding real-time systems"
+  - "Timing analysis concepts"
+  - "Scheduling algorithms"
+  - "System design principles"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "cormen2009"
+  - bib_key: "buttazzo2011"
+
+# Related algorithms
+related_algorithms:
+  - slug: "real-time-mpc"
+    relationship: "extension"
+    description: "Real-time MPC extends this with predictive control"
+  - slug: "real-time-pid"
+    relationship: "specialization"
+    description: "Real-time PID is a specific control algorithm"
+
+# Tags for categorization
+tags:
+  - "real-time-control"
+  - "timing"
+  - "scheduling"
+  - "deterministic"
+  - "safety-critical"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

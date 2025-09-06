@@ -1,0 +1,230 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: gp-optimization
+name: GP Optimization
+family_id: gaussian-process
+aliases: ["Bayesian Optimization", "GP-based Optimization", "Acquisition Function Optimization"]
+order: 3
+
+# Brief one-sentence summary for cards and navigation
+summary: "Global optimization method using Gaussian processes to efficiently explore and exploit the objective function with uncertainty-aware acquisition functions."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Gaussian Process Optimization, also known as Bayesian Optimization, is a powerful global optimization
+  method for expensive black-box functions. It uses Gaussian processes to model the objective function
+  and employs acquisition functions to balance exploration (uncertain regions) and exploitation (promising regions).
+
+  The key advantage is its sample efficiency - it can find near-optimal solutions with relatively few
+  function evaluations, making it ideal for expensive optimization problems like hyperparameter tuning,
+  experimental design, and engineering optimization.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Objective Function Model"
+      formula: "f(x) ~ GP(μ(x), k(x, x'))"
+      description: "GP prior over the unknown objective function"
+    - name: "Acquisition Function"
+      formula: "α(x) = μ(x) + κσ(x)"
+      description: "Expected Improvement or Upper Confidence Bound"
+    - name: "Expected Improvement"
+      formula: "EI(x) = σ(x)[φ(Z) + ZΦ(Z)]"
+      description: "Where Z = (μ(x) - f(x⁺))/σ(x)"
+    - name: "Upper Confidence Bound"
+      formula: "UCB(x) = μ(x) + βσ(x)"
+      description: "β controls exploration-exploitation trade-off"
+
+# Key properties and characteristics
+properties:
+  - name: "Sample Efficient"
+    description: "Finds good solutions with few function evaluations"
+    importance: "fundamental"
+  - name: "Global Optimization"
+    description: "Avoids local optima through exploration"
+    importance: "fundamental"
+  - name: "Uncertainty-Aware"
+    description: "Uses uncertainty estimates to guide search"
+    importance: "fundamental"
+  - name: "No Gradients Required"
+    description: "Works with black-box functions"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "expected-improvement"
+    name: "Expected Improvement"
+    description: "Most popular acquisition function balancing exploration and exploitation"
+    complexity:
+      time: "O(n³ + m)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from scipy.stats import norm
+      from sklearn.gaussian_process import GaussianProcessRegressor
+      from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+
+      class BayesianOptimizer:
+          """Bayesian Optimization with Expected Improvement."""
+
+          def __init__(self, kernel=None, alpha=1e-10, xi=0.01):
+              self.kernel = kernel or RBF() + WhiteKernel()
+              self.alpha = alpha
+              self.xi = xi  # Exploration parameter
+              self.gp = GaussianProcessRegressor(kernel=self.kernel, alpha=alpha)
+              self.X_observed = []
+              self.y_observed = []
+
+          def _expected_improvement(self, X, f_best):
+              """Calculate Expected Improvement acquisition function."""
+              mu, sigma = self.gp.predict(X, return_std=True)
+
+              # Avoid division by zero
+              sigma = np.maximum(sigma, 1e-9)
+
+              # Calculate improvement
+              improvement = mu - f_best - self.xi
+              Z = improvement / sigma
+
+              # Expected Improvement
+              ei = improvement * norm.cdf(Z) + sigma * norm.pdf(Z)
+
+              return ei
+
+          def _acquisition_function(self, X, f_best):
+              """Negative acquisition function for minimization."""
+              return -self._expected_improvement(X.reshape(1, -1), f_best)[0]
+
+          def suggest_next_point(self, bounds, n_restarts=10):
+              """Suggest next point to evaluate."""
+              if len(self.X_observed) == 0:
+                  # Random initialization
+                  return np.random.uniform(bounds[:, 0], bounds[:, 1])
+
+              # Fit GP to observed data
+              self.gp.fit(self.X_observed, self.y_observed)
+
+              # Find best observed value
+              f_best = np.min(self.y_observed)
+
+              # Optimize acquisition function
+              best_x = None
+              best_acq = -np.inf
+
+              for _ in range(n_restarts):
+                  # Random starting point
+                  x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])
+
+                  # Optimize
+                  result = minimize(
+                      self._acquisition_function,
+                      x0,
+                      args=(f_best,),
+                      bounds=bounds,
+                      method='L-BFGS-B'
+                  )
+
+                  if result.success and -result.fun > best_acq:
+                      best_acq = -result.fun
+                      best_x = result.x
+
+              return best_x
+
+          def optimize(self, objective_func, bounds, n_iterations=50, n_initial=5):
+              """Run Bayesian optimization."""
+              # Initial random sampling
+              for _ in range(n_initial):
+                  x = np.random.uniform(bounds[:, 0], bounds[:, 1])
+                  y = objective_func(x)
+                  self.X_observed.append(x)
+                  self.y_observed.append(y)
+
+              # Bayesian optimization loop
+              for _ in range(n_iterations):
+                  # Suggest next point
+                  x_next = self.suggest_next_point(bounds)
+
+                  # Evaluate objective
+                  y_next = objective_func(x_next)
+
+                  # Update observations
+                  self.X_observed.append(x_next)
+                  self.y_observed.append(y_next)
+
+              # Return best point found
+              best_idx = np.argmin(self.y_observed)
+              return self.X_observed[best_idx], self.y_observed[best_idx]
+    advantages:
+      - "Sample efficient for expensive functions"
+      - "Handles noisy objectives"
+      - "No gradient information required"
+      - "Provides uncertainty estimates"
+      - "Global optimization capability"
+    disadvantages:
+      - "Cubic time complexity"
+      - "Limited to moderate dimensions"
+      - "Requires hyperparameter tuning"
+      - "May get stuck in local optima of acquisition function"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n³ + m)"
+  space_complexity: "O(n²)"
+  notes: "n³ for GP fitting, m for acquisition function optimization"
+
+# Applications and use cases
+applications:
+  - category: "Hyperparameter Tuning"
+    examples: ["neural network tuning", "SVM parameter selection", "model selection"]
+  - category: "Experimental Design"
+    examples: ["drug discovery", "material design", "chemical synthesis"]
+  - category: "Engineering Optimization"
+    examples: ["aerospace design", "automotive tuning", "structural optimization"]
+  - category: "Algorithm Configuration"
+    examples: ["SAT solver tuning", "optimization algorithm parameters"]
+
+# Educational value
+educational_value:
+  - "Introduction to Bayesian optimization"
+  - "Understanding acquisition functions"
+  - "Exploration vs exploitation trade-off"
+  - "Global optimization strategies"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "rasmussen2006"
+  - bib_key: "shahriari2016"
+
+# Related algorithms
+related_algorithms:
+  - slug: "gp-regression"
+    relationship: "foundation"
+    description: "GP regression provides the surrogate model"
+  - slug: "sparse-gps"
+    relationship: "scalable_variant"
+    description: "Sparse GPs for high-dimensional optimization"
+
+# Tags for categorization
+tags:
+  - "gaussian-process"
+  - "optimization"
+  - "bayesian"
+  - "global-optimization"
+  - "acquisition-functions"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

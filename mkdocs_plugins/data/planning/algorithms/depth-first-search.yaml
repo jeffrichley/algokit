@@ -1,0 +1,322 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: depth-first-search
+name: Depth-First Search
+family_id: planning
+aliases: ["DFS", "Backtracking", "Depth-First Traversal"]
+order: 3
+
+# Brief one-sentence summary for cards and navigation
+summary: "Graph traversal algorithm that explores as far as possible along each branch before backtracking, using stack-based or recursive implementation."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Depth-First Search (DFS) is a fundamental graph traversal algorithm that explores as far as possible
+  along each branch before backtracking. It uses a stack (either explicit or implicit through recursion)
+  to keep track of the current path, making it memory-efficient for deep graphs.
+
+  DFS is particularly useful for problems involving backtracking, cycle detection, topological sorting,
+  and finding strongly connected components. While it doesn't guarantee shortest paths, it's efficient
+  in terms of memory usage and can handle very deep graphs.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Stack-based Traversal"
+      formula: "S = {current_path}, explore deepest unvisited neighbor"
+      description: "Always explore the deepest unvisited node first"
+    - name: "Backtracking"
+      formula: "When no unvisited neighbors, backtrack to previous node"
+      description: "Return to most recent node with unvisited neighbors"
+    - name: "Path Exploration"
+      formula: "P = {v₁, v₂, ..., vₖ} where (vᵢ, vᵢ₊₁) ∈ E"
+      description: "Explores complete paths before backtracking"
+    - name: "Memory Efficiency"
+      formula: "Space = O(depth) vs BFS O(breadth)"
+      description: "Memory usage proportional to maximum depth"
+
+# Key properties and characteristics
+properties:
+  - name: "Memory Efficient"
+    description: "Uses O(depth) space instead of O(breadth)"
+    importance: "fundamental"
+  - name: "Path Exploration"
+    description: "Explores complete paths before backtracking"
+    importance: "fundamental"
+  - name: "Backtracking"
+    description: "Natural support for backtracking problems"
+    importance: "fundamental"
+  - name: "Not Optimal"
+    description: "Doesn't guarantee shortest paths"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "recursive"
+    name: "Recursive DFS"
+    description: "Natural recursive implementation using function call stack"
+    complexity:
+      time: "O(V + E)"
+      space: "O(V)"
+    code: |
+      from typing import List, Tuple, Dict, Set, Optional
+
+      class DepthFirstSearch:
+          """Depth-First Search implementation."""
+
+          def __init__(self):
+              self.visited = set()
+              self.parent = {}
+              self.path = []
+
+          def _get_neighbors(self, position: Tuple[int, int], grid: List[List[int]]) -> List[Tuple[int, int]]:
+              """Get valid neighboring positions."""
+              rows, cols = len(grid), len(grid[0])
+              x, y = position
+              neighbors = []
+
+              # Check 4 directions (up, down, left, right)
+              directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+              for dx, dy in directions:
+                  new_x, new_y = x + dx, y + dy
+
+                  # Check bounds and obstacles
+                  if (0 <= new_x < rows and 0 <= new_y < cols and
+                      grid[new_x][new_y] != 1):  # 1 represents obstacle
+                      neighbors.append((new_x, new_y))
+
+              return neighbors
+
+          def _reconstruct_path(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
+              """Reconstruct path from goal to start."""
+              path = []
+              current = goal
+
+              while current is not None:
+                  path.append(current)
+                  current = self.parent.get(current)
+
+              return path[::-1]
+
+          def search_recursive(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
+              """Find path from start to goal using recursive DFS."""
+              self.visited = set()
+              self.parent = {start: None}
+
+              def dfs(current: Tuple[int, int]) -> bool:
+                  if current == goal:
+                      return True
+
+                  self.visited.add(current)
+
+                  for neighbor in self._get_neighbors(current, grid):
+                      if neighbor not in self.visited:
+                          self.parent[neighbor] = current
+                          if dfs(neighbor):
+                              return True
+
+                  return False
+
+              if dfs(start):
+                  return self._reconstruct_path(start, goal)
+              return None
+
+          def search_iterative(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
+              """Find path from start to goal using iterative DFS with stack."""
+              stack = [start]
+              visited = set()
+              parent = {start: None}
+
+              while stack:
+                  current = stack.pop()
+
+                  if current == goal:
+                      return self._reconstruct_path(start, goal)
+
+                  if current in visited:
+                      continue
+
+                  visited.add(current)
+
+                  # Add neighbors to stack (in reverse order for consistent exploration)
+                  neighbors = self._get_neighbors(current, grid)
+                  for neighbor in reversed(neighbors):
+                      if neighbor not in visited:
+                          parent[neighbor] = current
+                          stack.append(neighbor)
+
+              return None
+
+          def find_all_paths(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> List[List[Tuple[int, int]]]:
+              """Find all possible paths from start to goal using DFS."""
+              all_paths = []
+
+              def dfs_all_paths(current: Tuple[int, int], path: List[Tuple[int, int]]):
+                  if current == goal:
+                      all_paths.append(path + [current])
+                      return
+
+                  path.append(current)
+
+                  for neighbor in self._get_neighbors(current, grid):
+                      if neighbor not in path:  # Avoid cycles
+                          dfs_all_paths(neighbor, path)
+
+                  path.pop()  # Backtrack
+
+              dfs_all_paths(start, [])
+              return all_paths
+
+          def detect_cycle(self, graph: Dict[int, List[int]]) -> bool:
+              """Detect cycle in directed graph using DFS."""
+              WHITE, GRAY, BLACK = 0, 1, 2
+              color = {node: WHITE for node in graph}
+
+              def dfs_cycle(node: int) -> bool:
+                  if color[node] == GRAY:
+                      return True  # Back edge found
+
+                  if color[node] == BLACK:
+                      return False  # Already processed
+
+                  color[node] = GRAY
+
+                  for neighbor in graph.get(node, []):
+                      if dfs_cycle(neighbor):
+                          return True
+
+                  color[node] = BLACK
+                  return False
+
+              for node in graph:
+                  if color[node] == WHITE:
+                      if dfs_cycle(node):
+                          return True
+
+              return False
+
+      # Example usage for tree traversal
+      class TreeNode:
+          def __init__(self, val=0, left=None, right=None):
+              self.val = val
+              self.left = left
+              self.right = right
+
+      def dfs_tree_traversal(root: TreeNode) -> List[int]:
+          """Pre-order traversal of binary tree using DFS."""
+          result = []
+
+          def dfs(node: TreeNode):
+              if not node:
+                  return
+
+              result.append(node.val)  # Visit current node
+              dfs(node.left)           # Traverse left subtree
+              dfs(node.right)          # Traverse right subtree
+
+          dfs(root)
+          return result
+
+      def topological_sort(graph: Dict[int, List[int]]) -> List[int]:
+          """Topological sort using DFS."""
+          WHITE, GRAY, BLACK = 0, 1, 2
+          color = {node: WHITE for node in graph}
+          result = []
+
+          def dfs(node: int) -> bool:
+              if color[node] == GRAY:
+                  return False  # Cycle detected
+
+              if color[node] == BLACK:
+                  return True  # Already processed
+
+              color[node] = GRAY
+
+              for neighbor in graph.get(node, []):
+                  if not dfs(neighbor):
+                      return False
+
+              color[node] = BLACK
+              result.append(node)
+              return True
+
+          for node in graph:
+              if color[node] == WHITE:
+                  if not dfs(node):
+                      return []  # Cycle detected
+
+          return result[::-1]  # Reverse to get topological order
+    advantages:
+      - "Memory efficient for deep graphs"
+      - "Natural backtracking support"
+      - "Good for cycle detection"
+      - "Simple recursive implementation"
+      - "Explores complete paths"
+    disadvantages:
+      - "Not optimal for shortest paths"
+      - "May get stuck in deep paths"
+      - "Recursive version has stack overflow risk"
+      - "Doesn't guarantee finding shortest solution"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(V + E)"
+  space_complexity: "O(V)"
+  notes: "V is number of vertices, E is number of edges. Space complexity is O(depth) for recursion stack"
+
+# Applications and use cases
+applications:
+  - category: "Backtracking Problems"
+    examples: ["N-queens", "Sudoku solver", "maze generation"]
+  - category: "Graph Analysis"
+    examples: ["cycle detection", "topological sorting", "strongly connected components"]
+  - category: "Tree Traversal"
+    examples: ["pre-order traversal", "in-order traversal", "post-order traversal"]
+  - category: "Path Finding"
+    examples: ["maze solving", "puzzle solving", "game AI"]
+
+# Educational value
+educational_value:
+  - "Understanding recursion and backtracking"
+  - "Stack data structure concepts"
+  - "Graph traversal strategies"
+  - "Memory vs time trade-offs"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "cormen2009"
+  - bib_key: "russell2003"
+
+# Related algorithms
+related_algorithms:
+  - slug: "breadth-first-search"
+    relationship: "alternative"
+    description: "BFS is an alternative traversal strategy"
+  - slug: "a-star-search"
+    relationship: "foundation"
+    description: "A* can be viewed as guided DFS"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "search"
+  - "traversal"
+  - "backtracking"
+  - "graph-algorithms"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

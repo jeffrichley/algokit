@@ -1,0 +1,175 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: gp-regression
+name: GP Regression
+family_id: gaussian-process
+aliases: ["Gaussian Process Regression", "GPR", "Kriging"]
+order: 1
+
+# Brief one-sentence summary for cards and navigation
+summary: "Probabilistic regression method that provides both predictions and uncertainty estimates using Gaussian processes."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Gaussian Process Regression (GPR) is a powerful non-parametric Bayesian method for regression that provides
+  both predictions and uncertainty estimates. Unlike traditional regression methods, GPR doesn't assume a
+  specific functional form but instead places a prior over functions and updates this prior based on observed data.
+
+  The key advantage of GPR is its ability to quantify uncertainty in predictions, making it particularly
+  valuable for applications where understanding prediction confidence is crucial, such as active learning,
+  experimental design, and safety-critical systems.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Prior Distribution"
+      formula: "f(x) ~ GP(m(x), k(x, x'))"
+      description: "Gaussian process prior with mean function m(x) and covariance function k(x, x')"
+    - name: "Posterior Distribution"
+      formula: "f*|X, y ~ N(μ*, Σ*)"
+      description: "Posterior distribution at test points given training data"
+    - name: "Predictive Mean"
+      formula: "μ* = K(X*, X)[K(X, X) + σ²I]⁻¹y"
+      description: "Mean prediction at test points"
+    - name: "Predictive Variance"
+      formula: "Σ* = K(X*, X*) - K(X*, X)[K(X, X) + σ²I]⁻¹K(X, X*)"
+      description: "Uncertainty estimate at test points"
+
+# Key properties and characteristics
+properties:
+  - name: "Uncertainty Quantification"
+    description: "Provides natural confidence intervals for predictions"
+    importance: "fundamental"
+  - name: "Non-parametric"
+    description: "Model complexity grows with data size"
+    importance: "fundamental"
+  - name: "Kernel-based"
+    description: "Flexibility through choice of covariance function"
+    importance: "fundamental"
+  - name: "Bayesian"
+    description: "Incorporates prior knowledge and updates beliefs"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard GP Regression"
+    description: "Full GP with exact inference - suitable for small to medium datasets"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      from scipy.linalg import cho_solve, cho_factor
+      from sklearn.gaussian_process import GaussianProcessRegressor
+      from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+
+      class GPRegression:
+          """Gaussian Process Regression implementation."""
+
+          def __init__(self, kernel=None, alpha=1e-10):
+              self.kernel = kernel or RBF() + WhiteKernel()
+              self.alpha = alpha
+              self.X_train = None
+              self.y_train = None
+              self.K_inv = None
+
+          def fit(self, X, y):
+              """Fit the GP to training data."""
+              self.X_train = X
+              self.y_train = y
+
+              # Compute covariance matrix
+              K = self.kernel(X) + self.alpha * np.eye(len(X))
+
+              # Cholesky decomposition for numerical stability
+              self.L = cho_factor(K)
+              self.K_inv = cho_solve(self.L, np.eye(len(X)))
+
+          def predict(self, X_test, return_std=True):
+              """Make predictions at test points."""
+              # Cross-covariance between test and training points
+              K_star = self.kernel(X_test, self.X_train)
+
+              # Predictive mean
+              mu = K_star @ self.K_inv @ self.y_train
+
+              if return_std:
+                  # Predictive variance
+                  K_star_star = self.kernel(X_test)
+                  var = np.diag(K_star_star) - np.sum(K_star @ self.K_inv * K_star, axis=1)
+                  std = np.sqrt(np.maximum(var, 0))
+                  return mu, std
+
+              return mu
+    advantages:
+      - "Provides uncertainty estimates"
+      - "Flexible through kernel choice"
+      - "No assumptions about functional form"
+      - "Exact inference for small datasets"
+    disadvantages:
+      - "Cubic time complexity"
+      - "Memory intensive for large datasets"
+      - "Requires hyperparameter tuning"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n³)"
+  space_complexity: "O(n²)"
+  notes: "Standard GP has cubic time complexity due to matrix inversion. Sparse methods can reduce this to O(nm²) where m << n"
+
+# Applications and use cases
+applications:
+  - category: "Time Series Prediction"
+    examples: ["stock prices", "weather forecasting", "sensor data"]
+  - category: "Spatial Interpolation"
+    examples: ["geostatistics", "environmental monitoring", "mining"]
+  - category: "Active Learning"
+    examples: ["experimental design", "hyperparameter optimization"]
+  - category: "Surrogate Modeling"
+    examples: ["computer experiments", "expensive function approximation"]
+
+# Educational value
+educational_value:
+  - "Introduction to Bayesian machine learning"
+  - "Understanding kernel methods"
+  - "Uncertainty quantification concepts"
+  - "Non-parametric modeling"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "rasmussen2006"
+  - bib_key: "williams2006"
+
+# Related algorithms
+related_algorithms:
+  - slug: "gp-classification"
+    relationship: "variant"
+    description: "GP for classification problems"
+  - slug: "sparse-gps"
+    relationship: "scalable_variant"
+    description: "Scalable GP for large datasets"
+
+# Tags for categorization
+tags:
+  - "gaussian-process"
+  - "regression"
+  - "bayesian"
+  - "uncertainty-quantification"
+  - "kernel-methods"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

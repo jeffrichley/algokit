@@ -1,0 +1,420 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: partial-order-planning
+name: Partial Order Planning
+family_id: planning
+aliases: ["POP", "Least Commitment Planning", "Flexible Planning"]
+order: 5
+
+# Brief one-sentence summary for cards and navigation
+summary: "Planning algorithm that maintains partial ordering of actions, allowing flexible execution order and handling of uncertain environments."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Partial Order Planning (POP) is a classical planning algorithm that maintains a partial ordering of actions
+  rather than a strict sequence. This approach allows for flexible execution order and can handle uncertain
+  environments where the exact order of actions may not be known in advance.
+
+  The key insight is that many planning problems don't require a strict sequence of actions - only that
+  certain actions must occur before others. This flexibility makes POP particularly useful for problems
+  involving parallel execution, resource constraints, and uncertain environments.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Partial Order"
+      formula: "P = (A, <) where A is set of actions and < is partial order"
+      description: "Set of actions with partial ordering constraints"
+    - name: "Causal Links"
+      formula: "Aᵢ --[p]--> Aⱼ means Aᵢ achieves p for Aⱼ"
+      description: "Links showing which action achieves which precondition"
+    - name: "Threats"
+      formula: "Aₖ threatens Aᵢ --[p]--> Aⱼ if Aₖ deletes p"
+      description: "Actions that could interfere with causal links"
+    - name: "Open Conditions"
+      formula: "OC = {p : p is precondition not yet achieved}"
+      description: "Preconditions that still need to be achieved"
+
+# Key properties and characteristics
+properties:
+  - name: "Flexible Execution"
+    description: "Actions can be executed in any order consistent with constraints"
+    importance: "fundamental"
+  - name: "Least Commitment"
+    description: "Makes minimal commitments about action ordering"
+    importance: "fundamental"
+  - name: "Parallel Execution"
+    description: "Natural support for parallel action execution"
+    importance: "fundamental"
+  - name: "Threat Resolution"
+    description: "Handles conflicts between actions"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard POP"
+    description: "Classic POP implementation with threat resolution"
+    complexity:
+      time: "O(n!)"
+      space: "O(n)"
+    code: |
+      from typing import List, Set, Dict, Tuple, Optional
+      from dataclasses import dataclass
+      from collections import defaultdict
+
+      @dataclass
+      class Action:
+          """Represents a planning action."""
+          name: str
+          preconditions: Set[str]
+          effects: Set[str]
+          add_effects: Set[str]
+          delete_effects: Set[str]
+
+      @dataclass
+      class CausalLink:
+          """Represents a causal link between actions."""
+          producer: Action
+          consumer: Action
+          condition: str
+
+      @dataclass
+      class Threat:
+          """Represents a threat to a causal link."""
+          threat_action: Action
+          causal_link: CausalLink
+
+      @dataclass
+      class PartialOrderPlan:
+          """Represents a partial order plan."""
+          actions: Set[Action]
+          causal_links: Set[CausalLink]
+          ordering_constraints: Set[Tuple[Action, Action]]
+          open_conditions: Set[Tuple[Action, str]]
+
+      class PartialOrderPlanner:
+          """Partial Order Planning algorithm implementation."""
+
+          def __init__(self):
+              self.actions = []
+              self.initial_state = set()
+              self.goal = set()
+
+          def add_action(self, name: str, preconditions: Set[str], add_effects: Set[str], delete_effects: Set[str]):
+              """Add an action to the planning domain."""
+              action = Action(
+                  name=name,
+                  preconditions=preconditions,
+                  effects=add_effects | delete_effects,
+                  add_effects=add_effects,
+                  delete_effects=delete_effects
+              )
+              self.actions.append(action)
+
+          def _create_initial_plan(self) -> PartialOrderPlan:
+              """Create initial plan with start and finish actions."""
+              # Create start action (achieves initial state)
+              start_action = Action(
+                  name="START",
+                  preconditions=set(),
+                  effects=self.initial_state,
+                  add_effects=self.initial_state,
+                  delete_effects=set()
+              )
+
+              # Create finish action (requires goal)
+              finish_action = Action(
+                  name="FINISH",
+                  preconditions=self.goal,
+                  effects=set(),
+                  add_effects=set(),
+                  delete_effects=set()
+              )
+
+              # Create initial plan
+              plan = PartialOrderPlan(
+                  actions={start_action, finish_action},
+                  causal_links=set(),
+                  ordering_constraints={(start_action, finish_action)},
+                  open_conditions={(finish_action, condition) for condition in self.goal}
+              )
+
+              return plan
+
+          def _find_threats(self, plan: PartialOrderPlan) -> List[Threat]:
+              """Find all threats in the current plan."""
+              threats = []
+
+              for causal_link in plan.causal_links:
+                  for action in plan.actions:
+                      # Check if action threatens the causal link
+                      if (action != causal_link.producer and
+                          action != causal_link.consumer and
+                          causal_link.condition in action.delete_effects):
+
+                          # Check if action is not already ordered relative to causal link
+                          if not self._is_ordered(action, causal_link.producer, plan) and \
+                             not self._is_ordered(causal_link.consumer, action, plan):
+                              threats.append(Threat(action, causal_link))
+
+              return threats
+
+          def _is_ordered(self, action1: Action, action2: Action, plan: PartialOrderPlan) -> bool:
+              """Check if action1 is ordered before action2 in the plan."""
+              # Check direct ordering constraint
+              if (action1, action2) in plan.ordering_constraints:
+                  return True
+
+              # Check transitive closure
+              visited = set()
+              stack = [action1]
+
+              while stack:
+                  current = stack.pop()
+                  if current == action2:
+                      return True
+
+                  if current in visited:
+                      continue
+                  visited.add(current)
+
+                  # Add all actions that are ordered after current
+                  for (a1, a2) in plan.ordering_constraints:
+                      if a1 == current:
+                          stack.append(a2)
+
+              return False
+
+          def _resolve_threat(self, threat: Threat, plan: PartialOrderPlan) -> List[PartialOrderPlan]:
+              """Resolve a threat by adding ordering constraints."""
+              plans = []
+
+              # Option 1: Order threat action before producer
+              if not self._is_ordered(threat.threat_action, threat.causal_link.producer, plan):
+                  new_plan = self._copy_plan(plan)
+                  new_plan.ordering_constraints.add((threat.threat_action, threat.causal_link.producer))
+                  plans.append(new_plan)
+
+              # Option 2: Order consumer before threat action
+              if not self._is_ordered(threat.causal_link.consumer, threat.threat_action, plan):
+                  new_plan = self._copy_plan(plan)
+                  new_plan.ordering_constraints.add((threat.causal_link.consumer, threat.threat_action))
+                  plans.append(new_plan)
+
+              return plans
+
+          def _copy_plan(self, plan: PartialOrderPlan) -> PartialOrderPlan:
+              """Create a copy of the plan."""
+              return PartialOrderPlan(
+                  actions=plan.actions.copy(),
+                  causal_links=plan.causal_links.copy(),
+                  ordering_constraints=plan.ordering_constraints.copy(),
+                  open_conditions=plan.open_conditions.copy()
+              )
+
+          def _achieve_condition(self, condition: str, plan: PartialOrderPlan) -> List[PartialOrderPlan]:
+              """Find actions that can achieve a given condition."""
+              plans = []
+
+              for action in self.actions:
+                  if condition in action.add_effects:
+                      new_plan = self._copy_plan(plan)
+
+                      # Add action to plan
+                      new_plan.actions.add(action)
+
+                      # Add causal link
+                      causal_link = CausalLink(action, None, condition)
+                      new_plan.causal_links.add(causal_link)
+
+                      # Add ordering constraint (action before consumer)
+                      for (consumer, cond) in new_plan.open_conditions:
+                          if cond == condition:
+                              new_plan.ordering_constraints.add((action, consumer))
+                              causal_link.consumer = consumer
+                              break
+
+                      # Remove achieved condition from open conditions
+                      new_plan.open_conditions.discard((causal_link.consumer, condition))
+
+                      plans.append(new_plan)
+
+              return plans
+
+          def _is_plan_complete(self, plan: PartialOrderPlan) -> bool:
+              """Check if the plan is complete (no open conditions or threats)."""
+              return len(plan.open_conditions) == 0 and len(self._find_threats(plan)) == 0
+
+          def _plan_search(self, plan: PartialOrderPlan) -> Optional[PartialOrderPlan]:
+              """Recursive search for a complete plan."""
+              if self._is_plan_complete(plan):
+                  return plan
+
+              # Handle threats first
+              threats = self._find_threats(plan)
+              if threats:
+                  for threat in threats:
+                      for resolved_plan in self._resolve_threat(threat, plan):
+                          result = self._plan_search(resolved_plan)
+                          if result:
+                              return result
+                  return None
+
+              # Handle open conditions
+              if plan.open_conditions:
+                  condition = next(iter(plan.open_conditions))[1]
+                  for new_plan in self._achieve_condition(condition, plan):
+                      result = self._plan_search(new_plan)
+                      if result:
+                          return result
+
+              return None
+
+          def plan(self, initial_state: Set[str], goal: Set[str]) -> Optional[PartialOrderPlan]:
+              """Find a partial order plan from initial state to goal."""
+              self.initial_state = initial_state
+              self.goal = goal
+
+              # Create initial plan
+              initial_plan = self._create_initial_plan()
+
+              # Search for complete plan
+              return self._plan_search(initial_plan)
+
+          def extract_linear_plan(self, plan: PartialOrderPlan) -> List[Action]:
+              """Extract a linear sequence from partial order plan."""
+              if not plan:
+                  return []
+
+              # Topological sort of actions
+              in_degree = defaultdict(int)
+              graph = defaultdict(list)
+
+              for action in plan.actions:
+                  in_degree[action] = 0
+
+              for (a1, a2) in plan.ordering_constraints:
+                  graph[a1].append(a2)
+                  in_degree[a2] += 1
+
+              # Kahn's algorithm for topological sort
+              queue = [action for action in plan.actions if in_degree[action] == 0]
+              result = []
+
+              while queue:
+                  current = queue.pop(0)
+                  result.append(current)
+
+                  for neighbor in graph[current]:
+                      in_degree[neighbor] -= 1
+                      if in_degree[neighbor] == 0:
+                          queue.append(neighbor)
+
+              return result
+
+      # Example usage
+      def create_simple_planning_example():
+          """Create a simple planning problem example."""
+          planner = PartialOrderPlanner()
+
+          # Define actions
+          planner.add_action(
+              "move",
+              {"at-A"},
+              {"at-B"},
+              {"at-A"}
+          )
+
+          planner.add_action(
+              "load",
+              {"at-B", "empty"},
+              {"loaded"},
+              {"empty"}
+          )
+
+          planner.add_action(
+              "unload",
+              {"loaded", "at-C"},
+              {"empty"},
+              {"loaded"}
+          )
+
+          # Define initial state and goal
+          initial = {"at-A", "empty"}
+          goal = {"at-C", "empty"}
+
+          return planner, initial, goal
+    advantages:
+      - "Flexible execution order"
+      - "Natural parallel execution support"
+      - "Handles uncertain environments"
+      - "Least commitment approach"
+      - "Good for resource-constrained problems"
+    disadvantages:
+      - "Can be computationally expensive"
+      - "Complex threat resolution"
+      - "May not scale to large problems"
+      - "Requires careful constraint management"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n!)"
+  space_complexity: "O(n)"
+  notes: "n is the number of actions. Worst-case exponential due to threat resolution"
+
+# Applications and use cases
+applications:
+  - category: "Project Management"
+    examples: ["workflow planning", "resource allocation", "scheduling"]
+  - category: "Robotics"
+    examples: ["multi-robot coordination", "task planning", "manipulation"]
+  - category: "Manufacturing"
+    examples: ["production planning", "assembly line optimization", "quality control"]
+  - category: "Logistics"
+    examples: ["supply chain management", "transportation planning", "warehouse operations"]
+
+# Educational value
+educational_value:
+  - "Understanding partial order concepts"
+  - "Constraint satisfaction problems"
+  - "Flexible planning approaches"
+  - "Threat resolution strategies"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "russell2003"
+  - bib_key: "weld1999"
+
+# Related algorithms
+related_algorithms:
+  - slug: "graphplan"
+    relationship: "alternative"
+    description: "Alternative approach to classical planning"
+  - slug: "fast-forward"
+    relationship: "alternative"
+    description: "Different planning algorithm for similar problems"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "partial-order"
+  - "flexible-planning"
+  - "constraint-satisfaction"
+  - "parallel-execution"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

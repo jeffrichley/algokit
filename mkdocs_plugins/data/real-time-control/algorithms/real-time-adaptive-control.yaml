@@ -1,0 +1,342 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: real-time-adaptive-control
+name: Real-Time Adaptive Control
+family_id: real-time-control
+aliases: ["RT-Adaptive Control", "Real-Time Self-Tuning", "Adaptive RT Control"]
+order: 4
+
+# Brief one-sentence summary for cards and navigation
+summary: "Adaptive control algorithms that automatically adjust controller parameters in real-time to maintain performance under changing conditions."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Real-Time Adaptive Control combines the principles of adaptive control with real-time system requirements,
+  automatically adjusting controller parameters to maintain performance under changing conditions while
+  meeting strict timing constraints. The algorithm continuously monitors system performance and updates
+  control parameters to compensate for variations in plant dynamics, disturbances, and operating conditions.
+
+  The key challenge is balancing adaptation speed with stability and timing guarantees. Real-time adaptive
+  control systems must ensure that parameter updates don't violate timing constraints while maintaining
+  system stability and performance.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Plant Model"
+      formula: "y(t) = G(s, θ)u(t) + d(t)"
+      description: "Plant with unknown parameters θ and disturbances d"
+    - name: "Parameter Update"
+      formula: "θ̂(t+1) = θ̂(t) + γ(t)φ(t)e(t)"
+      description: "Recursive parameter estimation with adaptation gain"
+    - name: "Control Law"
+      formula: "u(t) = C(θ̂(t), r(t), y(t))"
+      description: "Control law with adaptive parameters"
+    - name: "Stability Condition"
+      formula: "∑ᵢ₌₀ᵗ γ(i) < ∞ and ∑ᵢ₌₀ᵗ γ²(i) < ∞"
+      description: "Conditions for parameter convergence"
+
+# Key properties and characteristics
+properties:
+  - name: "Self-Tuning"
+    description: "Automatically adjusts controller parameters"
+    importance: "fundamental"
+  - name: "Robust to Variations"
+    description: "Handles changes in plant dynamics"
+    importance: "fundamental"
+  - name: "Real-Time Constraints"
+    description: "Meets timing requirements during adaptation"
+    importance: "fundamental"
+  - name: "Stability Guarantees"
+    description: "Maintains system stability during adaptation"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "model-reference"
+    name: "Model Reference Adaptive Control"
+    description: "MRAC implementation with real-time constraints"
+    complexity:
+      time: "O(n)"
+      space: "O(n)"
+    code: |
+      import time
+      import numpy as np
+      from typing import Optional, Tuple, List
+      from dataclasses import dataclass
+      from scipy.linalg import solve
+
+      @dataclass
+      class AdaptiveControlParameters:
+          """Parameters for adaptive controller."""
+          dt: float  # Sampling time
+          adaptation_gain: float  # Adaptation rate
+          reference_model_params: List[float]  # Reference model parameters
+          initial_params: List[float]  # Initial controller parameters
+          param_bounds: Tuple[List[float], List[float]]  # Parameter bounds
+          max_adaptation_time: float  # Maximum time for parameter update
+
+      class RealTimeAdaptiveControl:
+          """Real-time adaptive control implementation."""
+
+          def __init__(self, params: AdaptiveControlParameters):
+              self.params = params
+
+              # Controller parameters
+              self.theta = np.array(params.initial_params)
+              self.theta_min = np.array(params.param_bounds[0])
+              self.theta_max = np.array(params.param_bounds[1])
+
+              # Reference model
+              self.reference_model = self._create_reference_model()
+
+              # Adaptation state
+              self.phi = np.zeros(len(self.theta))  # Regressor vector
+              self.error_history = []
+              self.parameter_history = []
+
+              # Timing
+              self.last_adaptation_time = time.time()
+              self.adaptation_times = []
+
+          def _create_reference_model(self):
+              """Create reference model for MRAC."""
+              # Simple second-order reference model
+              a1, a2 = self.params.reference_model_params[:2]
+              b1, b2 = self.params.reference_model_params[2:]
+
+              return {
+                  'a1': a1, 'a2': a2,
+                  'b1': b1, 'b2': b2,
+                  'y_ref_prev': 0.0,
+                  'y_ref_prev2': 0.0,
+                  'u_ref_prev': 0.0,
+                  'u_ref_prev2': 0.0
+              }
+
+          def _update_reference_model(self, reference: float) -> float:
+              """Update reference model and get reference output."""
+              # Reference model: y_ref = (b1*z + b2*z^2) / (1 + a1*z + a2*z^2) * r
+              y_ref = (self.reference_model['b1'] * reference +
+                      self.reference_model['b2'] * self.reference_model['u_ref_prev'] -
+                      self.reference_model['a1'] * self.reference_model['y_ref_prev'] -
+                      self.reference_model['a2'] * self.reference_model['y_ref_prev2'])
+
+              # Update reference model state
+              self.reference_model['y_ref_prev2'] = self.reference_model['y_ref_prev']
+              self.reference_model['y_ref_prev'] = y_ref
+              self.reference_model['u_ref_prev2'] = self.reference_model['u_ref_prev']
+              self.reference_model['u_ref_prev'] = reference
+
+              return y_ref
+
+          def _update_regressor(self, y: float, u: float, y_ref: float):
+              """Update regressor vector for parameter estimation."""
+              # Simple regressor for second-order system
+              self.phi[0] = y  # Current output
+              self.phi[1] = u  # Current input
+              self.phi[2] = y_ref  # Reference output
+
+          def _adapt_parameters(self, error: float) -> bool:
+              """Adapt controller parameters with timing constraints."""
+              start_time = time.time()
+
+              # Check if enough time has passed since last adaptation
+              if start_time - self.last_adaptation_time < self.params.max_adaptation_time:
+                  return False
+
+              # Parameter update law
+              gamma = self.params.adaptation_gain
+              theta_new = self.theta + gamma * self.phi * error
+
+              # Apply parameter bounds
+              theta_new = np.clip(theta_new, self.theta_min, self.theta_max)
+
+              # Update parameters
+              self.theta = theta_new
+
+              # Record adaptation
+              self.parameter_history.append(self.theta.copy())
+              self.last_adaptation_time = start_time
+
+              # Record timing
+              adaptation_time = time.time() - start_time
+              self.adaptation_times.append(adaptation_time)
+
+              # Keep only recent history
+              if len(self.parameter_history) > 100:
+                  self.parameter_history = self.parameter_history[-100:]
+              if len(self.adaptation_times) > 100:
+                  self.adaptation_times = self.adaptation_times[-100:]
+
+              return True
+
+          def control(self, reference: float, measurement: float) -> float:
+              """Compute control action using adaptive control."""
+              # Update reference model
+              y_ref = self._update_reference_model(reference)
+
+              # Calculate tracking error
+              error = y_ref - measurement
+              self.error_history.append(error)
+
+              # Update regressor
+              self._update_regressor(measurement, 0.0, y_ref)  # u will be computed
+
+              # Adapt parameters
+              adapted = self._adapt_parameters(error)
+
+              # Compute control action
+              u = self.theta[0] * measurement + self.theta[1] * reference + self.theta[2] * y_ref
+
+              # Update regressor with computed control
+              self._update_regressor(measurement, u, y_ref)
+
+              return u
+
+          def get_adaptation_statistics(self) -> dict:
+              """Get adaptation performance statistics."""
+              if not self.adaptation_times:
+                  return {}
+
+              return {
+                  'mean_adaptation_time': np.mean(self.adaptation_times),
+                  'max_adaptation_time': np.max(self.adaptation_times),
+                  'adaptation_count': len(self.adaptation_times),
+                  'current_parameters': self.theta.tolist(),
+                  'parameter_bounds': [self.theta_min.tolist(), self.theta_max.tolist()]
+              }
+
+          def reset(self):
+              """Reset adaptive controller."""
+              self.theta = np.array(self.params.initial_params)
+              self.phi = np.zeros(len(self.theta))
+              self.error_history = []
+              self.parameter_history = []
+              self.adaptation_times = []
+              self.last_adaptation_time = time.time()
+
+              # Reset reference model
+              self.reference_model = self._create_reference_model()
+
+      # Example usage
+      def create_rt_adaptive_example():
+          """Create a real-time adaptive control example."""
+          # Adaptive control parameters
+          params = AdaptiveControlParameters(
+              dt=0.01,  # 10ms sampling time
+              adaptation_gain=0.1,
+              reference_model_params=[0.5, 0.25, 0.1, 0.05],  # [a1, a2, b1, b2]
+              initial_params=[1.0, 0.5, 0.1],  # Initial controller parameters
+              param_bounds=([-10.0, -10.0, -10.0], [10.0, 10.0, 10.0]),  # Parameter bounds
+              max_adaptation_time=0.005  # 5ms maximum adaptation time
+          )
+
+          # Create controller
+          controller = RealTimeAdaptiveControl(params)
+
+          return controller
+
+      # Stability analysis
+      class StabilityAnalyzer:
+          """Analyze stability of adaptive control system."""
+
+          @staticmethod
+          def check_parameter_bounds(theta: np.ndarray, theta_min: np.ndarray, theta_max: np.ndarray) -> bool:
+              """Check if parameters are within bounds."""
+              return np.all(theta >= theta_min) and np.all(theta <= theta_max)
+
+          @staticmethod
+          def check_adaptation_gain(gamma: float, phi_norm: float) -> bool:
+              """Check if adaptation gain is appropriate."""
+              # Simple stability condition
+              return gamma * phi_norm < 1.0
+
+          @staticmethod
+          def analyze_error_convergence(error_history: List[float]) -> dict:
+              """Analyze error convergence."""
+              if len(error_history) < 10:
+                  return {}
+
+              recent_errors = error_history[-10:]
+              error_variance = np.var(recent_errors)
+              error_mean = np.mean(recent_errors)
+
+              return {
+                  'error_variance': error_variance,
+                  'error_mean': error_mean,
+                  'convergence_rate': np.abs(error_history[-1] - error_history[-10]) / 10
+              }
+    advantages:
+      - "Self-tuning capability"
+      - "Robust to parameter variations"
+      - "Handles changing conditions"
+      - "Maintains real-time constraints"
+      - "Automatic adaptation"
+    disadvantages:
+      - "Complex stability analysis"
+      - "Requires careful tuning"
+      - "May have learning transients"
+      - "Computational overhead"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n)"
+  space_complexity: "O(n)"
+  notes: "n is the number of parameters. Complexity depends on parameter dimension and adaptation frequency"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace"
+    examples: ["flight control", "attitude control", "trajectory tracking"]
+  - category: "Marine Systems"
+    examples: ["ship control", "underwater vehicles", "navigation"]
+  - category: "Industrial Control"
+    examples: ["process control", "manufacturing", "quality control"]
+  - category: "Robotics"
+    examples: ["manipulator control", "mobile robots", "autonomous systems"]
+
+# Educational value
+educational_value:
+  - "Understanding adaptive control theory"
+  - "Parameter estimation methods"
+  - "Stability analysis"
+  - "Real-time system design"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "medium"
+
+# References and resources
+references:
+  - bib_key: "astrom2008"
+  - bib_key: "buttazzo2011"
+
+# Related algorithms
+related_algorithms:
+  - slug: "real-time-control"
+    relationship: "foundation"
+    description: "Real-time control provides the timing framework"
+  - slug: "real-time-pid"
+    relationship: "extension"
+    description: "Real-time PID can be made adaptive"
+
+# Tags for categorization
+tags:
+  - "real-time-control"
+  - "adaptive-control"
+  - "self-tuning"
+  - "parameter-estimation"
+  - "robust"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

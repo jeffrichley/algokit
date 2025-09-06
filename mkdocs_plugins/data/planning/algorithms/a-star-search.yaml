@@ -1,0 +1,250 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: a-star-search
+name: A* Search
+family_id: planning
+aliases: ["A*", "A-star", "Heuristic Search"]
+order: 1
+
+# Brief one-sentence summary for cards and navigation
+summary: "Optimal pathfinding algorithm that uses heuristics to efficiently find the shortest path from start to goal in weighted graphs."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  A* Search is one of the most popular and effective pathfinding algorithms, combining the best of both
+  uniform-cost search and greedy best-first search. It uses a heuristic function to estimate the cost
+  from any node to the goal, allowing it to make informed decisions about which paths to explore.
+
+  The algorithm is optimal when using an admissible heuristic (one that never overestimates the true cost)
+  and is complete, meaning it will always find a solution if one exists. A* is widely used in robotics,
+  game AI, and navigation systems.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Evaluation Function"
+      formula: "f(n) = g(n) + h(n)"
+      description: "Total estimated cost through node n"
+    - name: "Admissibility Condition"
+      formula: "h(n) ≤ h*(n)"
+      description: "Heuristic never overestimates true cost"
+    - name: "Consistency Condition"
+      formula: "h(n) ≤ c(n, n') + h(n')"
+      description: "Heuristic satisfies triangle inequality"
+    - name: "Optimality"
+      formula: "f(n) = g*(n) + h*(n)"
+      description: "When h is admissible, A* finds optimal path"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal"
+    description: "Finds shortest path when heuristic is admissible"
+    importance: "fundamental"
+  - name: "Complete"
+    description: "Guaranteed to find solution if one exists"
+    importance: "fundamental"
+  - name: "Efficient"
+    description: "Uses heuristics to guide search"
+    importance: "fundamental"
+  - name: "Versatile"
+    description: "Works with any graph structure and cost function"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard A* Implementation"
+    description: "Classic A* with priority queue and heuristic function"
+    complexity:
+      time: "O(b^d)"
+      space: "O(b^d)"
+    code: |
+      import heapq
+      from typing import List, Tuple, Dict, Set, Optional, Callable
+      from dataclasses import dataclass
+
+      @dataclass
+      class Node:
+          """Represents a node in the search graph."""
+          position: Tuple[int, int]
+          g_cost: float = float('inf')
+          h_cost: float = 0.0
+          f_cost: float = float('inf')
+          parent: Optional['Node'] = None
+
+      class AStarSearch:
+          """A* pathfinding algorithm implementation."""
+
+          def __init__(self, heuristic_func: Callable[[Tuple[int, int], Tuple[int, int]], float]):
+              self.heuristic_func = heuristic_func
+
+          def _get_neighbors(self, position: Tuple[int, int], grid: List[List[int]]) -> List[Tuple[int, int]]:
+              """Get valid neighboring positions."""
+              rows, cols = len(grid), len(grid[0])
+              x, y = position
+              neighbors = []
+
+              # Check all 8 directions (including diagonals)
+              for dx in [-1, 0, 1]:
+                  for dy in [-1, 0, 1]:
+                      if dx == 0 and dy == 0:
+                          continue
+
+                      new_x, new_y = x + dx, y + dy
+
+                      # Check bounds and obstacles
+                      if (0 <= new_x < rows and 0 <= new_y < cols and
+                          grid[new_x][new_y] != 1):  # 1 represents obstacle
+                          neighbors.append((new_x, new_y))
+
+              return neighbors
+
+          def _reconstruct_path(self, current: Node) -> List[Tuple[int, int]]:
+              """Reconstruct path from goal to start."""
+              path = []
+              while current is not None:
+                  path.append(current.position)
+                  current = current.parent
+              return path[::-1]
+
+          def search(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
+              """Find shortest path from start to goal using A*."""
+              # Initialize start node
+              start_node = Node(start, g_cost=0, h_cost=self.heuristic_func(start, goal))
+              start_node.f_cost = start_node.g_cost + start_node.h_cost
+
+              # Priority queue (min-heap) for open set
+              open_set = [start_node]
+              heapq.heapify(open_set)
+
+              # Set of visited nodes
+              closed_set: Set[Tuple[int, int]] = set()
+
+              # Dictionary to track nodes by position
+              nodes: Dict[Tuple[int, int], Node] = {start: start_node}
+
+              while open_set:
+                  # Get node with lowest f_cost
+                  current = heapq.heappop(open_set)
+
+                  # Check if we reached the goal
+                  if current.position == goal:
+                      return self._reconstruct_path(current)
+
+                  # Add to closed set
+                  closed_set.add(current.position)
+
+                  # Explore neighbors
+                  for neighbor_pos in self._get_neighbors(current.position, grid):
+                      if neighbor_pos in closed_set:
+                          continue
+
+                      # Calculate tentative g_cost
+                      tentative_g = current.g_cost + self._heuristic_func(current.position, neighbor_pos)
+
+                      # Get or create neighbor node
+                      if neighbor_pos not in nodes:
+                          neighbor = Node(neighbor_pos)
+                          nodes[neighbor_pos] = neighbor
+                      else:
+                          neighbor = nodes[neighbor_pos]
+
+                      # Check if this path is better
+                      if tentative_g < neighbor.g_cost:
+                          neighbor.parent = current
+                          neighbor.g_cost = tentative_g
+                          neighbor.h_cost = self.heuristic_func(neighbor_pos, goal)
+                          neighbor.f_cost = neighbor.g_cost + neighbor.h_cost
+
+                          # Add to open set if not already there
+                          if neighbor not in open_set:
+                              heapq.heappush(open_set, neighbor)
+
+              # No path found
+              return None
+
+          def _heuristic_func(self, pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
+              """Default heuristic function (Euclidean distance)."""
+              return ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
+
+      # Example usage
+      def manhattan_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
+          """Manhattan distance heuristic (admissible for grid-based pathfinding)."""
+          return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+      def euclidean_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
+          """Euclidean distance heuristic (admissible but not consistent)."""
+          return ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
+    advantages:
+      - "Optimal solution when heuristic is admissible"
+      - "Efficient exploration using heuristics"
+      - "Complete algorithm"
+      - "Works with any graph structure"
+      - "Widely applicable"
+    disadvantages:
+      - "Memory intensive for large search spaces"
+      - "Quality depends on heuristic function"
+      - "May explore many nodes in complex environments"
+      - "Requires good heuristic for efficiency"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(b^d)"
+  space_complexity: "O(b^d)"
+  notes: "b is branching factor, d is solution depth. With perfect heuristic, complexity approaches O(d)"
+
+# Applications and use cases
+applications:
+  - category: "Game AI"
+    examples: ["pathfinding in games", "NPC movement", "strategy games"]
+  - category: "Robotics"
+    examples: ["robot navigation", "motion planning", "autonomous vehicles"]
+  - category: "Network Routing"
+    examples: ["internet routing", "transportation networks", "logistics"]
+  - category: "Puzzle Solving"
+    examples: ["sliding puzzles", "Rubik's cube", "maze solving"]
+
+# Educational value
+educational_value:
+  - "Understanding heuristic search"
+  - "Optimality vs efficiency trade-offs"
+  - "Graph search algorithms"
+  - "Algorithm design principles"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "cormen2009"
+  - bib_key: "russell2003"
+
+# Related algorithms
+related_algorithms:
+  - slug: "breadth-first-search"
+    relationship: "foundation"
+    description: "A* extends BFS with heuristics"
+  - slug: "depth-first-search"
+    relationship: "alternative"
+    description: "DFS is a different search strategy"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "search"
+  - "pathfinding"
+  - "heuristic"
+  - "optimal"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

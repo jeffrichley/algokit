@@ -1,0 +1,269 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: breadth-first-search
+name: Breadth-First Search
+family_id: planning
+aliases: ["BFS", "Level-order Search", "Uniform-cost Search"]
+order: 2
+
+# Brief one-sentence summary for cards and navigation
+summary: "Graph traversal algorithm that explores all nodes at the current depth level before moving to the next level, guaranteeing shortest path in unweighted graphs."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Breadth-First Search (BFS) is a fundamental graph traversal algorithm that explores nodes level by level,
+  visiting all nodes at distance k from the start before exploring nodes at distance k+1. This systematic
+  approach guarantees that the first time a goal is reached, it's via the shortest path in unweighted graphs.
+
+  BFS is complete and optimal for unweighted graphs, making it ideal for problems where all edges have
+  equal cost. It's widely used in shortest path problems, level-order tree traversal, and social network
+  analysis.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Level Order"
+      formula: "L₀ = {start}, Lᵢ = {v : d(start, v) = i}"
+      description: "Nodes at distance i from start"
+    - name: "Shortest Path"
+      formula: "d(start, goal) = min{k : goal ∈ Lₖ}"
+      description: "Shortest path length in unweighted graph"
+    - name: "Optimality"
+      formula: "BFS finds path of length d(start, goal)"
+      description: "Guaranteed shortest path in unweighted graphs"
+    - name: "Completeness"
+      formula: "If path exists, BFS will find it"
+      description: "Algorithm is complete for finite graphs"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal for Unweighted"
+    description: "Finds shortest path in unweighted graphs"
+    importance: "fundamental"
+  - name: "Complete"
+    description: "Guaranteed to find solution if one exists"
+    importance: "fundamental"
+  - name: "Level-by-Level"
+    description: "Explores nodes in order of distance from start"
+    importance: "fundamental"
+  - name: "Memory Intensive"
+    description: "Stores all nodes at current level"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard BFS Implementation"
+    description: "Classic BFS using queue data structure"
+    complexity:
+      time: "O(V + E)"
+      space: "O(V)"
+    code: |
+      from collections import deque
+      from typing import List, Tuple, Dict, Set, Optional, List
+
+      class BreadthFirstSearch:
+          """Breadth-First Search implementation."""
+
+          def __init__(self):
+              self.visited = set()
+              self.parent = {}
+
+          def _get_neighbors(self, position: Tuple[int, int], grid: List[List[int]]) -> List[Tuple[int, int]]:
+              """Get valid neighboring positions."""
+              rows, cols = len(grid), len(grid[0])
+              x, y = position
+              neighbors = []
+
+              # Check 4 directions (up, down, left, right)
+              directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+              for dx, dy in directions:
+                  new_x, new_y = x + dx, y + dy
+
+                  # Check bounds and obstacles
+                  if (0 <= new_x < rows and 0 <= new_y < cols and
+                      grid[new_x][new_y] != 1):  # 1 represents obstacle
+                      neighbors.append((new_x, new_y))
+
+              return neighbors
+
+          def _reconstruct_path(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
+              """Reconstruct path from goal to start."""
+              path = []
+              current = goal
+
+              while current is not None:
+                  path.append(current)
+                  current = self.parent.get(current)
+
+              return path[::-1]
+
+          def search(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
+              """Find shortest path from start to goal using BFS."""
+              # Initialize
+              queue = deque([start])
+              self.visited = {start}
+              self.parent = {start: None}
+
+              while queue:
+                  current = queue.popleft()
+
+                  # Check if we reached the goal
+                  if current == goal:
+                      return self._reconstruct_path(start, goal)
+
+                  # Explore neighbors
+                  for neighbor in self._get_neighbors(current, grid):
+                      if neighbor not in self.visited:
+                          self.visited.add(neighbor)
+                          self.parent[neighbor] = current
+                          queue.append(neighbor)
+
+              # No path found
+              return None
+
+          def level_order_traversal(self, grid: List[List[int]], start: Tuple[int, int]) -> List[List[Tuple[int, int]]]:
+              """Return nodes organized by level (distance from start)."""
+              levels = []
+              queue = deque([(start, 0)])  # (position, level)
+              visited = {start}
+
+              while queue:
+                  current, level = queue.popleft()
+
+                  # Add to appropriate level
+                  if level >= len(levels):
+                      levels.append([])
+                  levels[level].append(current)
+
+                  # Explore neighbors
+                  for neighbor in self._get_neighbors(current, grid):
+                      if neighbor not in visited:
+                          visited.add(neighbor)
+                          queue.append((neighbor, level + 1))
+
+              return levels
+
+          def shortest_distance(self, grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, int]) -> int:
+              """Find shortest distance from start to goal."""
+              queue = deque([(start, 0)])  # (position, distance)
+              visited = {start}
+
+              while queue:
+                  current, distance = queue.popleft()
+
+                  if current == goal:
+                      return distance
+
+                  for neighbor in self._get_neighbors(current, grid):
+                      if neighbor not in visited:
+                          visited.add(neighbor)
+                          queue.append((neighbor, distance + 1))
+
+              return -1  # No path found
+
+      # Example usage for tree traversal
+      class TreeNode:
+          def __init__(self, val=0, left=None, right=None):
+              self.val = val
+              self.left = left
+              self.right = right
+
+      def bfs_tree_traversal(root: TreeNode) -> List[List[int]]:
+          """Level-order traversal of binary tree."""
+          if not root:
+              return []
+
+          result = []
+          queue = deque([root])
+
+          while queue:
+              level_size = len(queue)
+              level = []
+
+              for _ in range(level_size):
+                  node = queue.popleft()
+                  level.append(node.val)
+
+                  if node.left:
+                      queue.append(node.left)
+                  if node.right:
+                      queue.append(node.right)
+
+              result.append(level)
+
+          return result
+    advantages:
+      - "Guaranteed shortest path in unweighted graphs"
+      - "Complete algorithm"
+      - "Simple to implement"
+      - "Level-by-level exploration"
+      - "Good for tree traversal"
+    disadvantages:
+      - "Memory intensive for large graphs"
+      - "Not optimal for weighted graphs"
+      - "May explore many unnecessary nodes"
+      - "Requires storing all nodes at current level"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(V + E)"
+  space_complexity: "O(V)"
+  notes: "V is number of vertices, E is number of edges. Space complexity is O(V) for visited set and queue"
+
+# Applications and use cases
+applications:
+  - category: "Shortest Path"
+    examples: ["unweighted pathfinding", "social network analysis", "web crawling"]
+  - category: "Tree Traversal"
+    examples: ["level-order traversal", "binary tree operations", "hierarchy processing"]
+  - category: "Graph Analysis"
+    examples: ["connected components", "bipartite graph detection", "cycle detection"]
+  - category: "Puzzle Solving"
+    examples: ["sliding puzzles", "maze solving", "word ladder"]
+
+# Educational value
+educational_value:
+  - "Understanding graph traversal"
+  - "Queue data structure usage"
+  - "Level-order processing"
+  - "Shortest path concepts"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "cormen2009"
+  - bib_key: "russell2003"
+
+# Related algorithms
+related_algorithms:
+  - slug: "depth-first-search"
+    relationship: "alternative"
+    description: "DFS is an alternative traversal strategy"
+  - slug: "a-star-search"
+    relationship: "extension"
+    description: "A* extends BFS with heuristics"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "search"
+  - "traversal"
+  - "shortest-path"
+  - "graph-algorithms"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

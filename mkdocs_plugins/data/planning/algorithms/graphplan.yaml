@@ -1,0 +1,382 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: graphplan
+name: GraphPlan
+family_id: planning
+aliases: ["Graph-based Planning", "Planning Graph", "STRIPS Planning"]
+order: 4
+
+# Brief one-sentence summary for cards and navigation
+summary: "Classical planning algorithm that builds a planning graph to find parallel action sequences for achieving goals from initial states."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  GraphPlan is a classical planning algorithm that constructs a planning graph to find solutions to STRIPS-style
+  planning problems. The algorithm builds a layered graph where each layer alternates between proposition layers
+  (representing facts) and action layers (representing possible actions), allowing it to find parallel action
+  sequences that achieve the goal.
+
+  The key insight is that the planning graph captures all possible ways to achieve propositions at each time
+  step, enabling the algorithm to find plans that may include parallel actions when they don't interfere
+  with each other.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Planning Graph"
+      formula: "G = (P₀, A₀, P₁, A₁, ..., Pₙ, Aₙ)"
+      description: "Alternating layers of propositions and actions"
+    - name: "Proposition Layer"
+      formula: "Pᵢ = {p : p can be achieved by time i}"
+      description: "Set of propositions achievable at time i"
+    - name: "Action Layer"
+      formula: "Aᵢ = {a : pre(a) ⊆ Pᵢ and no_mutex(a, Aᵢ)}"
+      description: "Actions executable at time i without mutual exclusion"
+    - name: "Mutex Relations"
+      formula: "mutex(p, q) if no single action can achieve both p and q"
+      description: "Mutual exclusion between propositions or actions"
+
+# Key properties and characteristics
+properties:
+  - name: "Parallel Actions"
+    description: "Can find plans with parallel, non-interfering actions"
+    importance: "fundamental"
+  - name: "Complete"
+    description: "Guaranteed to find solution if one exists"
+    importance: "fundamental"
+  - name: "STRIPS Domain"
+    description: "Designed for classical STRIPS planning problems"
+    importance: "fundamental"
+  - name: "Graph-based"
+    description: "Uses graph structure to represent planning problem"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard GraphPlan"
+    description: "Classic GraphPlan implementation with planning graph construction and solution extraction"
+    complexity:
+      time: "O(n²)"
+      space: "O(n²)"
+    code: |
+      from typing import List, Set, Dict, Tuple, Optional
+      from dataclasses import dataclass
+      from collections import defaultdict
+
+      @dataclass
+      class Action:
+          """Represents a planning action."""
+          name: str
+          preconditions: Set[str]
+          effects: Set[str]
+          add_effects: Set[str]
+          delete_effects: Set[str]
+
+      @dataclass
+      class PlanningGraph:
+          """Represents the planning graph structure."""
+          proposition_layers: List[Set[str]]
+          action_layers: List[Set[Action]]
+          proposition_mutexes: List[Set[Tuple[str, str]]]
+          action_mutexes: List[Set[Tuple[Action, Action]]]
+
+      class GraphPlan:
+          """GraphPlan algorithm implementation."""
+
+          def __init__(self):
+              self.actions = []
+              self.initial_state = set()
+              self.goal = set()
+
+          def add_action(self, name: str, preconditions: Set[str], add_effects: Set[str], delete_effects: Set[str]):
+              """Add an action to the planning domain."""
+              action = Action(
+                  name=name,
+                  preconditions=preconditions,
+                  effects=add_effects | delete_effects,
+                  add_effects=add_effects,
+                  delete_effects=delete_effects
+              )
+              self.actions.append(action)
+
+          def _actions_achieve_proposition(self, proposition: str) -> List[Action]:
+              """Find all actions that can achieve a given proposition."""
+              return [action for action in self.actions if proposition in action.add_effects]
+
+          def _check_action_mutex(self, action1: Action, action2: Action) -> bool:
+              """Check if two actions are mutually exclusive."""
+              # Interference: one deletes precondition or effect of the other
+              if (action1.delete_effects & action2.preconditions or
+                  action2.delete_effects & action1.preconditions or
+                  action1.delete_effects & action2.add_effects or
+                  action2.delete_effects & action1.add_effects):
+                  return True
+
+              # Competing needs: both need the same resource
+              if action1.preconditions & action2.preconditions:
+                  return True
+
+              return False
+
+          def _check_proposition_mutex(self, prop1: str, prop2: str, action_layer: Set[Action]) -> bool:
+              """Check if two propositions are mutually exclusive."""
+              # Find actions that achieve each proposition
+              actions1 = [a for a in action_layer if prop1 in a.add_effects]
+              actions2 = [a for a in action_layer if prop2 in a.add_effects]
+
+              # If no actions achieve both propositions, they're mutex
+              for a1 in actions1:
+                  for a2 in actions2:
+                      if not self._check_action_mutex(a1, a2):
+                          return False
+
+              return True
+
+          def _build_planning_graph(self) -> PlanningGraph:
+              """Build the planning graph layer by layer."""
+              graph = PlanningGraph(
+                  proposition_layers=[],
+                  action_layers=[],
+                  proposition_mutexes=[],
+                  action_mutexes=[]
+              )
+
+              # Initialize first proposition layer
+              current_propositions = self.initial_state.copy()
+              graph.proposition_layers.append(current_propositions)
+              graph.proposition_mutexes.append(set())
+
+              level = 0
+              max_levels = 100  # Prevent infinite loops
+
+              while level < max_levels:
+                  # Build action layer
+                  action_layer = set()
+                  for action in self.actions:
+                      if action.preconditions.issubset(current_propositions):
+                          action_layer.add(action)
+
+                  graph.action_layers.append(action_layer)
+
+                  # Check for action mutexes
+                  action_mutexes = set()
+                  actions_list = list(action_layer)
+                  for i in range(len(actions_list)):
+                      for j in range(i + 1, len(actions_list)):
+                          if self._check_action_mutex(actions_list[i], actions_list[j]):
+                              action_mutexes.add((actions_list[i], actions_list[j]))
+                  graph.action_mutexes.append(action_mutexes)
+
+                  # Build next proposition layer
+                  next_propositions = current_propositions.copy()
+                  for action in action_layer:
+                      next_propositions.update(action.add_effects)
+
+                  graph.proposition_layers.append(next_propositions)
+
+                  # Check for proposition mutexes
+                  prop_mutexes = set()
+                  props_list = list(next_propositions)
+                  for i in range(len(props_list)):
+                      for j in range(i + 1, len(props_list)):
+                          if self._check_proposition_mutex(props_list[i], props_list[j], action_layer):
+                              prop_mutexes.add((props_list[i], props_list[j]))
+                  graph.proposition_mutexes.append(prop_mutexes)
+
+                  # Check if goal is achievable
+                  if self.goal.issubset(next_propositions):
+                      # Check if goal propositions are not mutex
+                      goal_achievable = True
+                      for prop1 in self.goal:
+                          for prop2 in self.goal:
+                              if prop1 != prop2 and (prop1, prop2) in prop_mutexes:
+                                  goal_achievable = False
+                                  break
+                          if not goal_achievable:
+                              break
+
+                      if goal_achievable:
+                          break
+
+                  # Check for convergence
+                  if next_propositions == current_propositions:
+                      break
+
+                  current_propositions = next_propositions
+                  level += 1
+
+              return graph
+
+          def _extract_solution(self, graph: PlanningGraph) -> Optional[List[Set[Action]]]:
+              """Extract a solution from the planning graph."""
+              if not graph.proposition_layers:
+                  return None
+
+              # Find the level where goal is achievable
+              goal_level = None
+              for level, propositions in enumerate(graph.proposition_layers):
+                  if self.goal.issubset(propositions):
+                      # Check if goal propositions are not mutex
+                      goal_achievable = True
+                      for prop1 in self.goal:
+                          for prop2 in self.goal:
+                              if prop1 != prop2 and (prop1, prop2) in graph.proposition_mutexes[level]:
+                                  goal_achievable = False
+                                  break
+                          if not goal_achievable:
+                              break
+
+                      if goal_achievable:
+                          goal_level = level
+                          break
+
+              if goal_level is None:
+                  return None
+
+              # Extract solution backwards
+              solution = []
+              current_goals = self.goal.copy()
+
+              for level in range(goal_level, 0, -1):
+                  # Find actions that achieve current goals
+                  level_actions = set()
+                  for goal in current_goals:
+                      for action in graph.action_layers[level - 1]:
+                          if goal in action.add_effects:
+                              level_actions.add(action)
+
+                  solution.append(level_actions)
+
+                  # Update goals for next level
+                  next_goals = set()
+                  for action in level_actions:
+                      next_goals.update(action.preconditions)
+
+                  current_goals = next_goals
+
+              return solution[::-1]  # Reverse to get forward plan
+
+          def plan(self, initial_state: Set[str], goal: Set[str]) -> Optional[List[Set[Action]]]:
+              """Find a plan from initial state to goal."""
+              self.initial_state = initial_state
+              self.goal = goal
+
+              # Build planning graph
+              graph = self._build_planning_graph()
+
+              # Extract solution
+              return self._extract_solution(graph)
+
+      # Example usage
+      def create_blocks_world_example():
+          """Create a simple blocks world planning problem."""
+          planner = GraphPlan()
+
+          # Define actions
+          planner.add_action(
+              "pickup",
+              {"hand-empty", "clear-A", "on-table-A"},
+              {"holding-A"},
+              {"hand-empty", "clear-A", "on-table-A"}
+          )
+
+          planner.add_action(
+              "putdown",
+              {"holding-A"},
+              {"hand-empty", "clear-A", "on-table-A"},
+              {"holding-A"}
+          )
+
+          planner.add_action(
+              "stack",
+              {"holding-A", "clear-B"},
+              {"on-A-B", "hand-empty", "clear-A"},
+              {"holding-A", "clear-B"}
+          )
+
+          planner.add_action(
+              "unstack",
+              {"on-A-B", "clear-A", "hand-empty"},
+              {"holding-A", "clear-B"},
+              {"on-A-B", "clear-A", "hand-empty"}
+          )
+
+          # Define initial state and goal
+          initial = {"on-table-A", "on-table-B", "clear-A", "clear-B", "hand-empty"}
+          goal = {"on-A-B"}
+
+          return planner, initial, goal
+    advantages:
+      - "Finds parallel action sequences"
+      - "Complete for STRIPS domains"
+      - "Handles complex planning problems"
+      - "Graph structure provides insights"
+      - "Efficient for many planning problems"
+    disadvantages:
+      - "Limited to STRIPS domains"
+      - "May not scale to very large problems"
+      - "Requires propositional representation"
+      - "Complex mutex computation"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n²)"
+  space_complexity: "O(n²)"
+  notes: "n is the number of propositions and actions. Complexity depends on problem size and structure"
+
+# Applications and use cases
+applications:
+  - category: "Classical Planning"
+    examples: ["blocks world", "logistics", "robot navigation"]
+  - category: "Automated Planning"
+    examples: ["workflow automation", "resource allocation", "scheduling"]
+  - category: "AI Planning"
+    examples: ["game AI", "strategy games", "puzzle solving"]
+  - category: "Robotics"
+    examples: ["manipulation planning", "task planning", "motion planning"]
+
+# Educational value
+educational_value:
+  - "Understanding classical planning"
+  - "Graph-based problem solving"
+  - "Parallel action execution"
+  - "STRIPS representation"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "blum1997"
+  - bib_key: "russell2003"
+
+# Related algorithms
+related_algorithms:
+  - slug: "partial-order-planning"
+    relationship: "alternative"
+    description: "Alternative approach to classical planning"
+  - slug: "fast-forward"
+    relationship: "alternative"
+    description: "Different planning algorithm for similar problems"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "classical-planning"
+  - "graph-based"
+  - "strips"
+  - "parallel-actions"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

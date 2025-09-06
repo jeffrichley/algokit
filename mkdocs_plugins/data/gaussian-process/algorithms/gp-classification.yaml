@@ -1,0 +1,212 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: gp-classification
+name: GP Classification
+family_id: gaussian-process
+aliases: ["Gaussian Process Classification", "GPC"]
+order: 2
+
+# Brief one-sentence summary for cards and navigation
+summary: "Probabilistic classification method using Gaussian processes with sigmoid link functions for binary and multi-class problems."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Gaussian Process Classification (GPC) extends the principles of Gaussian Process Regression to classification problems.
+  Unlike regression, classification requires mapping the continuous GP output to discrete class labels through a link function,
+  typically the sigmoid function for binary classification or softmax for multi-class problems.
+
+  The key challenge in GP classification is that the posterior distribution is no longer Gaussian due to the non-linear
+  link function, requiring approximate inference methods such as Laplace approximation or variational inference.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Latent Function"
+      formula: "f(x) ~ GP(0, k(x, x'))"
+      description: "Gaussian process prior over latent function"
+    - name: "Link Function (Binary)"
+      formula: "π(x) = σ(f(x)) = 1/(1 + exp(-f(x)))"
+      description: "Sigmoid function mapping latent to probability"
+    - name: "Likelihood"
+      formula: "p(y|f) = ∏ᵢ σ(f(xᵢ))^yᵢ (1-σ(f(xᵢ)))^(1-yᵢ)"
+      description: "Bernoulli likelihood for binary classification"
+    - name: "Posterior Approximation"
+      formula: "q(f) ≈ N(f|μ, Σ)"
+      description: "Gaussian approximation to non-Gaussian posterior"
+
+# Key properties and characteristics
+properties:
+  - name: "Probabilistic Output"
+    description: "Provides class probabilities, not just predictions"
+    importance: "fundamental"
+  - name: "Non-parametric"
+    description: "Model complexity adapts to data"
+    importance: "fundamental"
+  - name: "Approximate Inference"
+    description: "Requires approximation due to non-Gaussian posterior"
+    importance: "implementation"
+  - name: "Kernel Flexibility"
+    description: "Choice of kernel determines decision boundary shape"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "laplace"
+    name: "Laplace Approximation"
+    description: "Approximates posterior with Gaussian using second-order Taylor expansion"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from scipy.linalg import cho_solve, cho_factor
+      from sklearn.gaussian_process import GaussianProcessClassifier
+      from sklearn.gaussian_process.kernels import RBF
+
+      class GPClassification:
+          """Gaussian Process Classification with Laplace approximation."""
+
+          def __init__(self, kernel=None, alpha=1e-10):
+              self.kernel = kernel or RBF()
+              self.alpha = alpha
+              self.X_train = None
+              self.y_train = None
+
+          def _sigmoid(self, x):
+              """Sigmoid function with numerical stability."""
+              x = np.clip(x, -500, 500)  # Prevent overflow
+              return 1 / (1 + np.exp(-x))
+
+          def _log_likelihood(self, f, X, y):
+              """Log likelihood for binary classification."""
+              pi = self._sigmoid(f)
+              # Add small epsilon to prevent log(0)
+              eps = 1e-15
+              pi = np.clip(pi, eps, 1 - eps)
+              return np.sum(y * np.log(pi) + (1 - y) * np.log(1 - pi))
+
+          def _objective(self, f, X, y, K):
+              """Objective function for optimization."""
+              # Log likelihood
+              ll = self._log_likelihood(f, X, y)
+
+              # Log prior (quadratic form)
+              K_inv = cho_solve(cho_factor(K), np.eye(len(f)))
+              lp = -0.5 * f.T @ K_inv @ f
+
+              return -(ll + lp)  # Negative log posterior
+
+          def fit(self, X, y):
+              """Fit the GP classifier."""
+              self.X_train = X
+              self.y_train = y
+
+              # Compute covariance matrix
+              K = self.kernel(X) + self.alpha * np.eye(len(X))
+
+              # Initialize latent function
+              f_init = np.zeros(len(X))
+
+              # Optimize latent function
+              result = minimize(
+                  self._objective, f_init,
+                  args=(X, y, K),
+                  method='L-BFGS-B'
+              )
+
+              self.f_opt = result.x
+
+              # Compute Hessian for Laplace approximation
+              pi = self._sigmoid(self.f_opt)
+              W = np.diag(pi * (1 - pi))
+              self.L = cho_factor(K + np.linalg.inv(W))
+
+          def predict_proba(self, X_test):
+              """Predict class probabilities."""
+              # Cross-covariance
+              K_star = self.kernel(X_test, self.X_train)
+
+              # Predictive mean
+              mu = K_star @ cho_solve(self.L, self.y_train - self._sigmoid(self.f_opt))
+
+              # Predictive variance
+              K_star_star = self.kernel(X_test)
+              var = np.diag(K_star_star) - np.sum(K_star @ cho_solve(self.L, K_star.T), axis=1)
+
+              # Approximate predictive distribution
+              pi = self._sigmoid(mu / np.sqrt(1 + var))
+
+              return np.column_stack([1 - pi, pi])
+    advantages:
+      - "Provides class probabilities"
+      - "Handles uncertainty in classification"
+      - "Flexible decision boundaries"
+      - "No assumptions about data distribution"
+    disadvantages:
+      - "Approximate inference only"
+      - "Cubic time complexity"
+      - "Requires hyperparameter tuning"
+      - "Limited to binary classification in basic form"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n³)"
+  space_complexity: "O(n²)"
+  notes: "Similar to GP regression but with additional optimization step for latent function"
+
+# Applications and use cases
+applications:
+  - category: "Medical Diagnosis"
+    examples: ["disease classification", "drug discovery", "medical imaging"]
+  - category: "Computer Vision"
+    examples: ["object recognition", "face detection", "scene classification"]
+  - category: "Natural Language Processing"
+    examples: ["sentiment analysis", "text classification", "spam detection"]
+  - category: "Quality Control"
+    examples: ["defect detection", "product classification", "anomaly detection"]
+
+# Educational value
+educational_value:
+  - "Introduction to probabilistic classification"
+  - "Understanding link functions"
+  - "Approximate inference methods"
+  - "Bayesian approach to classification"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "rasmussen2006"
+  - bib_key: "williams2006"
+
+# Related algorithms
+related_algorithms:
+  - slug: "gp-regression"
+    relationship: "foundation"
+    description: "GP regression is the foundation for GP classification"
+  - slug: "sparse-gps"
+    relationship: "scalable_variant"
+    description: "Scalable GP methods for large classification problems"
+
+# Tags for categorization
+tags:
+  - "gaussian-process"
+  - "classification"
+  - "bayesian"
+  - "probabilistic"
+  - "kernel-methods"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

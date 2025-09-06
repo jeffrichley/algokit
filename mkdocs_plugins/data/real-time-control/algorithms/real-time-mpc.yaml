@@ -1,0 +1,320 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: real-time-mpc
+name: Real-Time MPC
+family_id: real-time-control
+aliases: ["Real-Time Model Predictive Control", "RT-MPC", "Fast MPC"]
+order: 2
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control adapted for real-time systems with timing constraints, providing optimal control with guaranteed response times."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Real-Time Model Predictive Control (RT-MPC) extends traditional Model Predictive Control to operate
+  within strict timing constraints required by real-time systems. The algorithm solves optimization
+  problems to find optimal control actions while ensuring that computations complete within specified
+  time bounds.
+
+  The key challenge is balancing control performance with computational efficiency. RT-MPC uses various
+  techniques such as warm-starting, early termination, and simplified models to meet timing constraints
+  while maintaining good control performance.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Optimization Problem"
+      formula: "min J = ∑ᵢ₌₀ᴺ⁻¹ (xᵢᵀQxᵢ + uᵢᵀRuᵢ) + xₙᵀPxₙ"
+      description: "Quadratic cost function over prediction horizon"
+    - name: "System Dynamics"
+      formula: "xₖ₊₁ = Axₖ + Buₖ + wₖ"
+      description: "Linear system model with disturbances"
+    - name: "Constraints"
+      formula: "x_min ≤ xₖ ≤ x_max, u_min ≤ uₖ ≤ u_max"
+      description: "State and input constraints"
+    - name: "Timing Constraint"
+      formula: "t_solve ≤ t_deadline"
+      description: "Optimization must complete within deadline"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal Control"
+    description: "Finds optimal control actions within timing constraints"
+    importance: "fundamental"
+  - name: "Predictive"
+    description: "Uses system model to predict future behavior"
+    importance: "fundamental"
+  - name: "Constraint Handling"
+    description: "Explicitly handles state and input constraints"
+    importance: "fundamental"
+  - name: "Timing Guarantees"
+    description: "Ensures computation completes within deadline"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "warm-start"
+    name: "Warm-Start RT-MPC"
+    description: "Uses previous solution as initial guess for faster convergence"
+    complexity:
+      time: "O(n²)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      import time
+      from typing import Tuple, Optional, List
+      from dataclasses import dataclass
+      from scipy.optimize import minimize
+      import cvxpy as cp
+
+      @dataclass
+      class MPCParameters:
+          """Parameters for MPC controller."""
+          horizon: int
+          dt: float
+          Q: np.ndarray  # State weight matrix
+          R: np.ndarray  # Input weight matrix
+          P: np.ndarray  # Terminal weight matrix
+          x_min: np.ndarray
+          x_max: np.ndarray
+          u_min: np.ndarray
+          u_max: np.ndarray
+          max_solve_time: float  # Maximum time for optimization
+
+      class RealTimeMPC:
+          """Real-time Model Predictive Control implementation."""
+
+          def __init__(self, A: np.ndarray, B: np.ndarray, params: MPCParameters):
+              self.A = A  # System matrix
+              self.B = B  # Input matrix
+              self.params = params
+              self.nx = A.shape[0]  # Number of states
+              self.nu = B.shape[1]  # Number of inputs
+
+              # Previous solution for warm-starting
+              self.prev_solution = None
+
+          def _build_optimization_problem(self, x0: np.ndarray, reference: np.ndarray) -> cp.Problem:
+              """Build the MPC optimization problem."""
+              N = self.params.horizon
+
+              # Decision variables
+              x = cp.Variable((N + 1, self.nx))
+              u = cp.Variable((N, self.nu))
+
+              # Cost function
+              cost = 0
+              for k in range(N):
+                  cost += cp.quad_form(x[k] - reference, self.params.Q)
+                  cost += cp.quad_form(u[k], self.params.R)
+              cost += cp.quad_form(x[N] - reference, self.params.P)
+
+              # Constraints
+              constraints = []
+
+              # Initial condition
+              constraints.append(x[0] == x0)
+
+              # System dynamics
+              for k in range(N):
+                  constraints.append(x[k + 1] == self.A @ x[k] + self.B @ u[k])
+
+              # State constraints
+              for k in range(N + 1):
+                  constraints.append(x[k] >= self.params.x_min)
+                  constraints.append(x[k] <= self.params.x_max)
+
+              # Input constraints
+              for k in range(N):
+                  constraints.append(u[k] >= self.params.u_min)
+                  constraints.append(u[k] <= self.params.u_max)
+
+              # Create problem
+              problem = cp.Problem(cp.Minimize(cost), constraints)
+
+              return problem, x, u
+
+          def _solve_with_timeout(self, problem: cp.Problem, max_time: float) -> Optional[np.ndarray]:
+              """Solve optimization problem with timeout."""
+              start_time = time.time()
+
+              try:
+                  # Set solver parameters for speed
+                  problem.solve(
+                      solver=cp.OSQP,
+                      verbose=False,
+                      max_iter=1000,
+                      eps_abs=1e-4,
+                      eps_rel=1e-4
+                  )
+
+                  solve_time = time.time() - start_time
+
+                  if solve_time > max_time:
+                      print(f"Warning: Optimization took {solve_time:.3f}s, exceeding limit of {max_time:.3f}s")
+
+                  if problem.status == cp.OPTIMAL:
+                      return problem.solution.primal_vars
+                  else:
+                      print(f"Optimization failed with status: {problem.status}")
+                      return None
+
+              except Exception as e:
+                  print(f"Optimization error: {e}")
+                  return None
+
+          def _warm_start(self, x: cp.Variable, u: cp.Variable, x0: np.ndarray):
+              """Warm-start optimization with previous solution."""
+              if self.prev_solution is not None:
+                  try:
+                      # Use previous solution as initial guess
+                      x.value = self.prev_solution['x']
+                      u.value = self.prev_solution['u']
+                  except:
+                      # If warm-start fails, use simple initialization
+                      x.value = np.tile(x0, (self.params.horizon + 1, 1))
+                      u.value = np.zeros((self.params.horizon, self.nu))
+              else:
+                  # First iteration: use simple initialization
+                  x.value = np.tile(x0, (self.params.horizon + 1, 1))
+                  u.value = np.zeros((self.params.horizon, self.nu))
+
+          def control(self, x0: np.ndarray, reference: np.ndarray) -> Optional[np.ndarray]:
+              """Compute control action using RT-MPC."""
+              start_time = time.time()
+
+              # Build optimization problem
+              problem, x, u = self._build_optimization_problem(x0, reference)
+
+              # Warm-start with previous solution
+              self._warm_start(x, u, x0)
+
+              # Solve with timeout
+              solution = self._solve_with_timeout(problem, self.params.max_solve_time)
+
+              if solution is not None:
+                  # Extract control action
+                  u_opt = solution['u'][0]  # First control action
+
+                  # Store solution for next warm-start
+                  self.prev_solution = {
+                      'x': solution['x'],
+                      'u': solution['u']
+                  }
+
+                  solve_time = time.time() - start_time
+                  print(f"RT-MPC solved in {solve_time:.3f}s")
+
+                  return u_opt
+              else:
+                  # Fallback to simple control if optimization fails
+                  print("Using fallback control")
+                  return np.zeros(self.nu)
+
+          def get_solver_statistics(self) -> dict:
+              """Get solver performance statistics."""
+              return {
+                  'max_solve_time': self.params.max_solve_time,
+                  'horizon': self.params.horizon,
+                  'nx': self.nx,
+                  'nu': self.nu
+              }
+
+      # Example usage
+      def create_rt_mpc_example():
+          """Create a real-time MPC example."""
+          # System matrices (double integrator)
+          A = np.array([[1.0, 0.1], [0.0, 1.0]])
+          B = np.array([[0.005], [0.1]])
+
+          # MPC parameters
+          params = MPCParameters(
+              horizon=10,
+              dt=0.1,
+              Q=np.array([[1.0, 0.0], [0.0, 1.0]]),
+              R=np.array([[0.1]]),
+              P=np.array([[10.0, 0.0], [0.0, 10.0]]),
+              x_min=np.array([-10.0, -10.0]),
+              x_max=np.array([10.0, 10.0]),
+              u_min=np.array([-5.0]),
+              u_max=np.array([5.0]),
+              max_solve_time=0.05  # 50ms deadline
+          )
+
+          # Create controller
+          controller = RealTimeMPC(A, B, params)
+
+          return controller
+    advantages:
+      - "Optimal control with timing guarantees"
+      - "Handles constraints explicitly"
+      - "Predictive control capability"
+      - "Warm-starting for efficiency"
+      - "Fallback mechanisms for robustness"
+    disadvantages:
+      - "Higher computational complexity"
+      - "Requires system model"
+      - "May not meet timing constraints for complex systems"
+      - "Requires careful parameter tuning"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n²)"
+  space_complexity: "O(n²)"
+  notes: "n is the prediction horizon. Complexity depends on optimization solver and problem size"
+
+# Applications and use cases
+applications:
+  - category: "Autonomous Vehicles"
+    examples: ["path following", "collision avoidance", "trajectory tracking"]
+  - category: "Robotics"
+    examples: ["manipulator control", "mobile robot navigation", "quadrotor control"]
+  - category: "Industrial Control"
+    examples: ["process control", "manufacturing automation", "quality control"]
+  - category: "Aerospace"
+    examples: ["flight control", "attitude control", "trajectory optimization"]
+
+# Educational value
+educational_value:
+  - "Understanding predictive control"
+  - "Optimization in control systems"
+  - "Real-time system design"
+  - "Constraint handling"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "rawlings2017"
+  - bib_key: "buttazzo2011"
+
+# Related algorithms
+related_algorithms:
+  - slug: "real-time-control"
+    relationship: "foundation"
+    description: "Real-time control provides the timing framework"
+  - slug: "real-time-pid"
+    relationship: "alternative"
+    description: "Real-time PID is a simpler alternative"
+
+# Tags for categorization
+tags:
+  - "real-time-control"
+  - "model-predictive-control"
+  - "optimization"
+  - "predictive"
+  - "constraints"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

@@ -1,0 +1,239 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: multi-output-gps
+name: Multi-Output Gaussian Processes
+family_id: gaussian-process
+aliases: ["Multi-output GP", "Multi-task GP", "Convolved GP"]
+order: 6
+
+# Brief one-sentence summary for cards and navigation
+summary: "Extension of Gaussian processes to handle multiple correlated outputs simultaneously, enabling joint modeling and knowledge transfer between tasks."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Multi-Output Gaussian Processes extend standard GPs to handle multiple correlated outputs simultaneously.
+  Unlike independent GPs for each output, multi-output GPs model the correlations between outputs, enabling
+  knowledge transfer between tasks and improved predictions, especially when some outputs have limited data.
+
+  The key insight is that outputs are often correlated, and modeling these correlations can improve
+  predictions and provide insights into the relationships between different tasks or measurements.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Multi-output Prior"
+      formula: "f(x) ~ GP(0, K(x, x'))"
+      description: "Vector-valued GP with cross-covariance matrix K"
+    - name: "Cross-covariance"
+      formula: "K(x, x') = [K₁₁(x,x') K₁₂(x,x') ... K₁ₚ(x,x')]"
+      description: "Block matrix of covariances between all output pairs"
+    - name: "Linear Model of Coregionalization"
+      formula: "K(x, x') = ∑ᵢ Aᵢ ⊗ kᵢ(x, x')"
+      description: "Decomposition into coregionalization matrices and kernels"
+    - name: "Predictive Distribution"
+      formula: "f*|X, Y ~ N(μ*, Σ*)"
+      description: "Multi-output predictive distribution"
+
+# Key properties and characteristics
+properties:
+  - name: "Correlation Modeling"
+    description: "Captures dependencies between outputs"
+    importance: "fundamental"
+  - name: "Knowledge Transfer"
+    description: "Information sharing between related tasks"
+    importance: "fundamental"
+  - name: "Scalability"
+    description: "Complexity grows with number of outputs"
+    importance: "implementation"
+  - name: "Flexibility"
+    description: "Can handle different output types and scales"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "lcm"
+    name: "Linear Model of Coregionalization"
+    description: "Most common approach using linear combinations of latent functions"
+    complexity:
+      time: "O(n³p²)"
+      space: "O(n²p²)"
+    code: |
+      import numpy as np
+      from scipy.linalg import cho_solve, cho_factor
+      from sklearn.gaussian_process import GaussianProcessRegressor
+      from sklearn.gaussian_process.kernels import RBF
+
+      class MultiOutputGP:
+          """Multi-output Gaussian Process with Linear Model of Coregionalization."""
+
+          def __init__(self, n_outputs, kernel=None, alpha=1e-10):
+              self.n_outputs = n_outputs
+              self.kernel = kernel or RBF()
+              self.alpha = alpha
+              self.A = None  # Coregionalization matrix
+              self.X_train = None
+              self.Y_train = None
+
+          def _compute_coregionalization_matrix(self, Y):
+              """Compute coregionalization matrix from data."""
+              # Simple approach: use empirical covariance
+              Y_centered = Y - np.mean(Y, axis=0)
+              self.A = np.cov(Y_centered.T)
+
+              # Ensure positive definiteness
+              eigenvals, eigenvecs = np.linalg.eigh(self.A)
+              eigenvals = np.maximum(eigenvals, 1e-6)
+              self.A = eigenvecs @ np.diag(eigenvals) @ eigenvecs.T
+
+          def _compute_cross_covariance(self, X1, X2):
+              """Compute cross-covariance matrix between X1 and X2."""
+              n1, n2 = len(X1), len(X2)
+
+              # Base kernel matrix
+              K_base = self.kernel(X1, X2)
+
+              # Cross-covariance matrix
+              K_cross = np.zeros((n1 * self.n_outputs, n2 * self.n_outputs))
+
+              for i in range(self.n_outputs):
+                  for j in range(self.n_outputs):
+                      start_i, end_i = i * n1, (i + 1) * n1
+                      start_j, end_j = j * n2, (j + 1) * n2
+                      K_cross[start_i:end_i, start_j:end_j] = self.A[i, j] * K_base
+
+              return K_cross
+
+          def fit(self, X, Y):
+              """Fit the multi-output GP to training data."""
+              self.X_train = X
+              self.Y_train = Y
+
+              # Compute coregionalization matrix
+              self._compute_coregionalization_matrix(Y)
+
+              # Flatten outputs for vectorized computation
+              y_flat = Y.flatten()
+
+              # Compute full covariance matrix
+              K = self._compute_cross_covariance(X, X)
+              K += self.alpha * np.eye(K.shape[0])
+
+              # Cholesky decomposition
+              self.L = cho_factor(K)
+              self.K_inv = cho_solve(self.L, np.eye(K.shape[0]))
+
+          def predict(self, X_test, return_std=True):
+              """Make predictions at test points."""
+              # Cross-covariance between test and training points
+              K_star = self._compute_cross_covariance(X_test, self.X_train)
+
+              # Flatten training outputs
+              y_flat = self.Y_train.flatten()
+
+              # Predictive mean
+              mu_flat = K_star @ self.K_inv @ y_flat
+              mu = mu_flat.reshape(len(X_test), self.n_outputs)
+
+              if return_std:
+                  # Predictive variance
+                  K_star_star = self._compute_cross_covariance(X_test, X_test)
+                  var_flat = np.diag(K_star_star) - np.sum(K_star @ self.K_inv * K_star, axis=1)
+                  var = var_flat.reshape(len(X_test), self.n_outputs)
+                  std = np.sqrt(np.maximum(var, 0))
+                  return mu, std
+
+              return mu
+
+          def predict_cross_covariance(self, X_test):
+              """Predict cross-covariance between outputs at test points."""
+              K_star_star = self._compute_cross_covariance(X_test, X_test)
+              K_star = self._compute_cross_covariance(X_test, self.X_train)
+
+              # Cross-covariance prediction
+              cross_cov = K_star_star - K_star @ self.K_inv @ K_star.T
+
+              # Reshape to output format
+              n_test = len(X_test)
+              cross_cov_reshaped = np.zeros((n_test, self.n_outputs, self.n_outputs))
+
+              for i in range(n_test):
+                  for j in range(self.n_outputs):
+                      for k in range(self.n_outputs):
+                          idx_j = i * self.n_outputs + j
+                          idx_k = i * self.n_outputs + k
+                          cross_cov_reshaped[i, j, k] = cross_cov[idx_j, idx_k]
+
+              return cross_cov_reshaped
+    advantages:
+      - "Models correlations between outputs"
+      - "Enables knowledge transfer"
+      - "Improved predictions for sparse outputs"
+      - "Unified framework for multi-task learning"
+      - "Uncertainty quantification for all outputs"
+    disadvantages:
+      - "Higher computational complexity"
+      - "More hyperparameters to tune"
+      - "Requires careful coregionalization design"
+      - "Memory intensive for many outputs"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n³p²)"
+  space_complexity: "O(n²p²)"
+  notes: "p is number of outputs, complexity grows quadratically with p"
+
+# Applications and use cases
+applications:
+  - category: "Multi-task Learning"
+    examples: ["related classification tasks", "regression with multiple targets", "transfer learning"]
+  - category: "Sensor Networks"
+    examples: ["environmental monitoring", "IoT data", "distributed sensing"]
+  - category: "Scientific Computing"
+    examples: ["climate modeling", "physics simulations", "chemical processes"]
+  - category: "Engineering"
+    examples: ["structural analysis", "aerospace design", "manufacturing processes"]
+
+# Educational value
+educational_value:
+  - "Understanding multi-task learning"
+  - "Correlation modeling concepts"
+  - "Matrix operations in machine learning"
+  - "Knowledge transfer principles"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "medium"
+
+# References and resources
+references:
+  - bib_key: "alvarez2012"
+  - bib_key: "bonilla2008"
+
+# Related algorithms
+related_algorithms:
+  - slug: "gp-regression"
+    relationship: "extension"
+    description: "Multi-output GP extends standard GP regression"
+  - slug: "sparse-gps"
+    relationship: "scalable_variant"
+    description: "Sparse methods can be applied to multi-output GPs"
+
+# Tags for categorization
+tags:
+  - "gaussian-process"
+  - "multi-output"
+  - "multi-task"
+  - "correlation"
+  - "knowledge-transfer"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

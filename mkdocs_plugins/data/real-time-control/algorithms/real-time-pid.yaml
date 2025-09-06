@@ -1,0 +1,303 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: real-time-pid
+name: Real-Time PID
+family_id: real-time-control
+aliases: ["Real-Time PID Control", "RT-PID", "Fast PID"]
+order: 3
+
+# Brief one-sentence summary for cards and navigation
+summary: "Proportional-Integral-Derivative control algorithm optimized for real-time systems with guaranteed execution time and deterministic behavior."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Real-Time PID control is a specialized implementation of the classic Proportional-Integral-Derivative
+  controller designed to operate within strict timing constraints. The algorithm provides simple,
+  robust control with guaranteed execution time, making it ideal for real-time systems where
+  predictable performance is more important than optimal control.
+
+  The key advantage is its simplicity and reliability - PID control is well-understood, easy to
+  implement, and can be tuned to meet specific timing requirements. Real-time PID controllers
+  often include additional features such as anti-windup, derivative filtering, and adaptive
+  tuning to improve performance under real-time constraints.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "PID Control Law"
+      formula: "u(t) = Kₚe(t) + Kᵢ∫₀ᵗ e(τ)dτ + Kₐ(de(t)/dt)"
+      description: "Classical PID control law"
+    - name: "Discrete PID"
+      formula: "uₖ = Kₚeₖ + Kᵢ∑ᵢ₌₀ᵏ eᵢΔt + Kₐ(eₖ - eₖ₋₁)/Δt"
+      description: "Discrete-time implementation"
+    - name: "Anti-windup"
+      formula: "uₖ = sat(uₖ, u_min, u_max)"
+      description: "Saturation to prevent integral windup"
+    - name: "Derivative Filter"
+      formula: "y_f = αy_f + (1-α)y"
+      description: "Low-pass filter for derivative term"
+
+# Key properties and characteristics
+properties:
+  - name: "Simple and Robust"
+    description: "Easy to understand and implement"
+    importance: "fundamental"
+  - name: "Deterministic Execution"
+    description: "Guaranteed execution time"
+    importance: "fundamental"
+  - name: "Widely Applicable"
+    description: "Works for many control problems"
+    importance: "fundamental"
+  - name: "Tunable Parameters"
+    description: "Three parameters for different control objectives"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard Real-Time PID"
+    description: "Classic PID implementation with anti-windup and derivative filtering"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      import time
+      from typing import Optional, Tuple
+      from dataclasses import dataclass
+      import numpy as np
+
+      @dataclass
+      class PIDParameters:
+          """Parameters for PID controller."""
+          kp: float  # Proportional gain
+          ki: float  # Integral gain
+          kd: float  # Derivative gain
+          dt: float  # Sampling time
+          u_min: float  # Minimum control output
+          u_max: float  # Maximum control output
+          derivative_filter_alpha: float = 0.1  # Derivative filter coefficient
+          anti_windup_gain: float = 1.0  # Anti-windup gain
+
+      class RealTimePID:
+          """Real-time PID controller implementation."""
+
+          def __init__(self, params: PIDParameters):
+              self.params = params
+
+              # Controller state
+              self.integral = 0.0
+              self.previous_error = 0.0
+              self.previous_derivative = 0.0
+              self.previous_output = 0.0
+
+              # Timing
+              self.last_time = time.time()
+              self.execution_times = []
+
+          def _saturate(self, value: float) -> float:
+              """Saturate control output to limits."""
+              return max(self.params.u_min, min(self.params.u_max, value))
+
+          def _derivative_filter(self, derivative: float) -> float:
+              """Apply low-pass filter to derivative term."""
+              filtered = (self.params.derivative_filter_alpha * self.previous_derivative +
+                         (1 - self.params.derivative_filter_alpha) * derivative)
+              self.previous_derivative = filtered
+              return filtered
+
+          def _anti_windup(self, error: float, output: float) -> float:
+              """Apply anti-windup to integral term."""
+              if output > self.params.u_max:
+                  # Output saturated high, reduce integral
+                  self.integral -= self.params.anti_windup_gain * (output - self.params.u_max)
+              elif output < self.params.u_min:
+                  # Output saturated low, reduce integral
+                  self.integral -= self.params.anti_windup_gain * (output - self.params.u_min)
+              else:
+                  # Normal operation, update integral
+                  self.integral += error * self.params.dt
+
+              return self.integral
+
+          def control(self, setpoint: float, measurement: float) -> float:
+              """Compute control action using PID control."""
+              start_time = time.time()
+
+              # Calculate error
+              error = setpoint - measurement
+
+              # Proportional term
+              proportional = self.params.kp * error
+
+              # Integral term with anti-windup
+              integral = self._anti_windup(error, self.previous_output)
+              integral_term = self.params.ki * integral
+
+              # Derivative term with filtering
+              derivative = (error - self.previous_error) / self.params.dt
+              filtered_derivative = self._derivative_filter(derivative)
+              derivative_term = self.params.kd * filtered_derivative
+
+              # Total control output
+              output = proportional + integral_term + derivative_term
+
+              # Saturate output
+              output = self._saturate(output)
+
+              # Update state
+              self.previous_error = error
+              self.previous_output = output
+
+              # Record execution time
+              execution_time = time.time() - start_time
+              self.execution_times.append(execution_time)
+
+              # Keep only recent execution times
+              if len(self.execution_times) > 100:
+                  self.execution_times = self.execution_times[-100:]
+
+              return output
+
+          def reset(self):
+              """Reset controller state."""
+              self.integral = 0.0
+              self.previous_error = 0.0
+              self.previous_derivative = 0.0
+              self.previous_output = 0.0
+              self.execution_times = []
+
+          def get_execution_statistics(self) -> dict:
+              """Get execution time statistics."""
+              if not self.execution_times:
+                  return {}
+
+              return {
+                  'mean_execution_time': np.mean(self.execution_times),
+                  'max_execution_time': np.max(self.execution_times),
+                  'min_execution_time': np.min(self.execution_times),
+                  'std_execution_time': np.std(self.execution_times),
+                  'sample_count': len(self.execution_times)
+              }
+
+          def tune_parameters(self, kp: float, ki: float, kd: float):
+              """Update PID parameters."""
+              self.params.kp = kp
+              self.params.ki = ki
+              self.params.kd = kd
+
+      # Example usage
+      def create_rt_pid_example():
+          """Create a real-time PID example."""
+          # PID parameters
+          params = PIDParameters(
+              kp=1.0,
+              ki=0.1,
+              kd=0.05,
+              dt=0.01,  # 10ms sampling time
+              u_min=-10.0,
+              u_max=10.0,
+              derivative_filter_alpha=0.1,
+              anti_windup_gain=1.0
+          )
+
+          # Create controller
+          controller = RealTimePID(params)
+
+          return controller
+
+      # Ziegler-Nichols tuning method
+      class ZieglerNicholsTuner:
+          """Ziegler-Nichols tuning for PID controllers."""
+
+          @staticmethod
+          def tune_pid(ku: float, tu: float, method: str = "no_overshoot") -> Tuple[float, float, float]:
+              """Tune PID parameters using Ziegler-Nichols method."""
+              if method == "no_overshoot":
+                  kp = 0.2 * ku
+                  ki = 0.4 * ku / tu
+                  kd = 0.066 * ku * tu
+              elif method == "some_overshoot":
+                  kp = 0.33 * ku
+                  ki = 0.66 * ku / tu
+                  kd = 0.11 * ku * tu
+              elif method == "classic":
+                  kp = 0.6 * ku
+                  ki = 1.2 * ku / tu
+                  kd = 0.075 * ku * tu
+              else:
+                  raise ValueError("Invalid tuning method")
+
+              return kp, ki, kd
+    advantages:
+      - "Simple and reliable"
+      - "Guaranteed execution time"
+      - "Easy to tune and understand"
+      - "Robust to parameter variations"
+      - "Widely applicable"
+    disadvantages:
+      - "Limited performance for complex systems"
+      - "Requires manual tuning"
+      - "May not handle constraints well"
+      - "Limited to single-input single-output systems"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(1)"
+  space_complexity: "O(1)"
+  notes: "Constant time complexity for each control step"
+
+# Applications and use cases
+applications:
+  - category: "Industrial Control"
+    examples: ["temperature control", "pressure control", "flow control"]
+  - category: "Automotive"
+    examples: ["cruise control", "engine control", "suspension control"]
+  - category: "Robotics"
+    examples: ["joint control", "position control", "velocity control"]
+  - category: "Embedded Systems"
+    examples: ["microcontroller control", "sensor control", "actuator control"]
+
+# Educational value
+educational_value:
+  - "Understanding basic control theory"
+  - "PID tuning methods"
+  - "Real-time system implementation"
+  - "Control system design"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "astrom2006"
+  - bib_key: "buttazzo2011"
+
+# Related algorithms
+related_algorithm:
+  - slug: "real-time-control"
+    relationship: "foundation"
+    description: "Real-time control provides the timing framework"
+  - slug: "real-time-mpc"
+    relationship: "alternative"
+    description: "Real-time MPC is a more advanced alternative"
+
+# Tags for categorization
+tags:
+  - "real-time-control"
+  - "pid-control"
+  - "classical-control"
+  - "simple"
+  - "robust"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true

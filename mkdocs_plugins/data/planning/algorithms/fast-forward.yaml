@@ -1,0 +1,397 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: fast-forward
+name: Fast Forward
+family_id: planning
+aliases: ["FF", "FF Planner", "Heuristic Planning"]
+order: 6
+
+# Brief one-sentence summary for cards and navigation
+summary: "Heuristic planning algorithm that uses relaxed planning graphs to efficiently find solutions to STRIPS planning problems."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Fast Forward (FF) is a heuristic planning algorithm that uses relaxed planning graphs to guide search
+  in STRIPS planning problems. The algorithm relaxes the planning problem by ignoring delete effects,
+  creating a planning graph that can be solved efficiently to provide heuristic estimates.
+
+  The key insight is that the relaxed problem is much easier to solve and provides good heuristic
+  estimates for the original problem. FF combines this heuristic with a forward search strategy,
+  making it one of the most successful classical planning algorithms.
+
+# Problem formulation and mathematical details
+formulation:
+  mathematical_properties:
+    - name: "Relaxed Problem"
+      formula: "P⁺ = (S, A⁺, G) where A⁺ ignores delete effects"
+      description: "Planning problem with only add effects"
+    - name: "Relaxed Planning Graph"
+      formula: "G⁺ = (P₀, A₀, P₁, A₁, ..., Pₙ, Aₙ)"
+      description: "Planning graph for relaxed problem"
+    - name: "Heuristic Function"
+      formula: "h(s) = cost of relaxed plan from state s to goal"
+      description: "Cost of solving relaxed problem from current state"
+    - name: "Forward Search"
+      formula: "f(s) = g(s) + h(s)"
+      description: "Evaluation function combining cost and heuristic"
+
+# Key properties and characteristics
+properties:
+  - name: "Heuristic-based"
+    description: "Uses relaxed planning graphs for guidance"
+    importance: "fundamental"
+  - name: "Forward Search"
+    description: "Searches forward from initial state"
+    importance: "fundamental"
+  - name: "Efficient"
+    description: "Fast solution for many planning problems"
+    importance: "fundamental"
+  - name: "Not Optimal"
+    description: "May not find optimal solutions"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "standard"
+    name: "Standard FF"
+    description: "Classic FF implementation with relaxed planning graph heuristic"
+    complexity:
+      time: "O(n²)"
+      space: "O(n²)"
+    code: |
+      from typing import List, Set, Dict, Tuple, Optional
+      from dataclasses import dataclass
+      from collections import defaultdict, deque
+      import heapq
+
+      @dataclass
+      class Action:
+          """Represents a planning action."""
+          name: str
+          preconditions: Set[str]
+          effects: Set[str]
+          add_effects: Set[str]
+          delete_effects: Set[str]
+          cost: float = 1.0
+
+      @dataclass
+      class State:
+          """Represents a planning state."""
+          facts: Set[str]
+          g_cost: float = 0.0
+          h_cost: float = 0.0
+          f_cost: float = 0.0
+          parent: Optional['State'] = None
+          action: Optional[Action] = None
+
+      class FastForward:
+          """Fast Forward planning algorithm implementation."""
+
+          def __init__(self):
+              self.actions = []
+              self.initial_state = set()
+              self.goal = set()
+
+          def add_action(self, name: str, preconditions: Set[str], add_effects: Set[str], delete_effects: Set[str], cost: float = 1.0):
+              """Add an action to the planning domain."""
+              action = Action(
+                  name=name,
+                  preconditions=preconditions,
+                  effects=add_effects | delete_effects,
+                  add_effects=add_effects,
+                  delete_effects=delete_effects,
+                  cost=cost
+              )
+              self.actions.append(action)
+
+          def _create_relaxed_actions(self) -> List[Action]:
+              """Create relaxed actions (ignore delete effects)."""
+              relaxed_actions = []
+              for action in self.actions:
+                  relaxed_action = Action(
+                      name=action.name + "_relaxed",
+                      preconditions=action.preconditions,
+                      effects=action.add_effects,  # Only add effects
+                      add_effects=action.add_effects,
+                      delete_effects=set(),  # No delete effects
+                      cost=action.cost
+                  )
+                  relaxed_actions.append(relaxed_action)
+              return relaxed_actions
+
+          def _build_relaxed_planning_graph(self, state: Set[str]) -> Tuple[List[Set[str]], List[Set[Action]]]:
+              """Build relaxed planning graph from given state."""
+              proposition_layers = [state.copy()]
+              action_layers = []
+
+              level = 0
+              max_levels = 100  # Prevent infinite loops
+
+              while level < max_levels:
+                  # Build action layer
+                  action_layer = set()
+                  for action in self._create_relaxed_actions():
+                      if action.preconditions.issubset(proposition_layers[-1]):
+                          action_layer.add(action)
+
+                  action_layers.append(action_layer)
+
+                  # Build next proposition layer
+                  next_propositions = proposition_layers[-1].copy()
+                  for action in action_layer:
+                      next_propositions.update(action.add_effects)
+
+                  proposition_layers.append(next_propositions)
+
+                  # Check if goal is achievable
+                  if self.goal.issubset(next_propositions):
+                      break
+
+                  # Check for convergence
+                  if next_propositions == proposition_layers[-2]:
+                      break
+
+                  level += 1
+
+              return proposition_layers, action_layers
+
+          def _extract_relaxed_plan(self, proposition_layers: List[Set[str]], action_layers: List[Set[Action]]) -> List[Action]:
+              """Extract relaxed plan from planning graph."""
+              if not action_layers:
+                  return []
+
+              # Find the level where goal is achievable
+              goal_level = None
+              for level, propositions in enumerate(proposition_layers):
+                  if self.goal.issubset(propositions):
+                      goal_level = level
+                      break
+
+              if goal_level is None:
+                  return []
+
+              # Extract plan backwards
+              plan = []
+              current_goals = self.goal.copy()
+
+              for level in range(goal_level, 0, -1):
+                  # Find actions that achieve current goals
+                  level_actions = set()
+                  for goal in current_goals:
+                      for action in action_layers[level - 1]:
+                          if goal in action.add_effects:
+                              level_actions.add(action)
+
+                  plan.extend(level_actions)
+
+                  # Update goals for next level
+                  next_goals = set()
+                  for action in level_actions:
+                      next_goals.update(action.preconditions)
+
+                  current_goals = next_goals
+
+              return plan
+
+          def _compute_heuristic(self, state: Set[str]) -> float:
+              """Compute heuristic value using relaxed planning graph."""
+              proposition_layers, action_layers = self._build_relaxed_planning_graph(state)
+              relaxed_plan = self._extract_relaxed_plan(proposition_layers, action_layers)
+
+              # Return cost of relaxed plan
+              return sum(action.cost for action in relaxed_plan)
+
+          def _get_applicable_actions(self, state: Set[str]) -> List[Action]:
+              """Get all actions applicable in given state."""
+              applicable = []
+              for action in self.actions:
+                  if action.preconditions.issubset(state):
+                      applicable.append(action)
+              return applicable
+
+          def _apply_action(self, state: Set[str], action: Action) -> Set[str]:
+              """Apply action to state and return new state."""
+              new_state = state.copy()
+              new_state.update(action.add_effects)
+              new_state.difference_update(action.delete_effects)
+              return new_state
+
+          def _reconstruct_path(self, goal_state: State) -> List[Action]:
+              """Reconstruct path from goal state to initial state."""
+              path = []
+              current = goal_state
+
+              while current.parent is not None:
+                  if current.action:
+                      path.append(current.action)
+                  current = current.parent
+
+              return path[::-1]
+
+          def plan(self, initial_state: Set[str], goal: Set[str]) -> Optional[List[Action]]:
+              """Find a plan from initial state to goal using FF."""
+              self.initial_state = initial_state
+              self.goal = goal
+
+              # Initialize search
+              start_state = State(
+                  facts=initial_state,
+                  g_cost=0.0,
+                  h_cost=self._compute_heuristic(initial_state)
+              )
+              start_state.f_cost = start_state.g_cost + start_state.h_cost
+
+              # Priority queue for open states
+              open_states = [start_state]
+              heapq.heapify(open_states)
+
+              # Set of visited states
+              visited = set()
+
+              while open_states:
+                  current = heapq.heappop(open_states)
+
+                  # Check if goal is reached
+                  if self.goal.issubset(current.facts):
+                      return self._reconstruct_path(current)
+
+                  # Skip if already visited
+                  state_key = tuple(sorted(current.facts))
+                  if state_key in visited:
+                      continue
+                  visited.add(state_key)
+
+                  # Get applicable actions
+                  applicable_actions = self._get_applicable_actions(current.facts)
+
+                  for action in applicable_actions:
+                      # Apply action
+                      new_facts = self._apply_action(current.facts, action)
+
+                      # Create new state
+                      new_state = State(
+                          facts=new_facts,
+                          g_cost=current.g_cost + action.cost,
+                          parent=current,
+                          action=action
+                      )
+                      new_state.h_cost = self._compute_heuristic(new_facts)
+                      new_state.f_cost = new_state.g_cost + new_state.h_cost
+
+                      # Add to open states
+                      heapq.heappush(open_states, new_state)
+
+              return None
+
+      # Example usage
+      def create_blocks_world_ff_example():
+          """Create a blocks world planning problem for FF."""
+          planner = FastForward()
+
+          # Define actions
+          planner.add_action(
+              "pickup",
+              {"hand-empty", "clear-A", "on-table-A"},
+              {"holding-A"},
+              {"hand-empty", "clear-A", "on-table-A"}
+          )
+
+          planner.add_action(
+              "putdown",
+              {"holding-A"},
+              {"hand-empty", "clear-A", "on-table-A"},
+              {"holding-A"}
+          )
+
+          planner.add_action(
+              "stack",
+              {"holding-A", "clear-B"},
+              {"on-A-B", "hand-empty", "clear-A"},
+              {"holding-A", "clear-B"}
+          )
+
+          planner.add_action(
+              "unstack",
+              {"on-A-B", "clear-A", "hand-empty"},
+              {"holding-A", "clear-B"},
+              {"on-A-B", "clear-A", "hand-empty"}
+          )
+
+          # Define initial state and goal
+          initial = {"on-table-A", "on-table-B", "clear-A", "clear-B", "hand-empty"}
+          goal = {"on-A-B"}
+
+          return planner, initial, goal
+    advantages:
+      - "Fast solution for many problems"
+      - "Good heuristic guidance"
+      - "Handles complex planning problems"
+      - "Relatively simple implementation"
+      - "Effective for STRIPS domains"
+    disadvantages:
+      - "Not guaranteed optimal"
+      - "Heuristic may not be admissible"
+      - "May not scale to very large problems"
+      - "Limited to STRIPS domains"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(n²)"
+  space_complexity: "O(n²)"
+  notes: "n is the number of propositions and actions. Complexity depends on problem size and heuristic quality"
+
+# Applications and use cases
+applications:
+  - category: "Classical Planning"
+    examples: ["blocks world", "logistics", "robot navigation"]
+  - category: "Automated Planning"
+    examples: ["workflow automation", "resource allocation", "scheduling"]
+  - category: "AI Planning"
+    examples: ["game AI", "strategy games", "puzzle solving"]
+  - category: "Robotics"
+    examples: ["manipulation planning", "task planning", "motion planning"]
+
+# Educational value
+educational_value:
+  - "Understanding heuristic search"
+  - "Relaxed problem solving"
+  - "Planning graph concepts"
+  - "Forward search strategies"
+
+# Status and development
+status:
+  level: "complete"
+  implementation_quality: "high"
+  documentation_quality: "high"
+  test_coverage: "high"
+
+# References and resources
+references:
+  - bib_key: "hoffmann2001"
+  - bib_key: "russell2003"
+
+# Related algorithms
+related_algorithms:
+  - slug: "graphplan"
+    relationship: "alternative"
+    description: "Alternative approach to classical planning"
+  - slug: "partial-order-planning"
+    relationship: "alternative"
+    description: "Different planning algorithm for similar problems"
+
+# Tags for categorization
+tags:
+  - "planning"
+  - "heuristic"
+  - "forward-search"
+  - "strips"
+  - "relaxed-planning"
+
+# Template options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true
