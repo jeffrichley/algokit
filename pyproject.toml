@@ -272,7 +272,7 @@ exclude = ["tests", "examples", "scripts"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.7.1"
+version = "0.7.2"
 tag_format = "v$version"
 update_changelog_on_bump = true
 version_files = [

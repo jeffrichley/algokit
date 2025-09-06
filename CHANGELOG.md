@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.7.2 (2025-09-06)
+
+### Fix
+
+- restore missing SVG icons for documentation
+
 ## v0.7.1 (2025-09-06)
 
 ### Fix
