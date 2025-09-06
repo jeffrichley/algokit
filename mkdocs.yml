@@ -97,14 +97,65 @@ nav:
   - Overview: index.md
   - Algorithm Families:
     - Overview: families.md
+    - Control:
+      - Overview: control/index.md
+      - Adaptive Control: control/adaptive-control.md
+      - H-Infinity Control: control/h-infinity-control.md
+      - PID Control: control/pid-control.md
+      - Robust Control: control/robust-control.md
+      - Sliding Mode Control: control/sliding-mode-control.md
+    - Dynamic Movement Primitives:
+      - Overview: dynamic-movement-primitives/index.md
+      - Basic DMPs: dynamic-movement-primitives/basic-dmps.md
+      - Constrained DMPs: dynamic-movement-primitives/constrained-dmps.md
+      - DMPs Human-Robot Interaction: dynamic-movement-primitives/dmps-human-robot-interaction.md
+      - DMPs Locomotion: dynamic-movement-primitives/dmps-locomotion.md
+      - DMPs Manipulation: dynamic-movement-primitives/dmps-manipulation.md
+      - DMPs Obstacle Avoidance: dynamic-movement-primitives/dmps-obstacle-avoidance.md
+      - Geometry-Aware DMPs: dynamic-movement-primitives/geometry-aware-dmps.md
+      - Hierarchical DMPs: dynamic-movement-primitives/hierarchical-dmps.md
+      - Multi-Task DMP Learning: dynamic-movement-primitives/multi-task-dmp-learning.md
+      - Online DMP Adaptation: dynamic-movement-primitives/online-dmp-adaptation.md
+      - Probabilistic Movement Primitives: dynamic-movement-primitives/probabilistic-movement-primitives.md
+      - Reinforcement Learning DMPs: dynamic-movement-primitives/reinforcement-learning-dmps.md
+      - Spatially-Coupled Bimanual DMPs: dynamic-movement-primitives/spatially-coupled-bimanual-dmps.md
+      - Temporal DMPs: dynamic-movement-primitives/temporal-dmps.md
     - Dynamic Programming:
       - Overview: dynamic-programming/index.md
       - Fibonacci Sequence: dynamic-programming/fibonacci.md
       - Coin Change Problem: dynamic-programming/coin-change.md
       - 0/1 Knapsack Problem: dynamic-programming/knapsack.md
+    - Gaussian Process:
+      - Overview: gaussian-process/index.md
+    - Hierarchical Reinforcement Learning:
+      - Overview: hierarchical-reinforcement-learning/index.md
+      - Feudal Networks: hierarchical-reinforcement-learning/feudal-networks.md
+      - Hierarchical Actor-Critic: hierarchical-reinforcement-learning/hierarchical-actor-critic.md
+      - Hierarchical Policy Gradient: hierarchical-reinforcement-learning/hierarchical-policy-gradient.md
+      - Hierarchical Q-Learning: hierarchical-reinforcement-learning/hierarchical-q-learning.md
+      - Hierarchical Task Networks: hierarchical-reinforcement-learning/hierarchical-task-networks.md
+      - Option Critic: hierarchical-reinforcement-learning/option-critic.md
+    - Model Predictive Control:
+      - Overview: model-predictive-control/index.md
+      - Distributed MPC: model-predictive-control/distributed-mpc.md
+      - Economic MPC: model-predictive-control/economic-mpc.md
+      - Learning MPC: model-predictive-control/learning-mpc.md
+      - Linear MPC: model-predictive-control/linear-mpc.md
+      - Model Predictive Control: model-predictive-control/model-predictive-control.md
+      - Nonlinear MPC: model-predictive-control/nonlinear-mpc.md
+      - Robust MPC: model-predictive-control/robust-mpc.md
+    - Planning:
+      - Overview: planning/index.md
+    - Real-Time Control:
+      - Overview: real-time-control/index.md
     - Reinforcement Learning:
       - Overview: reinforcement-learning/index.md
+      - Actor-Critic: reinforcement-learning/actor-critic.md
+      - Deep Q-Network (DQN): reinforcement-learning/dqn.md
+      - Policy Gradient: reinforcement-learning/policy-gradient.md
+      - Proximal Policy Optimization (PPO): reinforcement-learning/ppo.md
       - Q-Learning: reinforcement-learning/q-learning.md
+      - SARSA: reinforcement-learning/sarsa.md
   - API Reference: api.md
   - Contributing: contributing.md
   - Security: SECURITY.md
