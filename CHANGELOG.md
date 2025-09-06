@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.8.0 (2025-09-06)
+
+### Feat
+
+- add missing algorithms for Gaussian Process, Planning, and Real-time Control families
+
 ## v0.7.2 (2025-09-06)
 
 ### Fix
