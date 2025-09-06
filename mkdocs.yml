@@ -127,6 +127,12 @@ nav:
       - 0/1 Knapsack Problem: dynamic-programming/knapsack.md
     - Gaussian Process:
       - Overview: gaussian-process/index.md
+      - Deep GPs: gaussian-process/deep-gps.md
+      - GP Classification: gaussian-process/gp-classification.md
+      - GP Optimization: gaussian-process/gp-optimization.md
+      - GP Regression: gaussian-process/gp-regression.md
+      - Multi-Output GPs: gaussian-process/multi-output-gps.md
+      - Sparse GPs: gaussian-process/sparse-gps.md
     - Hierarchical Reinforcement Learning:
       - Overview: hierarchical-reinforcement-learning/index.md
       - Feudal Networks: hierarchical-reinforcement-learning/feudal-networks.md
@@ -146,8 +152,19 @@ nav:
       - Robust MPC: model-predictive-control/robust-mpc.md
     - Planning:
       - Overview: planning/index.md
+      - A* Search: planning/a-star-search.md
+      - Breadth-First Search: planning/breadth-first-search.md
+      - Depth-First Search: planning/depth-first-search.md
+      - Fast Forward: planning/fast-forward.md
+      - Graphplan: planning/graphplan.md
+      - M*: planning/m-star.md
+      - Partial Order Planning: planning/partial-order-planning.md
     - Real-Time Control:
       - Overview: real-time-control/index.md
+      - Real-Time Adaptive Control: real-time-control/real-time-adaptive-control.md
+      - Real-Time Control: real-time-control/real-time-control.md
+      - Real-Time MPC: real-time-control/real-time-mpc.md
+      - Real-Time PID: real-time-control/real-time-pid.md
     - Reinforcement Learning:
       - Overview: reinforcement-learning/index.md
       - Actor-Critic: reinforcement-learning/actor-critic.md
