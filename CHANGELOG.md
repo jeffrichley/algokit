@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.9.0 (2025-09-06)
+
+### Feat
+
+- add Google Analytics tracking with feedback widget
+
 ## v0.8.0 (2025-09-06)
 
 ### Feat
