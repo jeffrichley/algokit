@@ -135,6 +135,8 @@ output/benchmarks/
 *.jpg
 *.jpeg
 *.svg
+# Exception: Allow SVG icons in docs directory
+!docs/icons/*.svg
 temp_media_*
 *.temp
 *.cache
