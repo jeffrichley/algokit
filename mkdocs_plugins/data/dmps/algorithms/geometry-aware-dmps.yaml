@@ -1,0 +1,603 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: geometry-aware-dmps
+name: Geometry-aware Dynamic Movement Primitives
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs that operate with symmetric positive definite matrices to handle stiffness and damping matrices for impedance control applications."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Geometry-aware Dynamic Movement Primitives extend the basic DMP framework to operate with symmetric positive definite (SPD) matrices, enabling the handling of stiffness and damping matrices that are fundamental to impedance control applications. This approach is particularly valuable in robotics where the robot's interaction with the environment requires careful control of forces and torques.
+
+  The key innovation of geometry-aware DMPs is the use of Riemannian geometry on the manifold of SPD matrices, which allows for:
+  - Natural interpolation between stiffness and damping matrices
+  - Proper handling of matrix-valued parameters
+  - Impedance control with learned stiffness and damping profiles
+  - Smooth transitions between different impedance characteristics
+  - Preservation of matrix properties during learning and execution
+
+  These DMPs are particularly valuable in applications requiring precise force control, such as assembly tasks, manipulation in uncertain environments, and human-robot interaction where the robot must adapt its impedance to the task requirements.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Stiffness matrices: K(t) ∈ SPD(n) for t ∈ [0, T]
+    - Damping matrices: D(t) ∈ SPD(n) for t ∈ [0, T]
+    - SPD manifold: M = {A ∈ ℝ^(n×n) : A = A^T, A ≻ 0}
+    - Riemannian metric: g_A(X, Y) = tr(A^(-1) X A^(-1) Y)
+
+    Learn DMPs that operate on the SPD manifold:
+    K(t) = K_0 * exp(Σ_{i=1}^K w_i^K ψ_i(t))
+    D(t) = D_0 * exp(Σ_{i=1}^K w_i^D ψ_i(t))
+    
+    Where:
+    - K_0, D_0 are initial SPD matrices
+    - w_i^K, w_i^D are learned weights
+    - ψ_i(t) are basis functions
+    - exp is the matrix exponential
+
+  key_properties:
+    - name: "SPD Manifold Operations"
+      formula: "K(t) = K_0 * exp(Σ_{i=1}^K w_i^K ψ_i(t))"
+      description: "Operations preserve the SPD property of matrices"
+    - name: "Riemannian Interpolation"
+      formula: "K(t) = K_0^(1-t) * K_1^t"
+      description: "Natural interpolation between SPD matrices"
+    - name: "Impedance Control"
+      formula: "τ = K(t)(q_d - q) + D(t)(q̇_d - q̇)"
+      description: "Generated matrices can be used directly for impedance control"
+
+# Key properties and characteristics
+properties:
+  - name: "SPD Matrix Handling"
+    description: "Properly handles symmetric positive definite matrices"
+    importance: "fundamental"
+  - name: "Riemannian Geometry"
+    description: "Uses Riemannian geometry for natural matrix operations"
+    importance: "fundamental"
+  - name: "Impedance Control"
+    description: "Generates stiffness and damping matrices for impedance control"
+    importance: "fundamental"
+  - name: "Matrix Interpolation"
+    description: "Natural interpolation between SPD matrices"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "spd_dmp"
+    name: "SPD Matrix DMPs"
+    description: "DMPs that operate on the manifold of SPD matrices"
+    complexity:
+      time: "O(T × K × n^3)"
+      space: "O(K × n^2)"
+    code: |
+      import numpy as np
+      from scipy.linalg import expm, logm
+      from scipy.optimize import minimize
+      from typing import Tuple, List, Optional
+      import warnings
+
+      class GeometryAwareDMP:
+          """
+          Geometry-aware DMP for SPD matrices (stiffness and damping).
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0):
+              """
+              Initialize geometry-aware DMP.
+
+              Args:
+                  n_dims: Number of dimensions (matrix size)
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # Weights for stiffness and damping matrices
+              self.w_K = np.zeros((n_dims, n_dims, n_basis))
+              self.w_D = np.zeros((n_dims, n_dims, n_basis))
+              
+              # Initial matrices
+              self.K_0 = np.eye(n_dims)
+              self.D_0 = np.eye(n_dims)
+
+          def basis_functions(self, t: np.ndarray) -> np.ndarray:
+              """
+              Compute basis function values at time points.
+
+              Args:
+                  t: Time points (normalized to [0,1])
+
+              Returns:
+                  Basis function matrix [T, K]
+              """
+              T = len(t)
+              psi = np.zeros((T, self.n_basis))
+              
+              for i in range(self.n_basis):
+                  psi[:, i] = np.exp(-self.h[i] * (t - self.c[i])**2)
+              
+              return psi
+
+          def spd_interpolation(self, K_0: np.ndarray, K_1: np.ndarray, t: float) -> np.ndarray:
+              """
+              Interpolate between two SPD matrices using Riemannian geometry.
+
+              Args:
+                  K_0: Initial SPD matrix
+                  K_1: Final SPD matrix
+                  t: Interpolation parameter [0,1]
+
+              Returns:
+                  Interpolated SPD matrix
+              """
+              # Compute logarithm
+              log_K_0 = logm(K_0)
+              log_K_1 = logm(K_1)
+              
+              # Interpolate in log space
+              log_K_t = (1 - t) * log_K_0 + t * log_K_1
+              
+              # Exponentiate back to SPD space
+              K_t = expm(log_K_t)
+              
+              return K_t
+
+          def learn_from_demo(self, K_demo: List[np.ndarray], D_demo: List[np.ndarray], 
+                            dt: float) -> None:
+              """
+              Learn DMP weights from demonstrated stiffness and damping matrices.
+
+              Args:
+                  K_demo: List of demonstrated stiffness matrices [T, n_dims, n_dims]
+                  D_demo: List of demonstrated damping matrices [T, n_dims, n_dims]
+                  dt: Time step
+              """
+              T = len(K_demo)
+              t = np.linspace(0, 1, T)
+              
+              # Set initial matrices
+              self.K_0 = K_demo[0]
+              self.D_0 = D_demo[0]
+              
+              # Compute basis functions
+              psi = self.basis_functions(t)
+              
+              # Learn weights for stiffness matrices
+              for i in range(self.n_dims):
+                  for j in range(self.n_dims):
+                      # Compute target forcing function
+                      f_target = np.zeros(T)
+                      for k in range(T):
+                          # Compute forcing function target
+                          K_target = K_demo[k]
+                          K_pred = self.K_0 @ expm(np.sum([self.w_K[i, j, l] * psi[k, l] 
+                                                          for l in range(self.n_basis)]))
+                          
+                          # Compute error in log space
+                          error = logm(K_target @ np.linalg.inv(K_pred))
+                          f_target[k] = error[i, j]
+                      
+                      # Learn weights using least squares
+                      for l in range(self.n_basis):
+                          numerator = np.sum(psi[:, l] * f_target)
+                          denominator = np.sum(psi[:, l]**2)
+                          
+                          if denominator > 1e-10:
+                              self.w_K[i, j, l] = numerator / denominator
+              
+              # Learn weights for damping matrices (similar process)
+              for i in range(self.n_dims):
+                  for j in range(self.n_dims):
+                      f_target = np.zeros(T)
+                      for k in range(T):
+                          D_target = D_demo[k]
+                          D_pred = self.D_0 @ expm(np.sum([self.w_D[i, j, l] * psi[k, l] 
+                                                          for l in range(self.n_basis)]))
+                          
+                          error = logm(D_target @ np.linalg.inv(D_pred))
+                          f_target[k] = error[i, j]
+                      
+                      for l in range(self.n_basis):
+                          numerator = np.sum(psi[:, l] * f_target)
+                          denominator = np.sum(psi[:, l]**2)
+                          
+                          if denominator > 1e-10:
+                              self.w_D[i, j, l] = numerator / denominator
+
+          def generate_matrices(self, K_goal: np.ndarray, D_goal: np.ndarray, 
+                              tau: float = 1.0, dt: float = 0.01) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+              """
+              Generate stiffness and damping matrices from learned DMP.
+
+              Args:
+                  K_goal: Goal stiffness matrix
+                  D_goal: Goal damping matrix
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (stiffness_matrices, damping_matrices)
+              """
+              # Time points
+              t = np.arange(0, 1.0, dt / tau)
+              T = len(t)
+              
+              # Compute basis functions
+              psi = self.basis_functions(t)
+              
+              # Generate matrices
+              K_traj = []
+              D_traj = []
+              
+              for k in range(T):
+                  # Generate stiffness matrix
+                  K_k = self.K_0.copy()
+                  for i in range(self.n_dims):
+                      for j in range(self.n_dims):
+                          weight_sum = np.sum([self.w_K[i, j, l] * psi[k, l] 
+                                             for l in range(self.n_basis)])
+                          K_k = K_k @ expm(weight_sum * np.eye(self.n_dims))
+                  
+                  # Generate damping matrix
+                  D_k = self.D_0.copy()
+                  for i in range(self.n_dims):
+                      for j in range(self.n_dims):
+                          weight_sum = np.sum([self.w_D[i, j, l] * psi[k, l] 
+                                             for l in range(self.n_basis)])
+                          D_k = D_k @ expm(weight_sum * np.eye(self.n_dims))
+                  
+                  K_traj.append(K_k)
+                  D_traj.append(D_k)
+              
+              return K_traj, D_traj
+
+          def impedance_control(self, q: np.ndarray, q_dot: np.ndarray, 
+                              q_d: np.ndarray, q_dot_d: np.ndarray, 
+                              K: np.ndarray, D: np.ndarray) -> np.ndarray:
+              """
+              Compute impedance control torques.
+
+              Args:
+                  q: Current joint positions
+                  q_dot: Current joint velocities
+                  q_d: Desired joint positions
+                  q_dot_d: Desired joint velocities
+                  K: Stiffness matrix
+                  D: Damping matrix
+
+              Returns:
+                  Control torques
+              """
+              # Position and velocity errors
+              e_pos = q_d - q
+              e_vel = q_dot_d - q_dot
+              
+              # Impedance control law
+              tau = K @ e_pos + D @ e_vel
+              
+              return tau
+
+    advantages:
+      - "Proper handling of SPD matrices"
+      - "Natural interpolation between matrices"
+      - "Direct application to impedance control"
+      - "Preserves matrix properties"
+    disadvantages:
+      - "High computational cost for matrix operations"
+      - "Complex learning process"
+      - "Requires matrix exponential computations"
+
+  - type: "log_euclidean_dmp"
+    name: "Log-Euclidean DMPs"
+    description: "DMPs using log-Euclidean geometry for SPD matrices"
+    complexity:
+      time: "O(T × K × n^3)"
+      space: "O(K × n^2)"
+    code: |
+      class LogEuclideanDMP(GeometryAwareDMP):
+          """
+          Log-Euclidean DMP for SPD matrices using log-Euclidean geometry.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0):
+              """
+              Initialize log-Euclidean DMP.
+
+              Args:
+                  n_dims: Number of dimensions (matrix size)
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x)
+              
+              # Weights in log space
+              self.w_K_log = np.zeros((n_dims, n_dims, n_basis))
+              self.w_D_log = np.zeros((n_dims, n_dims, n_basis))
+
+          def learn_from_demo(self, K_demo: List[np.ndarray], D_demo: List[np.ndarray], 
+                            dt: float) -> None:
+              """
+              Learn DMP weights using log-Euclidean geometry.
+
+              Args:
+                  K_demo: List of demonstrated stiffness matrices
+                  D_demo: List of demonstrated damping matrices
+                  dt: Time step
+              """
+              T = len(K_demo)
+              t = np.linspace(0, 1, T)
+              
+              # Set initial matrices
+              self.K_0 = K_demo[0]
+              self.D_0 = D_demo[0]
+              
+              # Compute basis functions
+              psi = self.basis_functions(t)
+              
+              # Learn weights for stiffness matrices in log space
+              for i in range(self.n_dims):
+                  for j in range(self.n_dims):
+                      # Compute target in log space
+                      f_target = np.zeros(T)
+                      for k in range(T):
+                          K_target = K_demo[k]
+                          K_pred = self.K_0 @ expm(np.sum([self.w_K_log[i, j, l] * psi[k, l] 
+                                                          for l in range(self.n_basis)]))
+                          
+                          # Error in log space
+                          error = logm(K_target @ np.linalg.inv(K_pred))
+                          f_target[k] = error[i, j]
+                      
+                      # Learn weights using least squares
+                      for l in range(self.n_basis):
+                          numerator = np.sum(psi[:, l] * f_target)
+                          denominator = np.sum(psi[:, l]**2)
+                          
+                          if denominator > 1e-10:
+                              self.w_K_log[i, j, l] = numerator / denominator
+              
+              # Learn weights for damping matrices (similar process)
+              for i in range(self.n_dims):
+                  for j in range(self.n_dims):
+                      f_target = np.zeros(T)
+                      for k in range(T):
+                          D_target = D_demo[k]
+                          D_pred = self.D_0 @ expm(np.sum([self.w_D_log[i, j, l] * psi[k, l] 
+                                                          for l in range(self.n_basis)]))
+                          
+                          error = logm(D_target @ np.linalg.inv(D_pred))
+                          f_target[k] = error[i, j]
+                      
+                      for l in range(self.n_basis):
+                          numerator = np.sum(psi[:, l] * f_target)
+                          denominator = np.sum(psi[:, l]**2)
+                          
+                          if denominator > 1e-10:
+                              self.w_D_log[i, j, l] = numerator / denominator
+
+          def generate_matrices(self, K_goal: np.ndarray, D_goal: np.ndarray, 
+                              tau: float = 1.0, dt: float = 0.01) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+              """
+              Generate stiffness and damping matrices using log-Euclidean geometry.
+
+              Args:
+                  K_goal: Goal stiffness matrix
+                  D_goal: Goal damping matrix
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (stiffness_matrices, damping_matrices)
+              """
+              # Time points
+              t = np.arange(0, 1.0, dt / tau)
+              T = len(t)
+              
+              # Compute basis functions
+              psi = self.basis_functions(t)
+              
+              # Generate matrices
+              K_traj = []
+              D_traj = []
+              
+              for k in range(T):
+                  # Generate stiffness matrix in log space
+                  K_log = np.zeros((self.n_dims, self.n_dims))
+                  for i in range(self.n_dims):
+                      for j in range(self.n_dims):
+                          weight_sum = np.sum([self.w_K_log[i, j, l] * psi[k, l] 
+                                             for l in range(self.n_basis)])
+                          K_log[i, j] = weight_sum
+                  
+                  K_k = self.K_0 @ expm(K_log)
+                  
+                  # Generate damping matrix in log space
+                  D_log = np.zeros((self.n_dims, self.n_dims))
+                  for i in range(self.n_dims):
+                      for j in range(self.n_dims):
+                          weight_sum = np.sum([self.w_D_log[i, j, l] * psi[k, l] 
+                                             for l in range(self.n_basis)])
+                          D_log[i, j] = weight_sum
+                  
+                  D_k = self.D_0 @ expm(D_log)
+                  
+                  K_traj.append(K_k)
+                  D_traj.append(D_k)
+              
+              return K_traj, D_traj
+
+    advantages:
+      - "Simpler geometry than full Riemannian"
+      - "Easier to implement and understand"
+      - "Still preserves SPD property"
+      - "Lower computational cost"
+    disadvantages:
+      - "Less geometrically principled"
+      - "May not capture all matrix relationships"
+      - "Still requires matrix exponential"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "SPD Matrix DMP Learning"
+      time: "O(T × K × n^3)"
+      space: "O(K × n^2)"
+      notes: "Learning time scales with trajectory length, basis functions, and matrix size"
+    
+    - approach: "Log-Euclidean DMP Learning"
+      time: "O(T × K × n^3)"
+      space: "O(K × n^2)"
+      notes: "Similar complexity but with simpler geometry"
+    
+    - approach: "Matrix Generation"
+      time: "O(T × n^3)"
+      space: "O(T × n^2)"
+      notes: "Generation time scales with trajectory length and matrix size"
+
+# Applications and use cases
+applications:
+  - category: "Impedance Control"
+    examples:
+      - "Assembly Tasks: Learning appropriate stiffness and damping for assembly"
+      - "Force Control: Learning force control strategies with variable impedance"
+      - "Compliance Control: Learning compliant behaviors for safe interaction"
+      - "Hybrid Control: Learning position/force control with impedance modulation"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Physical Interaction: Learning appropriate impedance for human interaction"
+      - "Collaborative Tasks: Learning impedance for collaborative manipulation"
+      - "Assistive Robotics: Learning impedance for assistive tasks"
+      - "Social Robotics: Learning impedance for social interaction"
+
+  - category: "Manipulation"
+    examples:
+      - "Grasping: Learning impedance for grasping different objects"
+      - "Tool Use: Learning impedance for tool manipulation"
+      - "Assembly: Learning impedance for assembly tasks"
+      - "Packaging: Learning impedance for packaging operations"
+
+  - category: "Locomotion"
+    examples:
+      - "Walking: Learning impedance for walking on different terrains"
+      - "Running: Learning impedance for running with different speeds"
+      - "Jumping: Learning impedance for jumping and landing"
+      - "Balancing: Learning impedance for balance control"
+
+  - category: "Medical Robotics"
+    examples:
+      - "Surgery: Learning impedance for surgical procedures"
+      - "Rehabilitation: Learning impedance for therapeutic exercises"
+      - "Prosthetics: Learning impedance for prosthetic control"
+      - "Diagnostic: Learning impedance for diagnostic procedures"
+
+# Educational value and learning objectives
+educational_value:
+  - "Riemannian Geometry: Understanding geometry on manifolds of matrices"
+  - "SPD Matrices: Understanding symmetric positive definite matrices"
+  - "Impedance Control: Understanding impedance control in robotics"
+  - "Matrix Operations: Understanding matrix exponential and logarithm"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/geometry_aware_dmps.py"
+      description: "Main implementation with SPD and log-Euclidean DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_geometry_aware_dmps.py"
+      description: "Comprehensive test suite including matrix property tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Arsigny, V., Fillard, P., Pennec, X., & Ayache, N."
+        year: "2006"
+        title: "Log-Euclidean metrics for fast and simple calculus on diffusion tensors"
+        publisher: "Magnetic Resonance in Medicine"
+        note: "Log-Euclidean geometry for SPD matrices"
+      - author: "Pennec, X., Fillard, P., & Ayache, N."
+        year: "2006"
+        title: "A Riemannian framework for tensor computing"
+        publisher: "International Journal of Computer Vision"
+        note: "Riemannian geometry for tensor computing"
+
+  - category: "DMP Extensions"
+    items:
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "DMPs with impedance control"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with variable impedance"
+
+  - category: "Online Resources"
+    items:
+      - title: "Symmetric Positive Definite Matrices"
+        url: "https://en.wikipedia.org/wiki/Definite_matrix"
+        note: "Wikipedia article on SPD matrices"
+      - title: "Riemannian Geometry"
+        url: "https://en.wikipedia.org/wiki/Riemannian_geometry"
+        note: "Wikipedia article on Riemannian geometry"
+      - title: "Impedance Control"
+        url: "https://en.wikipedia.org/wiki/Impedance_control"
+        note: "Wikipedia article on impedance control"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "SciPy Linear Algebra"
+        url: "https://docs.scipy.org/doc/scipy/reference/linalg.html"
+        note: "SciPy linear algebra functions"
+      - title: "NumPy Linear Algebra"
+        url: "https://numpy.org/doc/stable/reference/routines.linalg.html"
+        note: "NumPy linear algebra functions"
+      - title: "Manopt"
+        url: "https://www.manopt.org/"
+        note: "MATLAB toolbox for optimization on manifolds"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "geometry-aware-dmps"
+  - "spd-matrices"
+  - "riemannian-geometry"
+  - "impedance-control"
+  - "stiffness-damping"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that geometry-aware DMPs extend for matrix-valued parameters"
+  - slug: "constrained-dmps"
+    relationship: "same_family"
+    description: "Constrained DMPs that can be combined with geometry-aware DMPs"

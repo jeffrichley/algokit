@@ -1,0 +1,187 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: mpc
+name: Model Predictive Control
+slug: model-predictive-control
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control optimizes control actions by solving constrained optimization problems over a prediction horizon."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Model Predictive Control (MPC) is an advanced control strategy that uses a mathematical model
+  of the system to predict future behavior and optimize control actions over a finite prediction
+  horizon. Unlike traditional control methods, MPC explicitly handles constraints on inputs,
+  outputs, and states while optimizing a performance objective.
+
+  MPC has become the standard control method in process industries and is increasingly used
+  in automotive, aerospace, and robotics applications. Its ability to handle multivariable
+  systems, constraints, and nonlinear dynamics makes it particularly powerful for complex
+  control problems where traditional methods fall short.
+
+# Family characteristics
+key_characteristics:
+  - name: "Predictive Control"
+    description: "Uses system model to predict future behavior and optimize control actions"
+    importance: "fundamental"
+  - name: "Constraint Handling"
+    description: "Explicitly handles constraints on inputs, outputs, and states"
+    importance: "fundamental"
+  - name: "Receding Horizon"
+    description: "Optimizes over finite horizon and implements only the first control action"
+    importance: "fundamental"
+  - name: "Multivariable Control"
+    description: "Naturally handles systems with multiple inputs and outputs"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Process Industries"
+    examples: ["chemical plants", "oil refineries", "power plants", "pulp and paper"]
+  - category: "Automotive"
+    examples: ["engine control", "vehicle dynamics", "hybrid vehicles", "autonomous driving"]
+  - category: "Aerospace"
+    examples: ["flight control", "spacecraft guidance", "unmanned aerial vehicles"]
+  - category: "Robotics"
+    examples: ["manipulator control", "mobile robot navigation", "humanoid robots"]
+  - category: "Energy Systems"
+    examples: ["smart grids", "renewable energy", "battery management", "microgrids"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Prediction Horizon"
+    description: "Time window over which future behavior is predicted"
+    type: "concept"
+  - name: "Control Horizon"
+    description: "Time window over which control actions are optimized"
+    type: "concept"
+  - name: "Receding Horizon"
+    description: "Strategy of implementing only the first control action and shifting horizon"
+    type: "technique"
+  - name: "Constraints"
+    description: "Limitations on system inputs, outputs, and states"
+    type: "concept"
+  - name: "Cost Function"
+    description: "Mathematical expression of control objectives to be minimized"
+    type: "mathematical"
+  - name: "State Estimation"
+    description: "Process of estimating current system state from measurements"
+    type: "technique"
+  - name: "Disturbance Rejection"
+    description: "Ability to maintain performance despite external disturbances"
+    type: "concept"
+  - name: "Stability"
+    description: "Ensuring closed-loop system remains stable under MPC control"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "control"
+    relationship: "parent"
+    description: "MPC is a specialized control method within the broader control family"
+  - id: "optimization"
+    relationship: "foundation"
+    description: "MPC relies heavily on optimization algorithms for solving control problems"
+  - id: "system-identification"
+    relationship: "prerequisite"
+    description: "System models required for MPC are obtained through system identification"
+  - id: "state-estimation"
+    relationship: "integration"
+    description: "State estimation is often integrated with MPC for practical implementation"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(N³) to O(N⁶)"
+  typical_space: "O(N²) to O(N⁴)"
+  notes: "Complexity depends on prediction horizon N, system dimensions, and optimization method used"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "MPC Formulations"
+    content: |
+      !!! info "Linear vs Nonlinear MPC"
+
+          **Linear MPC**:
+
+          - Uses linear system models
+          - Quadratic cost functions
+          - Convex optimization problems
+          - Fast computation, guaranteed convergence
+          - Limited to linear system dynamics
+
+          **Nonlinear MPC**:
+
+          - Uses nonlinear system models
+          - General cost functions
+          - Non-convex optimization problems
+          - More computationally intensive
+          - Handles complex nonlinear dynamics
+
+  - name: "Constraint Types"
+    content: |
+      !!! info "MPC Constraint Categories"
+
+          1. **Input Constraints**: Limits on control actions (actuator limits)
+          2. **State Constraints**: Limits on system states (safety limits)
+          3. **Output Constraints**: Limits on system outputs (performance limits)
+          4. **Rate Constraints**: Limits on rate of change of inputs or states
+          5. **Soft vs Hard Constraints**: Violatable vs strictly enforced constraints
+
+  - name: "Implementation Considerations"
+    content: |
+      !!! info "Practical MPC Implementation"
+
+          **Computational Requirements**:
+          - Real-time optimization within sampling period
+          - Efficient numerical methods (QP, SQP, interior-point)
+          - Warm-starting for faster convergence
+
+          **Robustness and Stability**:
+          - Terminal constraints for stability
+          - Robust MPC for uncertainty handling
+          - Feasibility and recursive feasibility
+
+          **Tuning Parameters**:
+          - Prediction and control horizons
+          - Weighting matrices in cost function
+          - Constraint softening parameters
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "rawlings2017"  # Model Predictive Control: Theory, Computation, and Design
+  - bib_key: "cannon2017"    # Model Predictive Control: Classical, Robust and Stochastic
+  - bib_key: "mayne2014"     # Model predictive control: Recent developments and future promise
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "mpc"  # Primary family tag
+  - "control"
+  - "optimization"
+  - "constraints"
+  - "predictive"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

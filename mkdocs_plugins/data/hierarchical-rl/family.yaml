@@ -1,0 +1,198 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: hierarchical-rl
+name: Hierarchical Reinforcement Learning
+slug: hierarchical-reinforcement-learning
+# Brief one-sentence summary for cards and navigation
+summary: "Hierarchical Reinforcement Learning decomposes complex tasks into simpler subtasks using temporal abstraction and multi-level decision making."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Hierarchical Reinforcement Learning (HRL) extends traditional reinforcement learning by decomposing
+  complex tasks into simpler subtasks or options. This hierarchical structure enables agents to learn
+  more efficiently by reusing learned skills and operating at multiple levels of abstraction, from
+  high-level strategic planning to low-level control execution.
+
+  Unlike traditional RL where agents learn flat policies, HRL introduces temporal abstraction through
+  options - temporally extended actions that can be executed over multiple time steps. This allows
+  agents to operate at different time scales and reuse learned behaviors across different tasks,
+  making them particularly powerful for complex, long-horizon problems.
+
+# Family characteristics
+key_characteristics:
+  - name: "Temporal Abstraction"
+    description: "Actions that operate over different time scales from high-level strategy to low-level control"
+    importance: "fundamental"
+  - name: "Skill Reuse"
+    description: "Learned behaviors that can be applied to new tasks and environments"
+    importance: "fundamental"
+  - name: "Multi-level Decision Making"
+    description: "Hierarchical structure from strategy to control with different abstraction levels"
+    importance: "fundamental"
+  - name: "Option Policies"
+    description: "Temporally extended actions over multiple time steps with initiation and termination conditions"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Robotics and Autonomous Systems"
+    examples: ["manipulation tasks", "navigation", "autonomous vehicles", "humanoid robots"]
+  - category: "Game Playing and Strategy"
+    examples: ["real-time strategy games", "chess", "poker", "multi-player games"]
+  - category: "Multi-Agent Coordination"
+    examples: ["swarm robotics", "distributed systems", "cooperative games"]
+  - category: "Complex Control Systems"
+    examples: ["industrial automation", "smart grids", "traffic management"]
+  - category: "Natural Language Processing"
+    examples: ["dialogue systems", "text generation", "language understanding"]
+  - category: "Computer Vision and Perception"
+    examples: ["object recognition", "scene understanding", "visual navigation"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Options"
+    description: "Temporally extended actions that can be executed over multiple time steps"
+    type: "concept"
+  - name: "Hierarchy"
+    description: "Multiple levels of decision-making from high-level strategy to low-level control"
+    type: "concept"
+  - name: "Skill Reuse"
+    description: "Learned behaviors that can be applied to new tasks and environments"
+    type: "technique"
+  - name: "Temporal Abstraction"
+    description: "Actions that operate over different time scales"
+    type: "concept"
+  - name: "Subgoal Decomposition"
+    description: "Breaking complex tasks into manageable subtasks"
+    type: "technique"
+  - name: "Policy Hierarchies"
+    description: "Layered policies operating at different abstraction levels"
+    type: "mathematical"
+  - name: "Initiation Set"
+    description: "States where an option can be started"
+    type: "mathematical"
+  - name: "Termination Function"
+    description: "Probability of option terminating in each state"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "rl"
+    relationship: "parent"
+    description: "HRL extends traditional reinforcement learning with hierarchical structure"
+  - id: "multi-agent"
+    relationship: "related"
+    description: "HRL can be applied to multi-agent coordination and cooperation"
+  - id: "planning"
+    relationship: "integration"
+    description: "HRL often incorporates planning algorithms for task decomposition"
+  - id: "neural-networks"
+    relationship: "integration"
+    description: "Deep HRL combines hierarchical structure with neural networks"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(n²) to O(n³)"
+  typical_space: "O(n) to O(n²)"
+  notes: "Complexity depends on hierarchy depth, option complexity, and state-action space size"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Hierarchical Structures"
+    content: |
+      !!! info "Types of Hierarchies"
+
+          **Temporal Hierarchy**:
+
+          - **High-level**: Strategic decisions and goal setting
+          - **Mid-level**: Skill selection and coordination
+          - **Low-level**: Primitive actions and control
+
+          **Spatial Hierarchy**:
+
+          - **Global**: Environment-wide planning
+          - **Regional**: Local area navigation
+          - **Local**: Immediate obstacle avoidance
+
+          **Functional Hierarchy**:
+
+          - **Planning**: Long-term strategy
+          - **Navigation**: Path finding and movement
+          - **Control**: Actuator commands
+
+  - name: "Learning Approaches"
+    content: |
+      !!! info "Hierarchy Construction Methods"
+
+          **Predefined Hierarchies**:
+
+          - Human-designed task decomposition
+          - Fixed skill libraries
+          - Structured learning objectives
+
+          **Learned Hierarchies**:
+
+          - Automatic task decomposition
+          - Dynamic skill discovery
+          - Adaptive abstraction levels
+
+          **Hybrid Approaches**:
+
+          - Combine predefined and learned components
+          - Incremental hierarchy construction
+          - Skill refinement over time
+
+  - name: "Option Framework"
+    content: |
+      !!! info "Option Components"
+
+          1. **Initiation Set**: States where the option can be started
+          2. **Policy**: How to behave while the option is executing
+          3. **Termination Function**: When to stop executing the option
+          4. **Reward Function**: How rewards are distributed during option execution
+
+          **Option Properties**:
+          - **Temporal Abstraction**: Options can last multiple time steps
+          - **Reusability**: Same option can be used in different contexts
+          - **Composability**: Options can be combined to form complex behaviors
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "sutton1999"  # Between MDPs and semi-MDPs: A framework for temporal abstraction in reinforcement learning
+  - bib_key: "bacon2017"   # The option-critic architecture
+  - bib_key: "vezhnevets2017"  # Feudal networks for hierarchical reinforcement learning
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "hierarchical-rl"  # Primary family tag
+  - "reinforcement-learning"
+  - "temporal-abstraction"
+  - "options"
+  - "hierarchy"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

@@ -1,0 +1,526 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: actor-critic
+name: Actor-Critic
+family_id: rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "A hybrid reinforcement learning algorithm that combines policy gradient methods with value function approximation for improved learning efficiency."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Actor-Critic is a hybrid reinforcement learning algorithm that combines the benefits of both
+  policy-based and value-based methods. It uses two neural networks: an "actor" that learns
+  the policy and a "critic" that learns the value function. The critic provides a baseline
+  for the actor's policy updates, significantly reducing the variance of gradient estimates
+  compared to pure policy gradient methods like REINFORCE.
+
+  The algorithm works by having the actor select actions based on the current policy, while
+  the critic evaluates the quality of the current state or state-action pair. The critic's
+  value estimates are then used to compute advantages, which guide the actor's policy updates.
+  This combination allows for more stable and sample-efficient learning compared to pure
+  policy gradient methods.
+
+  Actor-Critic methods can be applied to both discrete and continuous action spaces and
+  are particularly effective in environments with high-dimensional state spaces.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Action space: A
+    - Policy: π(a|s;θ) parameterized by θ (Actor)
+    - Value function: V(s;φ) parameterized by φ (Critic)
+    - Reward function: R(s,a,s')
+    - Discount factor: γ ∈ [0,1]
+
+    Find parameters θ and φ that maximize expected return:
+
+    J(θ) = E[∑_{t=0}^∞ γ^t R_{t+1} | π(·|·;θ)]
+
+    Using gradient ascent on policy and value function:
+    θ ← θ + α_θ ∇_θ J(θ)
+    φ ← φ + α_φ ∇_φ L(φ)
+
+  key_properties:
+    - name: "Actor Update"
+      formula: "θ ← θ + α_θ ∑_{t=0}^T ∇_θ log π(a_t|s_t;θ) A^π(s_t,a_t)"
+      description: "Policy parameters updated using advantage estimates"
+    - name: "Critic Update"
+      formula: "φ ← φ + α_φ ∑_{t=0}^T ∇_φ (V(s_t;φ) - V^π(s_t))²"
+      description: "Value function parameters updated to minimize prediction error"
+    - name: "Advantage Estimation"
+      formula: "A^π(s_t,a_t) = Q^π(s_t,a_t) - V^π(s_t)"
+      description: "Advantage computed as difference between Q-value and state value"
+
+# Key properties and characteristics
+properties:
+  - name: "Hybrid Approach"
+    description: "Combines policy-based and value-based methods"
+    importance: "fundamental"
+  - name: "Variance Reduction"
+    description: "Uses value function as baseline to reduce variance"
+    importance: "fundamental"
+  - name: "Online Learning"
+    description: "Can learn from incomplete episodes"
+    importance: "fundamental"
+  - name: "Sample Efficiency"
+    description: "More sample efficient than pure policy gradient methods"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_actor_critic"
+    name: "Basic Actor-Critic"
+    description: "Standard Actor-Critic with separate actor and critic networks"
+    complexity:
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import numpy as np
+      from typing import List, Tuple
+
+      class ActorNetwork(nn.Module):
+          """
+          Actor network for policy learning.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
+              """
+              Initialize actor network.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  hidden_dim: Hidden layer dimension
+              """
+              super(ActorNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_dim, hidden_dim)
+              self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+              self.mean_head = nn.Linear(hidden_dim, action_dim)
+              self.log_std_head = nn.Linear(hidden_dim, action_dim)
+              self.relu = nn.ReLU()
+
+          def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+              """
+              Forward pass through the network.
+
+              Args:
+                  x: Input state tensor
+
+              Returns:
+                  Tuple of (mean, log_std) for action distribution
+              """
+              x = self.relu(self.fc1(x))
+              x = self.relu(self.fc2(x))
+              mean = self.mean_head(x)
+              log_std = self.log_std_head(x)
+              return mean, log_std
+
+          def get_action(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+              """
+              Sample action from policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Tuple of (action, log_prob)
+              """
+              mean, log_std = self.forward(state)
+              std = torch.exp(log_std)
+              normal = torch.distributions.Normal(mean, std)
+              action = normal.sample()
+              log_prob = normal.log_prob(action).sum(dim=-1)
+              return action, log_prob
+
+      class CriticNetwork(nn.Module):
+          """
+          Critic network for value function learning.
+          """
+
+          def __init__(self, state_dim: int, hidden_dim: int = 128):
+              """
+              Initialize critic network.
+
+              Args:
+                  state_dim: Dimension of state space
+                  hidden_dim: Hidden layer dimension
+              """
+              super(CriticNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_dim, hidden_dim)
+              self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+              self.value_head = nn.Linear(hidden_dim, 1)
+              self.relu = nn.ReLU()
+
+          def forward(self, x: torch.Tensor) -> torch.Tensor:
+              """
+              Forward pass through the network.
+
+              Args:
+                  x: Input state tensor
+
+              Returns:
+                  State value
+              """
+              x = self.relu(self.fc1(x))
+              x = self.relu(self.fc2(x))
+              return self.value_head(x)
+
+      class ActorCriticAgent:
+          """
+          Actor-Critic agent for reinforcement learning.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.001,
+                       gamma: float = 0.99, lambda_param: float = 0.95):
+              """
+              Initialize Actor-Critic agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizers
+                  gamma: Discount factor
+                  lambda_param: GAE lambda parameter
+              """
+              self.state_dim = state_dim
+              self.action_dim = action_dim
+              self.gamma = gamma
+              self.lambda_param = lambda_param
+
+              # Initialize actor and critic networks
+              self.actor = ActorNetwork(state_dim, action_dim)
+              self.critic = CriticNetwork(state_dim)
+              
+              # Initialize optimizers
+              self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
+              self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
+
+          def act(self, state: np.ndarray) -> np.ndarray:
+              """
+              Choose action using current policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Selected action
+              """
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              with torch.no_grad():
+                  action, _ = self.actor.get_action(state_tensor)
+              return action.numpy().flatten()
+
+          def update(self, states: List[np.ndarray], actions: List[np.ndarray],
+                    rewards: List[float], next_states: List[np.ndarray], dones: List[bool]) -> None:
+              """
+              Update actor and critic networks.
+
+              Args:
+                  states: List of states
+                  actions: List of actions
+                  rewards: List of rewards
+                  next_states: List of next states
+                  dones: List of done flags
+              """
+              states = torch.FloatTensor(states)
+              actions = torch.FloatTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Calculate values and next values
+              values = self.critic(states).squeeze()
+              next_values = self.critic(next_states).squeeze()
+
+              # Calculate advantages using GAE
+              advantages = []
+              advantage = 0
+              for i in reversed(range(len(rewards))):
+                  if dones[i]:
+                      advantage = 0
+                  advantage = rewards[i] + self.gamma * next_values[i] * (1 - dones[i]) - values[i] + self.gamma * self.lambda_param * advantage
+                  advantages.insert(0, advantage)
+
+              advantages = torch.FloatTensor(advantages)
+
+              # Calculate returns
+              returns = advantages + values
+
+              # Update critic
+              critic_loss = nn.MSELoss()(values, returns)
+              self.critic_optimizer.zero_grad()
+              critic_loss.backward()
+              self.critic_optimizer.step()
+
+              # Update actor
+              _, log_probs = self.actor.get_action(states)
+              actor_loss = -(log_probs * advantages.detach()).mean()
+              self.actor_optimizer.zero_grad()
+              actor_loss.backward()
+              self.actor_optimizer.step()
+    advantages:
+      - "Reduces variance compared to pure policy gradient methods"
+      - "More sample efficient than REINFORCE"
+      - "Can learn online without complete episodes"
+      - "Combines benefits of policy and value methods"
+    disadvantages:
+      - "More complex implementation than pure methods"
+      - "Requires tuning of two networks"
+      - "Can be unstable during training"
+      - "Still has higher variance than pure value-based methods"
+
+  - type: "advantage_actor_critic"
+    name: "Advantage Actor-Critic (A2C)"
+    description: "Synchronous Actor-Critic with advantage estimation"
+    complexity:
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+    code: |
+      class A2CAgent(ActorCriticAgent):
+          """
+          Advantage Actor-Critic (A2C) agent.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.001,
+                       gamma: float = 0.99, lambda_param: float = 0.95, n_steps: int = 5):
+              """
+              Initialize A2C agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizers
+                  gamma: Discount factor
+                  lambda_param: GAE lambda parameter
+                  n_steps: Number of steps for n-step returns
+              """
+              super().__init__(state_dim, action_dim, learning_rate, gamma, lambda_param)
+              self.n_steps = n_steps
+
+          def update_n_step(self, states: List[np.ndarray], actions: List[np.ndarray],
+                           rewards: List[float], next_states: List[np.ndarray], 
+                           dones: List[bool]) -> None:
+              """
+              Update using n-step returns.
+
+              Args:
+                  states: List of states
+                  actions: List of actions
+                  rewards: List of rewards
+                  next_states: List of next states
+                  dones: List of done flags
+              """
+              states = torch.FloatTensor(states)
+              actions = torch.FloatTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Calculate n-step returns
+              returns = []
+              for i in range(len(rewards)):
+                  if i + self.n_steps < len(rewards):
+                      # n-step return
+                      n_step_return = 0
+                      for j in range(self.n_steps):
+                          n_step_return += (self.gamma ** j) * rewards[i + j]
+                      n_step_return += (self.gamma ** self.n_steps) * self.critic(next_states[i + self.n_steps - 1]).item()
+                  else:
+                      # Use remaining steps
+                      n_step_return = 0
+                      for j in range(i, len(rewards)):
+                          n_step_return += (self.gamma ** (j - i)) * rewards[j]
+                  returns.append(n_step_return)
+
+              returns = torch.FloatTensor(returns)
+
+              # Calculate values
+              values = self.critic(states).squeeze()
+
+              # Calculate advantages
+              advantages = returns - values
+
+              # Update critic
+              critic_loss = nn.MSELoss()(values, returns)
+              self.critic_optimizer.zero_grad()
+              critic_loss.backward()
+              self.critic_optimizer.step()
+
+              # Update actor
+              _, log_probs = self.actor.get_action(states)
+              actor_loss = -(log_probs * advantages.detach()).mean()
+              self.actor_optimizer.zero_grad()
+              actor_loss.backward()
+              self.actor_optimizer.step()
+    advantages:
+      - "More stable than basic Actor-Critic"
+      - "Better sample efficiency"
+      - "Can handle both discrete and continuous actions"
+      - "Synchronous updates are simpler to implement"
+    disadvantages:
+      - "Still requires careful hyperparameter tuning"
+      - "Can be slower than asynchronous methods"
+      - "Requires more memory for n-step returns"
+      - "May not scale as well to large state spaces"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Actor-Critic"
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+      notes: "Time complexity includes both actor and critic network operations. Space complexity includes parameters for both networks"
+    
+    - approach: "A2C"
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters + n_steps × batch_size)"
+      notes: "Similar to basic Actor-Critic but with additional memory for n-step returns"
+
+# Applications and use cases
+applications:
+  - category: "Continuous Control"
+    examples:
+      - "Robot Control: Learning continuous control policies for robots"
+      - "Autonomous Vehicles: Learning driving policies"
+      - "Game Playing: Learning continuous control in games"
+      - "Physics Simulation: Learning control policies in physics engines"
+
+  - category: "Discrete Control"
+    examples:
+      - "Game Playing: Learning discrete action policies in games"
+      - "Resource Allocation: Learning allocation policies"
+      - "Scheduling: Learning scheduling policies"
+      - "Routing: Learning routing policies in networks"
+
+  - category: "High-Dimensional State Spaces"
+    examples:
+      - "Computer Vision: Learning from image inputs"
+      - "Natural Language Processing: Learning from text inputs"
+      - "Robotics: Learning from sensor data"
+      - "Finance: Learning from market data"
+
+  - category: "Real-Time Applications"
+    examples:
+      - "Trading: Learning trading strategies in real-time"
+      - "Robotics: Learning control policies during operation"
+      - "Gaming: Learning game strategies while playing"
+      - "Resource Management: Learning allocation policies during operation"
+
+  - category: "Educational Value"
+    examples:
+      - "Hybrid Methods: Understanding combination of policy and value methods"
+      - "Variance Reduction: Understanding techniques to reduce variance"
+      - "Online Learning: Understanding online learning in RL"
+      - "Advantage Estimation: Understanding advantage-based updates"
+
+# Educational value and learning objectives
+educational_value:
+  - "Hybrid Methods: Understanding combination of policy and value methods"
+  - "Variance Reduction: Learning techniques to reduce variance in gradient estimates"
+  - "Online Learning: Understanding online learning capabilities in RL"
+  - "Advantage Estimation: Understanding advantage-based policy updates"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/reinforcement_learning/actor_critic.py"
+      description: "Main implementation with basic Actor-Critic and A2C variants"
+    - path: "tests/unit/reinforcement_learning/test_actor_critic.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+      - author: "Szepesvári, C."
+        year: "2010"
+        title: "Algorithms for Reinforcement Learning"
+        publisher: "Morgan & Claypool"
+        note: "ISBN 978-1-60845-492-1"
+
+  - category: "Actor-Critic"
+    items:
+      - author: "Barto, A. G., Sutton, R. S., & Anderson, C. W."
+        year: "1983"
+        title: "Neuronlike adaptive elements that can solve difficult learning control problems"
+        publisher: "IEEE Transactions on Systems, Man, and Cybernetics"
+        note: "Volume 13, pages 834-846"
+      - author: "Konda, V. R., & Tsitsiklis, J. N."
+        year: "2000"
+        title: "Actor-critic algorithms"
+        publisher: "Advances in Neural Information Processing Systems"
+        note: "Volume 12, pages 1008-1014"
+
+  - category: "A2C"
+    items:
+      - author: "Mnih, V., et al."
+        year: "2016"
+        title: "Asynchronous Methods for Deep Reinforcement Learning"
+        publisher: "ICML"
+        note: "A3C paper (A2C is synchronous version)"
+      - author: "Wu, Y., et al."
+        year: "2017"
+        title: "Scalable trust-region method for deep reinforcement learning using Kronecker-factored approximation"
+        publisher: "ICML"
+        note: "ACKTR paper with A2C baseline"
+
+  - category: "Online Resources"
+    items:
+      - title: "Actor-Critic Methods"
+        url: "https://en.wikipedia.org/wiki/Actor%E2%80%93critic_method"
+        note: "Wikipedia article on Actor-Critic methods"
+      - title: "Reinforcement Learning Tutorial"
+        url: "https://spinningup.openai.com/en/latest/"
+        note: "OpenAI Spinning Up RL tutorial"
+      - title: "Actor-Critic Algorithm"
+        url: "https://www.geeksforgeeks.org/actor-critic-methods/"
+        note: "GeeksforGeeks Actor-Critic implementation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Gymnasium (OpenAI Gym)"
+        url: "https://gymnasium.farama.org/"
+        note: "RL environment library for testing algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "rl"
+  - "actor-critic"
+  - "a2c"
+  - "hybrid-methods"
+  - "variance-reduction"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "policy-gradient"
+    relationship: "same_family"
+    description: "Actor-Critic is a variant of policy gradient methods"
+  - slug: "ppo"
+    relationship: "same_family"
+    description: "PPO is an advanced policy gradient method that builds on Actor-Critic"

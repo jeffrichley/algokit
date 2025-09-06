@@ -1,0 +1,182 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: dmps
+name: Dynamic Movement Primitives
+slug: dynamic-movement-primitives
+# Brief one-sentence summary for cards and navigation
+summary: "Dynamic Movement Primitives provide a framework for learning, representing, and reproducing complex motor behaviors in robotics and control systems."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Dynamic Movement Primitives (DMPs) are a powerful framework for learning, representing, and reproducing
+  complex motor behaviors in robotics and control systems. DMPs provide a way to encode movements as
+  dynamical systems that can be learned from demonstrations, adapted to new situations, and combined
+  to create complex behaviors.
+
+  DMPs are particularly valuable in robotics because they offer a compact representation of movements
+  that preserves the essential characteristics while allowing for generalization and adaptation. They
+  can be used for imitation learning, skill transfer, and the generation of smooth, natural-looking
+  movements that are robust to perturbations and can be easily modified.
+
+# Family characteristics
+key_characteristics:
+  - name: "Dynamical System Representation"
+    description: "Movements are encoded as stable dynamical systems with attractor properties"
+    importance: "fundamental"
+  - name: "Learning from Demonstration"
+    description: "Can learn complex movements from human demonstrations or examples"
+    importance: "fundamental"
+  - name: "Generalization and Adaptation"
+    description: "Learned movements can be adapted to new goals, speeds, and contexts"
+    importance: "fundamental"
+  - name: "Modularity and Composition"
+    description: "Simple DMPs can be combined to create complex behaviors"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Robotics"
+    examples: ["manipulation", "locomotion", "grasping", "assembly tasks"]
+  - category: "Human-Robot Interaction"
+    examples: ["imitation learning", "skill transfer", "collaborative tasks"]
+  - category: "Animation and Graphics"
+    examples: ["character animation", "motion capture", "procedural animation"]
+  - category: "Rehabilitation"
+    examples: ["prosthetics control", "assistive devices", "therapy robots"]
+  - category: "Sports and Training"
+    examples: ["technique analysis", "skill development", "performance optimization"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Attractor Dynamics"
+    description: "Stable dynamical systems that converge to desired states"
+    type: "mathematical"
+  - name: "Canonical System"
+    description: "Time-based or state-based system that drives the movement evolution"
+    type: "mathematical"
+  - name: "Transformation System"
+    description: "System that generates the actual movement trajectory"
+    type: "mathematical"
+  - name: "Forcing Function"
+    description: "Nonlinear function that shapes the movement trajectory"
+    type: "mathematical"
+  - name: "Phase Variable"
+    description: "Monotonic variable that tracks progress through the movement"
+    type: "concept"
+  - name: "Goal State"
+    description: "Target state that the movement should reach"
+    type: "concept"
+  - name: "Start State"
+    description: "Initial state from which the movement begins"
+    type: "concept"
+  - name: "Temporal Scaling"
+    description: "Ability to speed up or slow down movements while preserving shape"
+    type: "technique"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "control"
+    relationship: "foundation"
+    description: "DMPs build upon control theory principles for stable movement generation"
+  - id: "reinforcement-learning"
+    relationship: "integration"
+    description: "RL can be used to learn and optimize DMP parameters"
+  - id: "optimization"
+    relationship: "application"
+    description: "DMP learning often involves optimization of movement parameters"
+  - id: "signal-processing"
+    relationship: "integration"
+    description: "Signal processing techniques are used for movement analysis and synthesis"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(n) to O(n²)"
+  typical_space: "O(n) to O(n²)"
+  notes: "Complexity depends on the number of basis functions and the dimensionality of the movement space"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "DMP Types and Variants"
+    content: |
+      !!! info "Discrete vs Rhythmic DMPs"
+
+          **Discrete DMPs**:
+
+          - For point-to-point movements
+          - Converge to a goal state
+          - Suitable for manipulation tasks
+          - Can be temporally scaled
+
+          **Rhythmic DMPs**:
+
+          - For periodic movements
+          - No specific goal state
+          - Suitable for locomotion and cyclic tasks
+          - Maintain rhythmic patterns
+
+  - name: "Learning and Adaptation"
+    content: |
+      !!! info "DMP Learning Approaches"
+
+          1. **Learning from Demonstration**: Extract DMP parameters from example movements
+          2. **Reinforcement Learning**: Optimize DMP parameters through trial and error
+          3. **Online Adaptation**: Modify DMP parameters during execution
+          4. **Multi-task Learning**: Learn DMPs that can handle multiple related tasks
+
+  - name: "Implementation Considerations"
+    content: |
+      !!! info "Practical DMP Implementation"
+
+          **Basis Function Selection**:
+          - Gaussian basis functions are commonly used
+          - Number of basis functions affects approximation quality
+          - Placement and width parameters are important
+
+          **Parameter Learning**:
+          - Linear regression for forcing function weights
+          - Non-linear optimization for other parameters
+          - Regularization to prevent overfitting
+
+          **Real-time Execution**:
+          - Efficient numerical integration
+          - Bounded computational complexity
+          - Smooth trajectory generation
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "cormen2009"  # General algorithms reference
+  - bib_key: "python_docs"  # Implementation reference
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "dmps"  # Primary family tag
+  - "robotics"
+  - "control"
+  - "learning"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

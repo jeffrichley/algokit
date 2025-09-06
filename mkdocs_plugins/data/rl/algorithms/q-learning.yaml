@@ -5,8 +5,6 @@
 slug: q-learning
 name: Q-Learning
 family_id: rl
-aliases: [q_learning, qlearning, q_algorithm]
-order: 10
 
 # Brief one-sentence summary for cards and navigation
 summary: "A model-free reinforcement learning algorithm that learns optimal action-value functions through temporal difference learning."
@@ -198,22 +196,16 @@ implementations:
 
 # Complexity analysis
 complexity:
-  time_complexity:
-    best_case: "O(|S| × |A| × episodes)"
-    average_case: "O(|S| × |A| × episodes)"
-    worst_case: "O(|S| × |A| × episodes)"
-    notes: "Time complexity depends on number of episodes and state-action space size"
-
-  space_complexity:
-    best_case: "O(|S| × |A|)"
-    average_case: "O(|S| × |A|)"
-    worst_case: "O(|S| × |A|)"
-    notes: "Space required for Q-table grows quadratically with state and action spaces"
-
-  convergence:
-    conditions: "All state-action pairs visited infinitely often, learning rate satisfies Robbins-Monro conditions"
-    rate: "O(1/√t) where t is the number of updates"
-    notes: "Convergence guaranteed under proper exploration and learning rate schedules"
+  analysis:
+    - approach: "Tabular Q-Learning"
+      time: "O(|S| × |A| × episodes)"
+      space: "O(|S| × |A|)"
+      notes: "Time complexity depends on number of episodes and state-action space size. Space required for Q-table grows quadratically with state and action spaces"
+    
+    - approach: "Convergence Analysis"
+      time: "O(1/√t)"
+      space: "O(|S| × |A|)"
+      notes: "Convergence guaranteed under proper exploration and learning rate schedules. All state-action pairs must be visited infinitely often"
 
 # Applications and use cases
 applications:

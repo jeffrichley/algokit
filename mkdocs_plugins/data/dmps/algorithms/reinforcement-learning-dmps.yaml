@@ -1,0 +1,817 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: reinforcement-learning-dmps
+name: Reinforcement Learning DMPs
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs enhanced with reinforcement learning for parameter optimization, reward-driven learning, and policy gradient methods for movement refinement."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Reinforcement Learning DMPs extend the basic DMP framework by integrating reinforcement learning techniques for parameter optimization and movement refinement. This approach enables robots to learn and improve their movements through trial and error, using reward signals to guide the learning process.
+
+  The key innovation of RL-enhanced DMPs is the integration of:
+  - RL-based parameter optimization for DMP weights
+  - Reward-driven learning from environmental feedback
+  - Policy gradient methods for movement refinement
+  - Exploration-exploitation strategies for movement discovery
+  - Robust learning in complex, uncertain environments
+
+  These DMPs are particularly valuable in applications where the robot must learn to perform tasks in complex environments with sparse or delayed rewards, such as manipulation in cluttered spaces, navigation in unknown environments, and any task requiring adaptive behavior.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Basic DMP: τẏ = α_y(β_y(g - y) - ẏ) + f(x, w)
+    - Reward function: R(s, a, s') where s is state, a is action, s' is next state
+    - Policy: π(a|s, w) = N(a|μ(s, w), σ²) where μ(s, w) is the mean action
+    - DMP parameters: w = {w_1, w_2, ..., w_K}
+    - Learning rate: α > 0
+
+    The RL-DMP objective is:
+    max_w J(w) = E[Σ_{t=0}^T γ^t R(s_t, a_t, s_{t+1})]
+    
+    Where the policy gradient is:
+    ∇_w J(w) = E[Σ_{t=0}^T ∇_w log π(a_t|s_t, w) A_t]
+    
+    And the DMP parameters are updated as:
+    w_{t+1} = w_t + α ∇_w J(w_t)
+    
+    Where A_t is the advantage function.
+
+  key_properties:
+    - name: "Policy Gradient"
+      formula: "∇_w J(w) = E[Σ_{t=0}^T ∇_w log π(a_t|s_t, w) A_t]"
+      description: "Policy gradient for DMP parameter updates"
+    - name: "Reward-driven Learning"
+      formula: "w_{t+1} = w_t + α ∇_w J(w_t)"
+      description: "Parameters are updated based on reward signals"
+    - name: "Exploration-Exploitation"
+      formula: "π(a|s, w) = N(a|μ(s, w), σ²)"
+      description: "Policy balances exploration and exploitation"
+
+# Key properties and characteristics
+properties:
+  - name: "Reward-driven Learning"
+    description: "Learns from reward signals and environmental feedback"
+    importance: "fundamental"
+  - name: "Policy Gradient Methods"
+    description: "Uses policy gradient methods for parameter optimization"
+    importance: "fundamental"
+  - name: "Exploration-Exploitation"
+    description: "Balances exploration and exploitation in learning"
+    importance: "fundamental"
+  - name: "Adaptive Behavior"
+    description: "Adapts behavior based on environmental feedback"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "policy_gradient_dmp"
+    name: "Policy Gradient DMPs"
+    description: "DMPs with policy gradient methods for parameter optimization"
+    complexity:
+      time: "O(T × K × E)"
+      space: "O(K + E)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Dict, List, Tuple, Optional, Callable
+      import matplotlib.pyplot as plt
+
+      class PolicyGradientDMP:
+          """
+          DMP with policy gradient methods for reinforcement learning.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
+                       gamma: float = 0.99, exploration_noise: float = 0.1):
+              """
+              Initialize policy gradient DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  learning_rate: Learning rate for parameter updates
+                  gamma: Discount factor
+                  exploration_noise: Exploration noise level
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.learning_rate = learning_rate
+              self.gamma = gamma
+              self.exploration_noise = exploration_noise
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP parameters (policy parameters)
+              self.w = np.random.normal(0, 0.1, (n_dims, n_basis))
+              self.w_old = self.w.copy()
+              
+              # Learning history
+              self.episode_rewards = []
+              self.episode_losses = []
+              self.parameter_history = []
+
+          def compute_policy(self, state: np.ndarray, t: float) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Compute policy (mean and variance) for given state.
+
+              Args:
+                  state: Current state
+                  t: Current time
+
+              Returns:
+                  Tuple of (mean_action, variance)
+              """
+              # Compute canonical system value
+              x = np.exp(-self.alpha_x * t)
+              
+              # Compute basis functions
+              psi = np.exp(-self.h * (x - self.c)**2)
+              psi_sum = np.sum(psi) + 1e-10
+              
+              # Compute mean action (forcing function)
+              mean_action = np.zeros(self.n_dims)
+              for d in range(self.n_dims):
+                  mean_action[d] = (np.sum(psi * self.w[d]) * x) / psi_sum
+              
+              # Compute variance (exploration noise)
+              variance = np.ones(self.n_dims) * self.exploration_noise
+              
+              return mean_action, variance
+
+          def sample_action(self, state: np.ndarray, t: float) -> np.ndarray:
+              """
+              Sample action from policy.
+
+              Args:
+                  state: Current state
+                  t: Current time
+
+              Returns:
+                  Sampled action
+              """
+              mean_action, variance = self.compute_policy(state, t)
+              action = np.random.normal(mean_action, np.sqrt(variance))
+              return action
+
+          def compute_policy_gradient(self, states: List[np.ndarray], actions: List[np.ndarray],
+                                    rewards: List[float], times: List[float]) -> np.ndarray:
+              """
+              Compute policy gradient for episode.
+
+              Args:
+                  states: List of states in episode
+                  actions: List of actions in episode
+                  rewards: List of rewards in episode
+                  times: List of times in episode
+
+              Returns:
+                  Policy gradient
+              """
+              # Compute returns
+              returns = []
+              G = 0
+              for reward in reversed(rewards):
+                  G = reward + self.gamma * G
+                  returns.insert(0, G)
+              
+              # Compute baseline (mean return)
+              baseline = np.mean(returns)
+              
+              # Compute policy gradient
+              grad = np.zeros((self.n_dims, self.n_basis))
+              
+              for i, (state, action, return_val, t) in enumerate(zip(states, actions, returns, times)):
+                  # Compute advantage
+                  advantage = return_val - baseline
+                  
+                  # Compute canonical system value
+                  x = np.exp(-self.alpha_x * t)
+                  
+                  # Compute basis functions
+                  psi = np.exp(-self.h * (x - self.c)**2)
+                  psi_sum = np.sum(psi) + 1e-10
+                  
+                  # Compute policy gradient
+                  for d in range(self.n_dims):
+                      for j in range(self.n_basis):
+                          # Gradient of log probability
+                          log_prob_grad = (action[d] - self.compute_policy(state, t)[0][d]) * psi[j] * x / (psi_sum * self.exploration_noise)
+                          grad[d, j] += advantage * log_prob_grad
+              
+              return grad
+
+          def update_policy(self, states: List[np.ndarray], actions: List[np.ndarray],
+                          rewards: List[float], times: List[float]) -> None:
+              """
+              Update policy using policy gradient.
+
+              Args:
+                  states: List of states in episode
+                  actions: List of actions in episode
+                  rewards: List of rewards in episode
+                  times: List of times in episode
+              """
+              # Store old parameters
+              self.w_old = self.w.copy()
+              
+              # Compute policy gradient
+              grad = self.compute_policy_gradient(states, actions, rewards, times)
+              
+              # Update parameters
+              self.w += self.learning_rate * grad
+              
+              # Store learning history
+              episode_reward = sum(rewards)
+              self.episode_rewards.append(episode_reward)
+              self.parameter_history.append(self.w.copy())
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn initial DMP parameters from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights
+              for d in range(self.n_dims):
+                  f_target = (ddy_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+              
+              # Store initial parameters
+              self.w_old = self.w.copy()
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                reward_function: Callable, tau: float = 1.0, 
+                                dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+              """
+              Generate trajectory using current policy.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  reward_function: Function that computes reward
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration, total_reward)
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Storage for episode
+              states = []
+              actions = []
+              rewards = []
+              times = []
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def rl_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Sample action from policy
+                  action = self.sample_action(y, t)
+                  
+                  # Store episode data
+                  states.append(y.copy())
+                  actions.append(action.copy())
+                  times.append(t)
+                  
+                  # Compute reward
+                  reward = reward_function(y, dy, action, t)
+                  rewards.append(reward)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + action
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(rl_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              total_reward = sum(rewards)
+              
+              return y_traj, dy_traj, ddy_traj, total_reward
+
+          def train_episode(self, y_0: np.ndarray, g: np.ndarray, reward_function: Callable,
+                          tau: float = 1.0, dt: float = 0.01) -> float:
+              """
+              Train for one episode.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  reward_function: Function that computes reward
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Episode reward
+              """
+              # Generate trajectory
+              y_traj, dy_traj, ddy_traj, total_reward = self.generate_trajectory(
+                  y_0, g, reward_function, tau, dt)
+              
+              # Update policy
+              states = []
+              actions = []
+              rewards = []
+              times = []
+              
+              for i, t in enumerate(np.arange(0, 1.0, dt / tau)):
+                  states.append(y_traj[i])
+                  actions.append(ddy_traj[i])
+                  times.append(t)
+                  
+                  reward = reward_function(y_traj[i], dy_traj[i], ddy_traj[i], t)
+                  rewards.append(reward)
+              
+              self.update_policy(states, actions, rewards, times)
+              
+              return total_reward
+
+          def train(self, y_0: np.ndarray, g: np.ndarray, reward_function: Callable,
+                   n_episodes: int = 100, tau: float = 1.0, dt: float = 0.01) -> List[float]:
+              """
+              Train the RL-DMP.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  reward_function: Function that computes reward
+                  n_episodes: Number of training episodes
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  List of episode rewards
+              """
+              episode_rewards = []
+              
+              for episode in range(n_episodes):
+                  # Train one episode
+                  reward = self.train_episode(y_0, g, reward_function, tau, dt)
+                  episode_rewards.append(reward)
+                  
+                  # Decay exploration noise
+                  self.exploration_noise *= 0.995
+                  self.exploration_noise = max(self.exploration_noise, 0.01)
+                  
+                  # Print progress
+                  if episode % 10 == 0:
+                      avg_reward = np.mean(episode_rewards[-10:])
+                      print(f"Episode {episode}, Average Reward: {avg_reward:.4f}")
+              
+              return episode_rewards
+
+          def visualize_learning(self, title: str = "RL-DMP Learning") -> None:
+              """
+              Visualize the learning process.
+
+              Args:
+                  title: Plot title
+              """
+              if not self.episode_rewards:
+                  print("No learning history available")
+                  return
+              
+              fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+              
+              # Plot episode rewards
+              episodes = range(len(self.episode_rewards))
+              ax1.plot(episodes, self.episode_rewards, 'b-', alpha=0.3, label='Episode Rewards')
+              
+              # Plot moving average
+              window_size = min(50, len(self.episode_rewards) // 10)
+              if window_size > 1:
+                  moving_avg = np.convolve(self.episode_rewards, np.ones(window_size)/window_size, mode='valid')
+                  ax1.plot(range(window_size-1, len(self.episode_rewards)), moving_avg, 'r-', linewidth=2, label='Moving Average')
+              
+              ax1.set_xlabel('Episode')
+              ax1.set_ylabel('Reward')
+              ax1.set_title('Learning Progress')
+              ax1.legend()
+              ax1.grid(True)
+              
+              # Plot parameter changes
+              if len(self.parameter_history) > 1:
+                  param_changes = []
+                  for i in range(1, len(self.parameter_history)):
+                      change = np.sum(np.abs(self.parameter_history[i] - self.parameter_history[i-1]))
+                      param_changes.append(change)
+                  
+                  ax2.plot(range(1, len(self.parameter_history)), param_changes, 'g-', label='Parameter Change')
+                  ax2.set_xlabel('Episode')
+                  ax2.set_ylabel('Parameter Change')
+                  ax2.set_title('Parameter Evolution')
+                  ax2.legend()
+                  ax2.grid(True)
+              
+              plt.suptitle(title)
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Reward-driven learning"
+      - "Policy gradient methods"
+      - "Exploration-exploitation balance"
+      - "Adaptive behavior"
+    disadvantages:
+      - "Requires reward function design"
+      - "May be slow to converge"
+      - "Sensitive to reward shaping"
+
+  - type: "actor_critic_dmp"
+    name: "Actor-Critic DMPs"
+    description: "DMPs with actor-critic methods for value function estimation"
+    complexity:
+      time: "O(T × K × E + T × V)"
+      space: "O(K + V)"
+    code: |
+      class ActorCriticDMP(PolicyGradientDMP):
+          """
+          DMP with actor-critic methods for value function estimation.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
+                       gamma: float = 0.99, exploration_noise: float = 0.1, 
+                       value_learning_rate: float = 0.01):
+              """
+              Initialize actor-critic DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  learning_rate: Learning rate for actor parameters
+                  gamma: Discount factor
+                  exploration_noise: Exploration noise level
+                  value_learning_rate: Learning rate for value function
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, learning_rate, gamma, exploration_noise)
+              self.value_learning_rate = value_learning_rate
+              
+              # Value function parameters
+              self.value_weights = np.random.normal(0, 0.1, (n_dims, n_basis))
+              
+              # Learning history
+              self.value_losses = []
+
+          def compute_value(self, state: np.ndarray, t: float) -> float:
+              """
+              Compute value function for given state.
+
+              Args:
+                  state: Current state
+                  t: Current time
+
+              Returns:
+                  Value estimate
+              """
+              # Compute canonical system value
+              x = np.exp(-self.alpha_x * t)
+              
+              # Compute basis functions
+              psi = np.exp(-self.h * (x - self.c)**2)
+              psi_sum = np.sum(psi) + 1e-10
+              
+              # Compute value
+              value = 0.0
+              for d in range(self.n_dims):
+                  value += (np.sum(psi * self.value_weights[d]) * x) / psi_sum
+              
+              return value
+
+          def update_value_function(self, states: List[np.ndarray], rewards: List[float], 
+                                  times: List[float]) -> None:
+              """
+              Update value function using TD learning.
+
+              Args:
+                  states: List of states in episode
+                  rewards: List of rewards in episode
+                  times: List of times in episode
+              """
+              # Compute returns
+              returns = []
+              G = 0
+              for reward in reversed(rewards):
+                  G = reward + self.gamma * G
+                  returns.insert(0, G)
+              
+              # Update value function
+              for i, (state, return_val, t) in enumerate(zip(states, returns, times)):
+                  # Compute current value estimate
+                  current_value = self.compute_value(state, t)
+                  
+                  # Compute TD error
+                  if i < len(states) - 1:
+                      next_value = self.compute_value(states[i+1], times[i+1])
+                      td_error = rewards[i] + self.gamma * next_value - current_value
+                  else:
+                      td_error = rewards[i] - current_value
+                  
+                  # Update value function weights
+                  x = np.exp(-self.alpha_x * t)
+                  psi = np.exp(-self.h * (x - self.c)**2)
+                  psi_sum = np.sum(psi) + 1e-10
+                  
+                  for d in range(self.n_dims):
+                      for j in range(self.n_basis):
+                          grad = psi[j] * x / psi_sum
+                          self.value_weights[d, j] += self.value_learning_rate * td_error * grad
+
+          def compute_advantage(self, states: List[np.ndarray], rewards: List[float], 
+                              times: List[float]) -> List[float]:
+              """
+              Compute advantage estimates using value function.
+
+              Args:
+                  states: List of states in episode
+                  rewards: List of rewards in episode
+                  times: List of times in episode
+
+              Returns:
+                  List of advantage estimates
+              """
+              advantages = []
+              
+              for i, (state, reward, t) in enumerate(zip(states, rewards, times)):
+                  # Compute current value estimate
+                  current_value = self.compute_value(state, t)
+                  
+                  # Compute next value estimate
+                  if i < len(states) - 1:
+                      next_value = self.compute_value(states[i+1], times[i+1])
+                      advantage = reward + self.gamma * next_value - current_value
+                  else:
+                      advantage = reward - current_value
+                  
+                  advantages.append(advantage)
+              
+              return advantages
+
+          def update_policy(self, states: List[np.ndarray], actions: List[np.ndarray],
+                          rewards: List[float], times: List[float]) -> None:
+              """
+              Update policy using actor-critic method.
+
+              Args:
+                  states: List of states in episode
+                  actions: List of actions in episode
+                  rewards: List of rewards in episode
+                  times: List of times in episode
+              """
+              # Store old parameters
+              self.w_old = self.w.copy()
+              
+              # Update value function
+              self.update_value_function(states, rewards, times)
+              
+              # Compute advantages
+              advantages = self.compute_advantage(states, rewards, times)
+              
+              # Compute policy gradient
+              grad = np.zeros((self.n_dims, self.n_basis))
+              
+              for i, (state, action, advantage, t) in enumerate(zip(states, actions, advantages, times)):
+                  # Compute canonical system value
+                  x = np.exp(-self.alpha_x * t)
+                  
+                  # Compute basis functions
+                  psi = np.exp(-self.h * (x - self.c)**2)
+                  psi_sum = np.sum(psi) + 1e-10
+                  
+                  # Compute policy gradient
+                  for d in range(self.n_dims):
+                      for j in range(self.n_basis):
+                          # Gradient of log probability
+                          log_prob_grad = (action[d] - self.compute_policy(state, t)[0][d]) * psi[j] * x / (psi_sum * self.exploration_noise)
+                          grad[d, j] += advantage * log_prob_grad
+              
+              # Update parameters
+              self.w += self.learning_rate * grad
+              
+              # Store learning history
+              episode_reward = sum(rewards)
+              self.episode_rewards.append(episode_reward)
+              self.parameter_history.append(self.w.copy())
+
+    advantages:
+      - "Value function estimation"
+      - "Reduced variance in policy gradient"
+      - "Better sample efficiency"
+      - "Actor-critic architecture"
+    disadvantages:
+      - "More complex implementation"
+      - "Requires value function approximation"
+      - "May be sensitive to function approximation errors"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Policy Gradient DMP"
+      time: "O(T × K × E)"
+      space: "O(K + E)"
+      notes: "Time complexity scales with trajectory length, basis functions, and episodes"
+    
+    - approach: "Actor-Critic DMP"
+      time: "O(T × K × E + T × V)"
+      space: "O(K + V)"
+      notes: "Additional complexity for value function estimation"
+    
+    - approach: "Policy Gradient Computation"
+      time: "O(T × K)"
+      space: "O(K)"
+      notes: "Policy gradient computation scales with trajectory length and basis functions"
+
+# Applications and use cases
+applications:
+  - category: "Manipulation in Complex Environments"
+    examples:
+      - "Cluttered Manipulation: Learning to manipulate objects in cluttered environments"
+      - "Dynamic Obstacles: Learning to avoid dynamic obstacles during manipulation"
+      - "Variable Surfaces: Learning to adapt to different surface properties"
+      - "Tool Use: Learning to use tools in complex environments"
+
+  - category: "Navigation and Locomotion"
+    examples:
+      - "Terrain Adaptation: Learning to adapt to different terrains"
+      - "Obstacle Avoidance: Learning to avoid obstacles during navigation"
+      - "Gait Optimization: Learning optimal gaits for different conditions"
+      - "Path Planning: Learning optimal paths in complex environments"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Adaptive Assistance: Learning to provide adaptive assistance"
+      - "Collaborative Tasks: Learning to collaborate with humans"
+      - "Social Interaction: Learning social interaction behaviors"
+      - "Personalized Service: Learning personalized service behaviors"
+
+  - category: "Industrial Applications"
+    examples:
+      - "Quality Control: Learning quality control procedures"
+      - "Process Optimization: Learning to optimize manufacturing processes"
+      - "Maintenance: Learning maintenance procedures"
+      - "Safety: Learning safety procedures"
+
+  - category: "Entertainment and Arts"
+    examples:
+      - "Dance: Learning dance movements and choreography"
+      - "Music: Learning musical instrument playing"
+      - "Sports: Learning sports movements and techniques"
+      - "Gaming: Learning game strategies and movements"
+
+# Educational value and learning objectives
+educational_value:
+  - "Reinforcement Learning: Understanding RL principles and methods"
+  - "Policy Gradient Methods: Understanding policy gradient algorithms"
+  - "Actor-Critic Methods: Understanding actor-critic architectures"
+  - "Exploration-Exploitation: Understanding exploration-exploitation trade-offs"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/reinforcement_learning_dmps.py"
+      description: "Main implementation with policy gradient and actor-critic methods"
+    - path: "tests/unit/dynamic_movement_primitives/test_reinforcement_learning_dmps.py"
+      description: "Comprehensive test suite including RL learning tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "Comprehensive introduction to reinforcement learning"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with reinforcement learning"
+
+  - category: "Policy Gradient Methods"
+    items:
+      - author: "Williams, R. J."
+        year: "1992"
+        title: "Simple statistical gradient-following algorithms for connectionist reinforcement learning"
+        publisher: "Machine Learning"
+        note: "Original policy gradient method"
+      - author: "Schulman, J., et al."
+        year: "2017"
+        title: "Proximal policy optimization algorithms"
+        publisher: "arXiv preprint arXiv:1707.06347"
+        note: "Proximal policy optimization"
+
+  - category: "Actor-Critic Methods"
+    items:
+      - author: "Barto, A. G., Sutton, R. S., & Anderson, C. W."
+        year: "1983"
+        title: "Neuronlike adaptive elements that can solve difficult learning control problems"
+        publisher: "IEEE Transactions on Systems, Man, and Cybernetics"
+        note: "Original actor-critic method"
+      - author: "Mnih, V., et al."
+        year: "2016"
+        title: "Asynchronous methods for deep reinforcement learning"
+        publisher: "International Conference on Machine Learning"
+        note: "Asynchronous actor-critic methods"
+
+  - category: "Online Resources"
+    items:
+      - title: "Reinforcement Learning"
+        url: "https://en.wikipedia.org/wiki/Reinforcement_learning"
+        note: "Wikipedia article on reinforcement learning"
+      - title: "Policy Gradient Methods"
+        url: "https://en.wikipedia.org/wiki/Policy_gradient_methods"
+        note: "Wikipedia article on policy gradient methods"
+      - title: "Actor-Critic Methods"
+        url: "https://en.wikipedia.org/wiki/Actor%E2%80%93critic_methods"
+        note: "Wikipedia article on actor-critic methods"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "OpenAI Gym"
+        url: "https://gym.openai.com/"
+        note: "Reinforcement learning environment library"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "reinforcement-learning"
+  - "policy-gradient"
+  - "actor-critic"
+  - "reward-driven-learning"
+  - "exploration-exploitation"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that RL-DMPs extend with reinforcement learning"
+  - slug: "online-dmp-adaptation"
+    relationship: "same_family"
+    description: "Online adaptation that can be combined with RL methods"

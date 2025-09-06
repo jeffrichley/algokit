@@ -5,8 +5,6 @@
 slug: knapsack
 name: 0/1 Knapsack Problem
 family_id: dp
-aliases: [knapsack, zero_one_knapsack]
-order: 30
 
 # Brief one-sentence summary for cards and navigation
 summary: "Optimize value within weight constraints using dynamic programming for resource allocation."

@@ -1,0 +1,408 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: adaptive-control
+name: Adaptive Control
+family_id: control
+
+# Brief one-sentence summary for cards and navigation
+summary: "Control strategy that automatically adjusts controller parameters based on real-time system identification and performance evaluation."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Adaptive Control is a control strategy that automatically adjusts controller parameters based on real-time system identification and performance evaluation. Unlike fixed-parameter controllers like PID, adaptive controllers continuously learn and adapt to changing system dynamics, making them ideal for systems with unknown or time-varying parameters.
+
+  This approach is particularly valuable in aerospace applications, robotics, process control, and other domains where system characteristics may change over time or are initially unknown. Adaptive controllers can handle parameter uncertainties, environmental changes, and system degradation while maintaining desired performance.
+
+# Problem formulation and mathematical details
+formulation:
+  adaptive_framework: |
+    The adaptive control system consists of two main components:
+
+    1. Parameter Estimation (System Identification):
+    θ̂(t) = θ̂(t-1) + γ(t) φ(t) e(t)
+
+    2. Control Law:
+    u(t) = θ̂ᵀ(t) φ(t) + K_p e(t) + K_i ∫ e(τ) dτ
+
+    3. Lyapunov Stability Criterion:
+    V(t) = ½ e²(t) + ½ θ̃ᵀ(t) Γ⁻¹ θ̃(t)
+
+    Where:
+    - θ̂(t) is the estimated parameter vector at time t
+    - γ(t) is the adaptation gain (learning rate)
+    - φ(t) is the regressor vector
+    - e(t) is the prediction error
+    - θ̃(t) = θ - θ̂(t) is the parameter estimation error
+
+  key_properties:
+    - name: "Online Learning"
+      formula: "θ̂(t) = θ̂(t-1) + γ(t) φ(t) e(t)"
+      description: "Continuously updates parameters during operation"
+    - name: "Lyapunov Stability"
+      formula: "V̇(t) ≤ 0"
+      description: "Ensures system stability during adaptation"
+    - name: "Convergence"
+      formula: "lim_{t→∞} θ̃(t) = 0"
+      description: "Parameters converge to true values under certain conditions"
+
+# Key properties and characteristics
+properties:
+  - name: "Online Learning"
+    description: "Continuously updates parameters during operation"
+    importance: "fundamental"
+  - name: "Robustness"
+    description: "Handles parameter uncertainties and system changes"
+    importance: "fundamental"
+  - name: "Self-tuning"
+    description: "Automatically adjusts to maintain performance"
+    importance: "fundamental"
+  - name: "Stability Guarantees"
+    description: "Lyapunov-based stability guarantees"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "model_reference_adaptive"
+    name: "Model Reference Adaptive Control (MRAC)"
+    description: "Adaptive controller that forces plant output to track reference model output"
+    complexity:
+      time: "O(n²)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      from typing import List, Tuple, Optional
+      from scipy.linalg import solve
+
+      class ModelReferenceAdaptiveController:
+          """
+          Model Reference Adaptive Controller implementation.
+
+          Args:
+              n_params: Number of parameters to estimate
+              learning_rate: Adaptation gain (default: 0.1)
+              forgetting_factor: Forgetting factor for RLS (default: 0.99)
+              control_gains: Fixed control gains (Kp, Ki) (default: (1.0, 0.1))
+          """
+
+          def __init__(self, n_params: int, learning_rate: float = 0.1,
+                       forgetting_factor: float = 0.99, control_gains: Tuple[float, float] = (1.0, 0.1)):
+
+              self.n_params = n_params
+              self.gamma = learning_rate
+              self.lambda_ = forgetting_factor
+
+              # Parameter estimation
+              self.theta_hat = np.zeros(n_params)
+              self.P = np.eye(n_params) * 1000  # Initial covariance
+
+              # Control parameters
+              self.kp, self.ki = control_gains
+              self.integral_error = 0.0
+
+              # History for analysis
+              self.parameter_history = []
+              self.control_history = []
+              self.error_history = []
+
+          def update_parameters(self, regressor: np.ndarray, output: float,
+                              predicted_output: float) -> None:
+              """
+              Update parameter estimates using recursive least squares.
+
+              Args:
+                  regressor: Feature vector
+                  output: Actual system output
+                  predicted_output: Predicted output using current parameters
+              """
+              # Prediction error
+              error = output - predicted_output
+
+              # RLS update
+              P_phi = self.P @ regressor
+              denominator = self.lambda_ + regressor.T @ P_phi
+              K = P_phi / denominator
+
+              # Update parameter estimates
+              self.theta_hat += K * error
+
+              # Update covariance matrix
+              self.P = (self.P - np.outer(K, P_phi)) / self.lambda_
+
+              # Store history
+              self.parameter_history.append(self.theta_hat.copy())
+              self.error_history.append(error)
+
+          def compute_control(self, reference: float, output: float,
+                            regressor: np.ndarray) -> float:
+              """
+              Compute control input using adaptive parameters.
+
+              Args:
+                  reference: Reference signal
+                  output: Current system output
+                  regressor: Feature vector
+
+              Returns:
+                  Control input
+              """
+              # Tracking error
+              error = reference - output
+              self.integral_error += error
+
+              # Adaptive control law
+              adaptive_term = self.theta_hat.T @ regressor
+              pid_term = self.kp * error + self.ki * self.integral_error
+
+              control_input = adaptive_term + pid_term
+
+              # Store history
+              self.control_history.append(control_input)
+
+              return control_input
+    advantages:
+      - "Automatic parameter adaptation"
+      - "Handles unknown system parameters"
+      - "Robust to parameter variations"
+      - "Theoretical stability guarantees"
+    disadvantages:
+      - "More complex than fixed controllers"
+      - "Requires persistent excitation for convergence"
+      - "May have slower initial response"
+
+  - type: "self_tuning_control"
+    name: "Self-Tuning Control"
+    description: "Combines system identification with controller design"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    code: |
+      class SelfTuningController:
+          """
+          Self-Tuning Controller implementation.
+          """
+
+          def __init__(self, model_order: int, learning_rate: float = 0.1):
+              self.model_order = model_order
+              self.learning_rate = learning_rate
+
+              # System identification
+              self.theta = np.zeros(2 * model_order)
+              self.P = np.eye(2 * model_order) * 1000
+
+              # Controller parameters
+              self.controller_params = np.zeros(model_order)
+
+          def identify_system(self, input_history: List[float], 
+                            output_history: List[float]) -> None:
+              """
+              Identify system parameters using recursive least squares.
+              """
+              if len(input_history) < self.model_order + 1:
+                  return
+
+              # Build regressor vector
+              regressor = np.array(
+                  output_history[-self.model_order:] + 
+                  input_history[-self.model_order:]
+              )
+
+              # Current output
+              current_output = output_history[-1]
+
+              # Predicted output
+              predicted_output = self.theta.T @ regressor
+
+              # Update parameters
+              error = current_output - predicted_output
+              P_phi = self.P @ regressor
+              K = P_phi / (1 + regressor.T @ P_phi)
+
+              self.theta += K * error
+              self.P -= np.outer(K, P_phi)
+
+          def design_controller(self, desired_poles: List[float]) -> None:
+              """
+              Design controller based on identified system parameters.
+              """
+              # Extract system parameters
+              a_params = self.theta[:self.model_order]
+              b_params = self.theta[self.model_order:]
+
+              # Design controller (simplified pole placement)
+              # This is a simplified example - real implementation would be more complex
+              self.controller_params = np.array(desired_poles[:self.model_order])
+
+          def compute_control(self, reference: float, output: float,
+                            input_history: List[float], 
+                            output_history: List[float]) -> float:
+              """
+              Compute control input using self-tuning approach.
+              """
+              # Update system identification
+              self.identify_system(input_history, output_history)
+
+              # Redesign controller periodically
+              if len(self.theta) > 0 and np.random.random() < 0.1:
+                  desired_poles = [-0.5, -0.3]  # Example desired poles
+                  self.design_controller(desired_poles)
+
+              # Compute control (simplified)
+              error = reference - output
+              control_input = np.sum(self.controller_params * np.array(output_history[-self.model_order:]))
+
+              return control_input
+    advantages:
+      - "Automatic controller design"
+      - "Handles time-varying systems"
+      - "Combines identification and control"
+    disadvantages:
+      - "Computationally intensive"
+      - "Requires careful tuning of identification parameters"
+      - "May be unstable during learning phase"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Model Reference Adaptive Control"
+      time: "O(n²)"
+      space: "O(n²)"
+      notes: "Time complexity dominated by matrix operations in RLS update"
+    - approach: "Self-Tuning Control"
+      time: "O(n³)"
+      space: "O(n²)"
+      notes: "Higher complexity due to controller redesign step"
+
+  performance_notes:
+    - "Adaptive controllers require more computation than fixed controllers"
+    - "Memory requirements grow with number of parameters"
+    - "Convergence time depends on excitation conditions"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Adapting to changing aircraft dynamics"
+      - "Satellite Control: Handling fuel consumption and mass changes"
+      - "Missile Guidance: Adapting to target maneuvers"
+      - "Spacecraft Docking: Handling uncertain contact dynamics"
+
+  - category: "Robotics and Automation"
+    examples:
+      - "Robot Control: Adapting to payload changes and wear"
+      - "Manufacturing: Handling material property variations"
+      - "Autonomous Vehicles: Adapting to road conditions and vehicle dynamics"
+      - "Manipulation: Handling unknown object properties"
+
+  - category: "Process Control"
+    examples:
+      - "Chemical Plants: Handling catalyst degradation"
+      - "Power Systems: Adapting to load variations"
+      - "Water Treatment: Handling varying water quality"
+      - "Food Processing: Adapting to ingredient variations"
+
+  - category: "Biomedical Systems"
+    examples:
+      - "Drug Delivery: Adapting to patient response"
+      - "Prosthetics: Learning user movement patterns"
+      - "Pacemakers: Adapting to heart condition changes"
+      - "Rehabilitation: Adapting to patient progress"
+
+  - category: "Marine and Offshore"
+    examples:
+      - "Ship Control: Handling wave and current variations"
+      - "Underwater Vehicles: Adapting to changing buoyancy"
+      - "Offshore Platforms: Handling environmental changes"
+      - "Submarine Control: Adapting to depth and speed changes"
+
+# Educational value and learning objectives
+educational_value:
+  - "System Identification: Learning to estimate system parameters online"
+  - "Adaptive Control Theory: Understanding Lyapunov stability and convergence"
+  - "Real-time Learning: Implementing learning algorithms in control systems"
+  - "Robustness Analysis: Understanding performance under uncertainty"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/control/adaptive_control.py"
+      description: "Main implementation with MRAC and self-tuning variants"
+    - path: "tests/unit/control/test_adaptive_control.py"
+      description: "Comprehensive test suite including stability tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Åström, K. J., & Wittenmark, B."
+        year: "2013"
+        title: "Adaptive Control"
+        publisher: "Dover Publications"
+        note: "ISBN 978-0-486-49518-1"
+      - author: "Ioannou, P. A., & Sun, J."
+        year: "2012"
+        title: "Robust Adaptive Control"
+        publisher: "Dover Publications"
+        note: "ISBN 978-0-486-48911-1"
+
+  - category: "Adaptive Control"
+    items:
+      - author: "Landau, I. D."
+        year: "1979"
+        title: "Adaptive Control: The Model Reference Approach"
+        publisher: "Marcel Dekker"
+        note: "ISBN 978-0-8247-6901-9"
+      - author: "Narendra, K. S., & Annaswamy, A. M."
+        year: "1989"
+        title: "Stable Adaptive Systems"
+        publisher: "Prentice Hall"
+        note: "ISBN 978-0-13-839994-0"
+
+  - category: "Online Resources"
+    items:
+      - title: "Adaptive Control"
+        url: "https://en.wikipedia.org/wiki/Adaptive_control"
+        note: "Wikipedia article on adaptive control"
+      - title: "Model Reference Adaptive Control"
+        url: "https://www.mathworks.com/help/control/ug/model-reference-adaptive-control.html"
+        note: "MATLAB documentation on MRAC"
+      - title: "Adaptive Control Tutorial"
+        url: "https://www.controleng.com/articles/adaptive-control-tutorial/"
+        note: "Control Engineering adaptive control tutorial"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "Adaptive Control Toolbox"
+        url: "https://www.mathworks.com/products/control.html"
+        note: "MATLAB toolbox for adaptive control design"
+      - title: "System Identification Toolbox"
+        url: "https://www.mathworks.com/products/sysid.html"
+        note: "MATLAB toolbox for system identification"
+
+# Tags for categorization and search
+tags:
+  - "control"
+  - "adaptive-control"
+  - "parameter-estimation"
+  - "self-tuning"
+  - "model-reference"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "pid-control"
+    relationship: "same_family"
+    description: "Fixed-parameter controller that adaptive control can improve upon"
+  - slug: "robust-control"
+    relationship: "same_family"
+    description: "Alternative approach to handling system uncertainties"

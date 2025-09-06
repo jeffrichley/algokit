@@ -1,0 +1,464 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: sliding-mode-control
+name: Sliding Mode Control
+family_id: control
+
+# Brief one-sentence summary for cards and navigation
+summary: "Robust control strategy that forces the system state to reach and remain on a predefined sliding surface, regardless of parameter uncertainties and external disturbances."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Sliding Mode Control (SMC) is a robust control strategy that forces the system state to reach and remain on a predefined sliding surface, regardless of parameter uncertainties and external disturbances. The controller switches between different control structures based on the system's position relative to this surface, creating a discontinuous control law that provides excellent robustness properties.
+
+  This approach is particularly valuable in applications where system parameters are uncertain, external disturbances are present, or when high-precision control is required. Sliding mode controllers are widely used in aerospace systems, robotics, power electronics, and other domains where robustness is critical.
+
+# Problem formulation and mathematical details
+formulation:
+  sliding_surface: |
+    The sliding surface s(x,t) is defined as:
+
+    s(x,t) = (d/dt + λ)^{n-1} e(t)
+
+    Where:
+    - e(t) = x_d(t) - x(t) is the tracking error
+    - x_d(t) is the desired trajectory
+    - x(t) is the current state
+    - λ > 0 is a design parameter
+    - n is the system order
+
+  sliding_condition: |
+    The sliding mode occurs when s(x,t) = 0, which implies:
+
+    ṡ(x,t) = 0
+
+  control_law: |
+    The control input u(t) consists of two components:
+
+    u(t) = u_eq(t) + u_sw(t)
+
+    Where:
+    - u_eq(t) is the equivalent control (continuous part)
+    - u_sw(t) is the switching control (discontinuous part)
+
+  equivalent_control: |
+    u_eq(t) = -B^{-1}(x) [f(x) + λ ė(t)]
+
+  switching_control: |
+    u_sw(t) = -K sign(s(x,t))
+
+    Where K > 0 is the switching gain and sign(·) is the signum function.
+
+  key_properties:
+    - name: "Finite-Time Convergence"
+      formula: "s(x,t) = 0 in finite time"
+      description: "System reaches sliding surface in finite time"
+    - name: "Invariance Property"
+      formula: "ṡ(x,t) = 0 on sliding surface"
+      description: "Once on sliding surface, system becomes invariant to disturbances"
+    - name: "Robustness"
+      formula: "||u_sw|| ≥ ||disturbance||"
+      description: "Insensitive to parameter uncertainties and disturbances"
+
+# Key properties and characteristics
+properties:
+  - name: "Robustness"
+    description: "Insensitive to parameter uncertainties and disturbances"
+    importance: "fundamental"
+  - name: "Finite-Time Convergence"
+    description: "System reaches sliding surface in finite time"
+    importance: "fundamental"
+  - name: "Invariance"
+    description: "Once on sliding surface, system becomes invariant to disturbances"
+    importance: "fundamental"
+  - name: "Chattering"
+    description: "High-frequency switching can cause unwanted oscillations"
+    importance: "implementation"
+  - name: "Design Flexibility"
+    description: "Can handle nonlinear and time-varying systems"
+    importance: "application"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_smc"
+    name: "Basic Sliding Mode Controller"
+    description: "Standard sliding mode controller with boundary layer for chattering reduction"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      import numpy as np
+      from typing import Tuple, Callable, Optional
+
+      class SlidingModeController:
+          """
+          Basic Sliding Mode Controller implementation.
+
+          Args:
+              lambda_param: Sliding surface parameter (default: 1.0)
+              switching_gain: Switching control gain (default: 10.0)
+              boundary_layer: Boundary layer thickness for chattering reduction (default: 0.1)
+              sampling_time: Controller sampling time (default: 0.01)
+          """
+
+          def __init__(self, lambda_param: float = 1.0, switching_gain: float = 10.0,
+                       boundary_layer: float = 0.1, sampling_time: float = 0.01):
+
+              self.lambda_param = lambda_param
+              self.K = switching_gain
+              self.boundary_layer = boundary_layer
+              self.dt = sampling_time
+
+              # State tracking
+              self.prev_error = 0.0
+              self.prev_error_derivative = 0.0
+
+              # History for analysis
+              self.sliding_surface_history = []
+              self.control_history = []
+              self.error_history = []
+
+          def compute_sliding_surface(self, error: float, error_derivative: float) -> float:
+              """
+              Compute sliding surface value.
+
+              Args:
+                  error: Current tracking error
+                  error_derivative: Error derivative
+
+              Returns:
+                  Sliding surface value
+              """
+              # Sliding surface: s = ė + λe
+              sliding_surface = error_derivative + self.lambda_param * error
+              return sliding_surface
+
+          def compute_control(self, error: float, error_derivative: float,
+                            system_dynamics: Callable[[float, float], float]) -> float:
+              """
+              Compute sliding mode control input.
+
+              Args:
+                  error: Current tracking error
+                  error_derivative: Error derivative
+                  system_dynamics: Function describing system dynamics
+
+              Returns:
+                  Control input
+              """
+              # Compute sliding surface
+              s = self.compute_sliding_surface(error, error_derivative)
+
+              # Equivalent control (continuous part)
+              u_eq = -system_dynamics(error, error_derivative) - self.lambda_param * error_derivative
+
+              # Switching control (discontinuous part)
+              if abs(s) > self.boundary_layer:
+                  # Outside boundary layer: use sign function
+                  u_sw = -self.K * np.sign(s)
+              else:
+                  # Inside boundary layer: use saturation function
+                  u_sw = -self.K * s / self.boundary_layer
+
+              # Total control input
+              control_input = u_eq + u_sw
+
+              # Store history
+              self.sliding_surface_history.append(s)
+              self.control_history.append(control_input)
+              self.error_history.append(error)
+
+              # Update previous values
+              self.prev_error = error
+              self.prev_error_derivative = error_derivative
+
+              return control_input
+
+          def get_sliding_surface_history(self) -> list:
+              """Get sliding surface history."""
+              return self.sliding_surface_history.copy()
+
+          def get_control_history(self) -> list:
+              """Get control input history."""
+              return self.control_history.copy()
+
+          def get_error_history(self) -> list:
+              """Get error history."""
+              return self.error_history.copy()
+    advantages:
+      - "Excellent robustness properties"
+      - "Finite-time convergence"
+      - "Invariant to disturbances on sliding surface"
+      - "Simple implementation"
+    disadvantages:
+      - "Chattering problem"
+      - "High control activity"
+      - "May require high switching frequency"
+
+  - type: "super_twisting"
+    name: "Super-Twisting Sliding Mode Controller"
+    description: "Second-order sliding mode controller that reduces chattering"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      class SuperTwistingController:
+          """
+          Super-Twisting Sliding Mode Controller implementation.
+          """
+
+          def __init__(self, lambda_param: float = 1.0, k1: float = 1.5, k2: float = 1.1):
+              self.lambda_param = lambda_param
+              self.k1 = k1
+              self.k2 = k2
+
+              # State variables
+              self.integral_term = 0.0
+              self.prev_error = 0.0
+
+          def compute_control(self, error: float, error_derivative: float) -> float:
+              """
+              Compute super-twisting control input.
+
+              Args:
+                  error: Current tracking error
+                  error_derivative: Error derivative
+
+              Returns:
+                  Control input
+              """
+              # Sliding surface
+              s = error_derivative + self.lambda_param * error
+
+              # Super-twisting algorithm
+              if abs(s) > 0.1:  # Threshold for switching
+                  # Discontinuous part
+                  u_discontinuous = -self.k1 * np.sign(s)
+              else:
+                  # Continuous part
+                  u_discontinuous = -self.k1 * s / 0.1
+
+              # Integral term
+              self.integral_term += -self.k2 * np.sign(s)
+
+              # Total control
+              control_input = u_discontinuous + self.integral_term
+
+              return control_input
+    advantages:
+      - "Reduces chattering"
+      - "Second-order sliding mode"
+      - "Smoother control action"
+    disadvantages:
+      - "More complex than basic SMC"
+      - "Requires tuning of additional parameters"
+
+  - type: "terminal_smc"
+    name: "Terminal Sliding Mode Controller"
+    description: "Sliding mode controller with terminal sliding surface for finite-time convergence"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      class TerminalSlidingModeController:
+          """
+          Terminal Sliding Mode Controller implementation.
+          """
+
+          def __init__(self, alpha: float = 0.5, beta: float = 1.5, k: float = 10.0):
+              self.alpha = alpha
+              self.beta = beta
+              self.k = k
+
+          def compute_terminal_surface(self, error: float, error_derivative: float) -> float:
+              """
+              Compute terminal sliding surface.
+
+              Args:
+                  error: Current tracking error
+                  error_derivative: Error derivative
+
+              Returns:
+                  Terminal sliding surface value
+              """
+              # Terminal sliding surface: s = ė + αe + β|e|^γ sign(e)
+              gamma = self.alpha / self.beta
+              terminal_surface = error_derivative + self.alpha * error + self.beta * (abs(error) ** gamma) * np.sign(error)
+              return terminal_surface
+
+          def compute_control(self, error: float, error_derivative: float) -> float:
+              """
+              Compute terminal sliding mode control input.
+
+              Args:
+                  error: Current tracking error
+                  error_derivative: Error derivative
+
+              Returns:
+                  Control input
+              """
+              # Compute terminal sliding surface
+              s = self.compute_terminal_surface(error, error_derivative)
+
+              # Terminal sliding mode control
+              control_input = -self.k * np.sign(s)
+
+              return control_input
+    advantages:
+      - "Finite-time convergence"
+      - "Terminal sliding surface"
+      - "Better convergence properties"
+    disadvantages:
+      - "More complex sliding surface"
+      - "Requires careful parameter tuning"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Sliding Mode Control"
+      time: "O(1)"
+      space: "O(1)"
+      notes: "Constant time and space complexity per control step"
+    - approach: "Super-Twisting SMC"
+      time: "O(1)"
+      space: "O(1)"
+      notes: "Similar complexity to basic SMC"
+    - approach: "Terminal SMC"
+      time: "O(1)"
+      space: "O(1)"
+      notes: "Constant complexity with more complex sliding surface"
+
+  performance_notes:
+    - "Sliding mode controllers are computationally efficient"
+    - "Suitable for real-time applications"
+    - "Memory requirements are minimal"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Robust attitude control under varying conditions"
+      - "Satellite Control: Precise attitude control with fuel consumption"
+      - "Missile Guidance: Robust tracking despite target maneuvers"
+      - "Spacecraft Docking: Precise control under uncertain contact dynamics"
+
+  - category: "Robotics and Automation"
+    examples:
+      - "Robot Control: Robust manipulation under payload changes"
+      - "Manufacturing: Precise control despite tool wear"
+      - "Autonomous Vehicles: Robust navigation under environmental changes"
+      - "Precision Machining: High-precision control for accuracy"
+
+  - category: "Power Electronics"
+    examples:
+      - "Motor Drives: Robust control under load variations"
+      - "Power Converters: Robust voltage regulation"
+      - "Grid Control: Robust power system stabilization"
+      - "Renewable Energy: Robust control under weather variations"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Active Suspension: Robust control under varying road conditions"
+      - "Engine Control: Robust performance under engine wear"
+      - "Steering Control: Robust lane keeping despite disturbances"
+      - "Brake Control: Robust ABS under varying conditions"
+
+  - category: "Marine and Offshore"
+    examples:
+      - "Ship Control: Robust control under wave and current variations"
+      - "Underwater Vehicles: Robust control under changing buoyancy"
+      - "Offshore Platforms: Robust control under environmental changes"
+      - "Submarine Control: Robust control under depth and speed changes"
+
+# Educational value and learning objectives
+educational_value:
+  - "Robust Control Theory: Understanding discontinuous control strategies"
+  - "Sliding Mode Theory: Learning about sliding surfaces and reaching conditions"
+  - "Chattering Analysis: Understanding and mitigating chattering problems"
+  - "Nonlinear Control: Learning to handle nonlinear and uncertain systems"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/control/sliding_mode_control.py"
+      description: "Main implementation with basic, super-twisting, and terminal variants"
+    - path: "tests/unit/control/test_sliding_mode_control.py"
+      description: "Comprehensive test suite including robustness tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Utkin, V. I."
+        year: "1992"
+        title: "Sliding Modes in Control and Optimization"
+        publisher: "Springer-Verlag"
+        note: "ISBN 978-3-540-53516-8"
+      - author: "Edwards, C., & Spurgeon, S. K."
+        year: "1998"
+        title: "Sliding Mode Control: Theory and Applications"
+        publisher: "Taylor & Francis"
+        note: "ISBN 978-0-7484-0605-8"
+
+  - category: "Sliding Mode Control"
+    items:
+      - author: "Utkin, V. I."
+        year: "1977"
+        title: "Variable structure systems with sliding modes"
+        publisher: "IEEE Transactions on Automatic Control"
+        note: "Volume 22, pages 212-222"
+      - author: "Levant, A."
+        year: "1993"
+        title: "Sliding order and sliding accuracy in sliding mode control"
+        publisher: "International Journal of Control"
+        note: "Volume 58, pages 1247-1263"
+
+  - category: "Online Resources"
+    items:
+      - title: "Sliding Mode Control"
+        url: "https://en.wikipedia.org/wiki/Sliding_mode_control"
+        note: "Wikipedia article on sliding mode control"
+      - title: "Sliding Mode Control Tutorial"
+        url: "https://www.controleng.com/articles/sliding-mode-control-tutorial/"
+        note: "Control Engineering sliding mode tutorial"
+      - title: "Super-Twisting Algorithm"
+        url: "https://www.mathworks.com/help/robust/ug/super-twisting-algorithm.html"
+        note: "MATLAB documentation on super-twisting algorithm"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "Robust Control Toolbox"
+        url: "https://www.mathworks.com/products/robust.html"
+        note: "MATLAB toolbox for robust control design"
+      - title: "Sliding Mode Control Design"
+        url: "https://www.mathworks.com/help/robust/ug/sliding-mode-control-design.html"
+        note: "MATLAB documentation on sliding mode control design"
+
+# Tags for categorization and search
+tags:
+  - "control"
+  - "sliding-mode-control"
+  - "robust-control"
+  - "variable-structure"
+  - "chattering-reduction"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "robust-control"
+    relationship: "same_family"
+    description: "Broader category of robust control methods including sliding mode"
+  - slug: "adaptive-control"
+    relationship: "same_family"
+    description: "Alternative approach to handling system uncertainties"

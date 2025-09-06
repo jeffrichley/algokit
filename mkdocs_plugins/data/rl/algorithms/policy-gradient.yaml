@@ -1,0 +1,529 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: policy-gradient
+name: Policy Gradient
+family_id: rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "A policy-based reinforcement learning algorithm that directly optimizes the policy using gradient ascent on expected returns."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Policy Gradient methods are a class of reinforcement learning algorithms that directly optimize
+  the policy function using gradient ascent on the expected return. Unlike value-based methods
+  like Q-Learning, policy gradient methods learn the policy directly without needing to learn
+  value functions first.
+
+  These methods are particularly useful for continuous action spaces, stochastic policies,
+  and scenarios where the optimal policy might be stochastic. They work by computing gradients
+  of the expected return with respect to the policy parameters and updating the policy in
+  the direction that increases expected return.
+
+  The most common policy gradient algorithm is REINFORCE, which uses the policy gradient theorem
+  to derive unbiased gradient estimates from sampled trajectories.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Action space: A
+    - Policy: π(a|s;θ) parameterized by θ
+    - Reward function: R(s,a,s')
+    - Discount factor: γ ∈ [0,1]
+
+    Find policy parameters θ that maximize expected return:
+
+    J(θ) = E[∑_{t=0}^∞ γ^t R_{t+1} | π(·|·;θ)]
+
+    Using gradient ascent:
+    θ ← θ + α ∇_θ J(θ)
+
+  key_properties:
+    - name: "Policy Gradient Theorem"
+      formula: "∇_θ J(θ) = E[∑_{t=0}^∞ γ^t ∇_θ log π(a_t|s_t;θ) A^π(s_t,a_t)]"
+      description: "Gradient of expected return with respect to policy parameters"
+    - name: "REINFORCE Update"
+      formula: "θ ← θ + α ∑_{t=0}^T γ^t R_t ∇_θ log π(a_t|s_t;θ)"
+      description: "Policy parameter update using sampled returns"
+    - name: "Baseline Subtraction"
+      formula: "θ ← θ + α ∑_{t=0}^T γ^t (R_t - b(s_t)) ∇_θ log π(a_t|s_t;θ)"
+      description: "Reduces variance by subtracting baseline from returns"
+
+# Key properties and characteristics
+properties:
+  - name: "Policy-Based"
+    description: "Directly optimizes the policy function"
+    importance: "fundamental"
+  - name: "Continuous Actions"
+    description: "Naturally handles continuous action spaces"
+    importance: "fundamental"
+  - name: "Stochastic Policies"
+    description: "Can learn stochastic optimal policies"
+    importance: "fundamental"
+  - name: "High Variance"
+    description: "Gradient estimates have high variance"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "reinforce"
+    name: "REINFORCE (Monte Carlo Policy Gradient)"
+    description: "Basic policy gradient algorithm using Monte Carlo returns"
+    complexity:
+      time: "O(episodes × steps_per_episode × policy_forward_pass)"
+      space: "O(policy_parameters)"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import numpy as np
+      from typing import List, Tuple
+
+      class PolicyNetwork(nn.Module):
+          """
+          Neural network policy for continuous action spaces.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
+              """
+              Initialize policy network.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  hidden_dim: Hidden layer dimension
+              """
+              super(PolicyNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_dim, hidden_dim)
+              self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+              self.mean_head = nn.Linear(hidden_dim, action_dim)
+              self.log_std_head = nn.Linear(hidden_dim, action_dim)
+              self.relu = nn.ReLU()
+
+          def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+              """
+              Forward pass through the network.
+
+              Args:
+                  x: Input state tensor
+
+              Returns:
+                  Tuple of (mean, log_std) for action distribution
+              """
+              x = self.relu(self.fc1(x))
+              x = self.relu(self.fc2(x))
+              mean = self.mean_head(x)
+              log_std = self.log_std_head(x)
+              return mean, log_std
+
+          def get_action(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+              """
+              Sample action from policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Tuple of (action, log_prob)
+              """
+              mean, log_std = self.forward(state)
+              std = torch.exp(log_std)
+              normal = torch.distributions.Normal(mean, std)
+              action = normal.sample()
+              log_prob = normal.log_prob(action).sum(dim=-1)
+              return action, log_prob
+
+      class REINFORCEAgent:
+          """
+          REINFORCE agent for policy gradient learning.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.001,
+                       gamma: float = 0.99, use_baseline: bool = True):
+              """
+              Initialize REINFORCE agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizer
+                  gamma: Discount factor
+                  use_baseline: Whether to use baseline for variance reduction
+              """
+              self.state_dim = state_dim
+              self.action_dim = action_dim
+              self.gamma = gamma
+              self.use_baseline = use_baseline
+
+              # Initialize policy network
+              self.policy = PolicyNetwork(state_dim, action_dim)
+              self.optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
+
+              # Initialize baseline network if using baseline
+              if self.use_baseline:
+                  self.baseline = nn.Sequential(
+                      nn.Linear(state_dim, 128),
+                      nn.ReLU(),
+                      nn.Linear(128, 128),
+                      nn.ReLU(),
+                      nn.Linear(128, 1)
+                  )
+                  self.baseline_optimizer = optim.Adam(self.baseline.parameters(), lr=learning_rate)
+
+          def act(self, state: np.ndarray) -> np.ndarray:
+              """
+              Choose action using current policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Selected action
+              """
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              with torch.no_grad():
+                  action, _ = self.policy.get_action(state_tensor)
+              return action.numpy().flatten()
+
+          def update(self, trajectories: List[List[Tuple]]) -> None:
+              """
+              Update policy using REINFORCE algorithm.
+
+              Args:
+                  trajectories: List of trajectories, each containing (state, action, reward, log_prob)
+              """
+              all_states = []
+              all_actions = []
+              all_log_probs = []
+              all_returns = []
+
+              # Process each trajectory
+              for trajectory in trajectories:
+                  states, actions, rewards, log_probs = zip(*trajectory)
+                  
+                  # Calculate returns
+                  returns = []
+                  G = 0
+                  for reward in reversed(rewards):
+                      G = reward + self.gamma * G
+                      returns.insert(0, G)
+                  
+                  all_states.extend(states)
+                  all_actions.extend(actions)
+                  all_log_probs.extend(log_probs)
+                  all_returns.extend(returns)
+
+              # Convert to tensors
+              states = torch.FloatTensor(all_states)
+              actions = torch.FloatTensor(all_actions)
+              old_log_probs = torch.FloatTensor(all_log_probs)
+              returns = torch.FloatTensor(all_returns)
+
+              # Normalize returns
+              returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+
+              # Calculate baseline if using
+              if self.use_baseline:
+                  baseline_values = self.baseline(states).squeeze()
+                  advantages = returns - baseline_values
+                  
+                  # Update baseline
+                  baseline_loss = nn.MSELoss()(baseline_values, returns)
+                  self.baseline_optimizer.zero_grad()
+                  baseline_loss.backward()
+                  self.baseline_optimizer.step()
+              else:
+                  advantages = returns
+
+              # Calculate policy loss
+              _, new_log_probs = self.policy.get_action(states)
+              policy_loss = -(new_log_probs * advantages).mean()
+
+              # Update policy
+              self.optimizer.zero_grad()
+              policy_loss.backward()
+              self.optimizer.step()
+    advantages:
+      - "Directly optimizes policy"
+      - "Handles continuous action spaces naturally"
+      - "Can learn stochastic policies"
+      - "Theoretically sound convergence guarantees"
+    disadvantages:
+      - "High variance in gradient estimates"
+      - "Sample inefficient"
+      - "Slow convergence"
+      - "Requires complete episodes"
+
+  - type: "actor_critic"
+    name: "Actor-Critic (Policy Gradient with Value Function)"
+    description: "Policy gradient with value function baseline for variance reduction"
+    complexity:
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+    code: |
+      class ActorCriticAgent:
+          """
+          Actor-Critic agent combining policy gradient with value function.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.001,
+                       gamma: float = 0.99, lambda_param: float = 0.95):
+              """
+              Initialize Actor-Critic agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizers
+                  gamma: Discount factor
+                  lambda_param: GAE lambda parameter
+              """
+              self.state_dim = state_dim
+              self.action_dim = action_dim
+              self.gamma = gamma
+              self.lambda_param = lambda_param
+
+              # Initialize actor (policy) network
+              self.actor = PolicyNetwork(state_dim, action_dim)
+              self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
+
+              # Initialize critic (value) network
+              self.critic = nn.Sequential(
+                  nn.Linear(state_dim, 128),
+                  nn.ReLU(),
+                  nn.Linear(128, 128),
+                  nn.ReLU(),
+                  nn.Linear(128, 1)
+              )
+              self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
+
+          def act(self, state: np.ndarray) -> np.ndarray:
+              """
+              Choose action using current policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Selected action
+              """
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              with torch.no_grad():
+                  action, _ = self.actor.get_action(state_tensor)
+              return action.numpy().flatten()
+
+          def update(self, states: List[np.ndarray], actions: List[np.ndarray],
+                    rewards: List[float], next_states: List[np.ndarray], dones: List[bool]) -> None:
+              """
+              Update actor and critic networks.
+
+              Args:
+                  states: List of states
+                  actions: List of actions
+                  rewards: List of rewards
+                  next_states: List of next states
+                  dones: List of done flags
+              """
+              states = torch.FloatTensor(states)
+              actions = torch.FloatTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Calculate values and next values
+              values = self.critic(states).squeeze()
+              next_values = self.critic(next_states).squeeze()
+
+              # Calculate advantages using GAE
+              advantages = []
+              advantage = 0
+              for i in reversed(range(len(rewards))):
+                  if dones[i]:
+                      advantage = 0
+                  advantage = rewards[i] + self.gamma * next_values[i] * (1 - dones[i]) - values[i] + self.gamma * self.lambda_param * advantage
+                  advantages.insert(0, advantage)
+
+              advantages = torch.FloatTensor(advantages)
+
+              # Calculate returns
+              returns = advantages + values
+
+              # Update critic
+              critic_loss = nn.MSELoss()(values, returns)
+              self.critic_optimizer.zero_grad()
+              critic_loss.backward()
+              self.critic_optimizer.step()
+
+              # Update actor
+              _, log_probs = self.actor.get_action(states)
+              actor_loss = -(log_probs * advantages.detach()).mean()
+              self.actor_optimizer.zero_grad()
+              actor_loss.backward()
+              self.actor_optimizer.step()
+    advantages:
+      - "Reduces variance compared to REINFORCE"
+      - "More sample efficient"
+      - "Can learn online (no need for complete episodes)"
+      - "Combines benefits of policy and value methods"
+    disadvantages:
+      - "More complex implementation"
+      - "Requires tuning of two networks"
+      - "Can be unstable during training"
+      - "Still has higher variance than value-based methods"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "REINFORCE"
+      time: "O(episodes × steps_per_episode × policy_forward_pass)"
+      space: "O(policy_parameters)"
+      notes: "Time complexity dominated by policy network forward passes. Space complexity includes policy parameters only"
+    
+    - approach: "Actor-Critic"
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+      notes: "Time complexity includes both policy and value network operations. Space complexity includes both network parameters"
+
+# Applications and use cases
+applications:
+  - category: "Continuous Control"
+    examples:
+      - "Robot Control: Learning continuous control policies for robots"
+      - "Autonomous Vehicles: Learning steering and acceleration policies"
+      - "Game Playing: Learning continuous control in games"
+      - "Physics Simulation: Learning control policies in physics engines"
+
+  - category: "Stochastic Environments"
+    examples:
+      - "Financial Trading: Learning stochastic trading policies"
+      - "Resource Allocation: Learning allocation policies under uncertainty"
+      - "Game Theory: Learning mixed strategies in games"
+      - "Multi-Agent Systems: Learning policies in competitive environments"
+
+  - category: "High-Dimensional Action Spaces"
+    examples:
+      - "Robotics: Learning control for high-DOF robots"
+      - "Animation: Learning motion policies for characters"
+      - "Music Generation: Learning policies for music composition"
+      - "Text Generation: Learning policies for text generation"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Recommendation Systems: Learning stochastic recommendation policies"
+      - "Ad Placement: Learning placement policies with uncertainty"
+      - "Energy Management: Learning energy allocation policies"
+      - "Traffic Control: Learning traffic light control policies"
+
+  - category: "Educational Value"
+    examples:
+      - "Policy-Based Methods: Understanding direct policy optimization"
+      - "Gradient Methods: Understanding gradient-based optimization in RL"
+      - "Variance Reduction: Understanding techniques to reduce variance"
+      - "Continuous Control: Understanding continuous action spaces"
+
+# Educational value and learning objectives
+educational_value:
+  - "Policy-Based Methods: Understanding direct policy optimization approaches"
+  - "Gradient Methods: Learning gradient-based optimization in RL"
+  - "Variance Reduction: Understanding techniques to reduce variance in estimates"
+  - "Continuous Control: Understanding how to handle continuous action spaces"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/reinforcement_learning/policy_gradient.py"
+      description: "Main implementation with REINFORCE and Actor-Critic variants"
+    - path: "tests/unit/reinforcement_learning/test_policy_gradient.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+      - author: "Szepesvári, C."
+        year: "2010"
+        title: "Algorithms for Reinforcement Learning"
+        publisher: "Morgan & Claypool"
+        note: "ISBN 978-1-60845-492-1"
+
+  - category: "Policy Gradient"
+    items:
+      - author: "Williams, R. J."
+        year: "1992"
+        title: "Simple statistical gradient-following algorithms for connectionist reinforcement learning"
+        publisher: "Machine Learning"
+        note: "Volume 8, pages 229-256 - Original REINFORCE paper"
+      - author: "Sutton, R. S., et al."
+        year: "2000"
+        title: "Policy gradient methods for reinforcement learning with function approximation"
+        publisher: "Advances in Neural Information Processing Systems"
+        note: "Volume 12, pages 1057-1063"
+
+  - category: "Actor-Critic"
+    items:
+      - author: "Barto, A. G., Sutton, R. S., & Anderson, C. W."
+        year: "1983"
+        title: "Neuronlike adaptive elements that can solve difficult learning control problems"
+        publisher: "IEEE Transactions on Systems, Man, and Cybernetics"
+        note: "Volume 13, pages 834-846"
+      - author: "Konda, V. R., & Tsitsiklis, J. N."
+        year: "2000"
+        title: "Actor-critic algorithms"
+        publisher: "Advances in Neural Information Processing Systems"
+        note: "Volume 12, pages 1008-1014"
+
+  - category: "Online Resources"
+    items:
+      - title: "Policy Gradient Methods"
+        url: "https://en.wikipedia.org/wiki/Policy_gradient_methods"
+        note: "Wikipedia article on policy gradient methods"
+      - title: "Reinforcement Learning Tutorial"
+        url: "https://spinningup.openai.com/en/latest/"
+        note: "OpenAI Spinning Up RL tutorial"
+      - title: "Policy Gradient Algorithm"
+        url: "https://www.geeksforgeeks.org/policy-gradient-methods/"
+        note: "GeeksforGeeks policy gradient implementation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Gymnasium (OpenAI Gym)"
+        url: "https://gymnasium.farama.org/"
+        note: "RL environment library for testing algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "rl"
+  - "policy-gradient"
+  - "reinforce"
+  - "actor-critic"
+  - "policy-based"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "actor-critic"
+    relationship: "same_family"
+    description: "Actor-Critic is a variant of policy gradient methods"
+  - slug: "ppo"
+    relationship: "same_family"
+    description: "PPO is an advanced policy gradient method"

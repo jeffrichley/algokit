@@ -1,0 +1,363 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: model-predictive-control
+name: Model Predictive Control
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Advanced control strategy that uses system models to predict future behavior and optimize control actions over a finite horizon while handling constraints."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Model Predictive Control (MPC) is an advanced control strategy that uses a mathematical model of the system to predict future behavior and optimize control actions over a finite prediction horizon. Unlike traditional control methods, MPC explicitly handles constraints on inputs, outputs, and states while optimizing a performance objective.
+
+  The key principle of MPC is the receding horizon approach: at each time step, the controller solves an optimization problem over a finite prediction horizon, implements only the first control action, and then shifts the horizon forward by one time step. This approach provides excellent performance for complex systems with constraints and is widely used in process industries, automotive, aerospace, and robotics applications.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    At each time step k, solve:
+    
+    min_{U_k} J(x(k), U_k) = Σ_{i=0}^{N_p-1} ||y(k+i|k) - r(k+i)||_Q² + Σ_{i=0}^{N_c-1} ||u(k+i)||_R²
+    
+    Subject to:
+    - x(k+i+1|k) = f(x(k+i|k), u(k+i), d(k+i))
+    - y(k+i|k) = h(x(k+i|k), u(k+i))
+    - g(x(k+i|k), u(k+i)) ≤ 0
+    - u_min ≤ u(k+i) ≤ u_max
+    - x_min ≤ x(k+i|k) ≤ x_max
+    
+    Where:
+    - U_k = [u(k), u(k+1), ..., u(k+N_c-1)] is the control sequence
+    - N_p is the prediction horizon
+    - N_c is the control horizon
+    - r(k) is the reference trajectory
+    - Q and R are weighting matrices
+
+  discrete_time_form: |
+    The receding horizon implementation:
+    
+    1. Measure current state x(k)
+    2. Solve optimization problem for U_k
+    3. Apply first control action u(k) = U_k[0]
+    4. Shift horizon: k ← k+1
+    5. Repeat
+
+  key_properties:
+    - name: "Predictive Control"
+      formula: "U_k = argmin J(x(k), U_k)"
+      description: "Optimizes control sequence over finite horizon"
+    - name: "Receding Horizon"
+      formula: "u(k) = U_k[0]"
+      description: "Implements only first control action and shifts horizon"
+    - name: "Constraint Handling"
+      formula: "g(x,u) ≤ 0, h(x,u) = 0"
+      description: "Explicitly handles system constraints"
+
+# Key properties and characteristics
+properties:
+  - name: "Predictive Control"
+    description: "Uses system model to predict future behavior"
+    importance: "fundamental"
+  - name: "Constraint Handling"
+    description: "Explicitly handles constraints on inputs, outputs, and states"
+    importance: "fundamental"
+  - name: "Receding Horizon"
+    description: "Optimizes over finite horizon and implements only first action"
+    importance: "fundamental"
+  - name: "Multivariable Control"
+    description: "Naturally handles systems with multiple inputs and outputs"
+    importance: "implementation"
+  - name: "Real-time Optimization"
+    description: "Solves optimization problem at each time step"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_mpc"
+    name: "Basic MPC Controller"
+    description: "Standard MPC implementation with linear system model and quadratic cost"
+    complexity:
+      time: "O(N³)"
+      space: "O(N²)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import Optional, Tuple, Callable
+
+      class BasicMPCController:
+          """
+          Basic Model Predictive Controller implementation.
+
+          Args:
+              A: State matrix
+              B: Input matrix
+              C: Output matrix
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              Qf: Terminal state weight matrix
+          """
+
+          def __init__(self, A: np.ndarray, B: np.ndarray, C: np.ndarray,
+                       prediction_horizon: int, control_horizon: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       Qf: np.ndarray = None):
+
+              self.A = A
+              self.B = B
+              self.C = C
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              
+              # State and input dimensions
+              self.nx = A.shape[0]
+              self.nu = B.shape[1]
+              self.ny = C.shape[0]
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+              self.Qf = Qf if Qf is not None else self.Q
+
+              # Build prediction matrices
+              self._build_prediction_matrices()
+
+          def _build_prediction_matrices(self) -> None:
+              """Build prediction matrices for efficient computation."""
+              # State prediction matrix
+              self.Phi = np.zeros((self.Np * self.nx, self.nx))
+              for i in range(self.Np):
+                  self.Phi[i*self.nx:(i+1)*self.nx, :] = np.linalg.matrix_power(self.A, i+1)
+
+              # Input prediction matrix
+              self.Gamma = np.zeros((self.Np * self.nx, self.Nc * self.nu))
+              for i in range(self.Np):
+                  for j in range(min(i+1, self.Nc)):
+                      self.Gamma[i*self.nx:(i+1)*self.nx, j*self.nu:(j+1)*self.nu] = \
+                          np.linalg.matrix_power(self.A, i-j) @ self.B
+
+              # Output prediction matrix
+              self.Psi = np.kron(np.eye(self.Np), self.C)
+
+          def solve_mpc(self, x0: np.ndarray, r: np.ndarray,
+                       u_min: Optional[np.ndarray] = None,
+                       u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve MPC optimization problem.
+
+              Args:
+                  x0: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal control sequence
+              """
+              # Build cost function matrices
+              H = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ self.Gamma + \
+                  np.kron(np.eye(self.Nc), self.R)
+              
+              f = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ \
+                  (self.Phi @ x0 - r.flatten())
+
+              # Set up constraints
+              constraints = []
+              bounds = []
+
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Solve QP problem
+              result = minimize(
+                  fun=lambda u: 0.5 * u.T @ H @ u + f.T @ u,
+                  x0=np.zeros(self.Nc * self.nu),
+                  method='L-BFGS-B',
+                  bounds=bounds,
+                  constraints=constraints
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def control_step(self, x: np.ndarray, r: np.ndarray,
+                          u_min: Optional[np.ndarray] = None,
+                          u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Perform one MPC control step.
+
+              Args:
+                  x: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Control action to apply
+              """
+              # Solve MPC problem
+              U_opt = self.solve_mpc(x, r, u_min, u_max)
+              
+              # Return first control action
+              return U_opt[0]
+    advantages:
+      - "Handles constraints explicitly"
+      - "Multivariable control capability"
+      - "Predictive control with model-based optimization"
+      - "Widely applicable to many systems"
+    disadvantages:
+      - "Requires accurate system model"
+      - "Computationally intensive for large horizons"
+      - "May not guarantee stability without additional constraints"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic MPC Controller"
+      time: "O(N³)"
+      space: "O(N²)"
+      notes: "Complexity depends on prediction horizon N and system dimensions"
+    - approach: "Nonlinear MPC"
+      time: "O(N⁶)"
+      space: "O(N⁴)"
+      notes: "Higher complexity due to nonlinear optimization"
+
+  performance_notes:
+    - "MPC requires real-time optimization within sampling period"
+    - "Computational complexity scales with prediction horizon"
+    - "Memory requirements scale with system dimensions"
+
+# Applications and use cases
+applications:
+  - category: "Process Industries"
+    examples:
+      - "Chemical Plants: Temperature, pressure, and composition control"
+      - "Oil Refineries: Distillation column control and optimization"
+      - "Power Plants: Boiler and turbine control"
+      - "Pulp and Paper: Process control and quality optimization"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Engine Control: Fuel injection and ignition timing optimization"
+      - "Vehicle Dynamics: Trajectory tracking and stability control"
+      - "Hybrid Vehicles: Energy management and power distribution"
+      - "Autonomous Driving: Path planning and vehicle control"
+
+  - category: "Aerospace Applications"
+    examples:
+      - "Flight Control: Aircraft attitude and trajectory control"
+      - "Spacecraft Guidance: Orbital maneuvers and docking"
+      - "UAV Control: Autonomous flight and mission execution"
+      - "Satellite Control: Attitude and orbit maintenance"
+
+  - category: "Robotics"
+    examples:
+      - "Manipulator Control: Joint trajectory tracking"
+      - "Mobile Robot Navigation: Path planning and obstacle avoidance"
+      - "Humanoid Robots: Balance and locomotion control"
+      - "Industrial Robots: Pick and place operations"
+
+  - category: "Energy Systems"
+    examples:
+      - "Smart Grids: Power flow optimization and demand response"
+      - "Renewable Energy: Wind and solar power management"
+      - "Battery Management: Charging and discharging optimization"
+      - "Microgrids: Distributed energy resource coordination"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Advanced predictive control concepts"
+  - "Optimization: Real-time optimization for control applications"
+  - "System Modeling: Understanding system dynamics and constraints"
+  - "Multivariable Control: Handling multiple inputs and outputs"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/model_predictive_control.py"
+      description: "Main implementation with basic and advanced variants"
+    - path: "tests/unit/mpc/test_model_predictive_control.py"
+      description: "Comprehensive test suite including performance tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Cannon, M., & Kouvaritakis, B."
+        year: "2017"
+        title: "Model Predictive Control: Classical, Robust and Stochastic"
+        publisher: "Springer"
+        note: "ISBN 978-3-319-42053-9"
+
+  - category: "MPC Theory"
+    items:
+      - author: "Mayne, D. Q., Rawlings, J. B., Rao, C. V., & Scokaert, P. O. M."
+        year: "2000"
+        title: "Constrained model predictive control: Stability and optimality"
+        publisher: "Automatica"
+        note: "Volume 36, pages 789-814"
+      - author: "Garcia, C. E., Prett, D. M., & Morari, M."
+        year: "1989"
+        title: "Model predictive control: Theory and practice—A survey"
+        publisher: "Automatica"
+        note: "Volume 25, pages 335-348"
+
+  - category: "Online Resources"
+    items:
+      - title: "Model Predictive Control"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "MPC Tutorial"
+        url: "https://www.mathworks.com/help/mpc/"
+        note: "MATLAB Model Predictive Control Toolbox documentation"
+      - title: "MPC Implementation Guide"
+        url: "https://www.controleng.com/articles/model-predictive-control-implementation/"
+        note: "Control Engineering MPC implementation guide"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "CasADi"
+        url: "https://web.casadi.org/"
+        note: "Symbolic framework for nonlinear optimization and MPC"
+      - title: "ACADO Toolkit"
+        url: "https://acado.github.io/"
+        note: "Software environment for automatic control and dynamic optimization"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "model-predictive-control"
+  - "predictive-control"
+  - "constraint-handling"
+  - "optimization"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "linear-mpc"
+    relationship: "specialization"
+    description: "Linear MPC is a specialized form of MPC for linear systems"
+  - slug: "nonlinear-mpc"
+    relationship: "specialization"
+    description: "Nonlinear MPC extends MPC to handle nonlinear systems"
+  - slug: "robust-mpc"
+    relationship: "specialization"
+    description: "Robust MPC handles model uncertainty and disturbances"

@@ -5,8 +5,6 @@
 slug: fibonacci
 name: Fibonacci Sequence
 family_id: dp
-aliases: [fib, fibonacci_sequence]
-order: 10
 
 # Brief one-sentence summary for cards and navigation
 summary: "Classic sequence where each number is the sum of the two preceding ones, demonstrating recursion, memoization, and dynamic programming."
@@ -297,19 +295,3 @@ related_algorithms:
     relationship: "same_family"
     description: "More complex DP problem with constraints"
 
-# Template and rendering options
-template_options:
-  show_complexity_table: true
-  show_implementation_comparison: true
-  show_mathematical_properties: true
-  show_applications: true
-  show_educational_value: true
-  show_source_links: true
-  show_related_algorithms: true
-
-# Metadata for the documentation system
-meta:
-  created: "2025-01-04"
-  # last_updated is automatically managed by git/file system
-  version: "1.0"
-  author: "Jeff Richley"

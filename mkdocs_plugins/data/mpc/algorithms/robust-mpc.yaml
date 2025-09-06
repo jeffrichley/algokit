@@ -1,0 +1,474 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: robust-mpc
+name: Robust MPC
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control that handles model uncertainty and disturbances through robust optimization techniques to ensure constraint satisfaction and stability."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Robust MPC extends the predictive control framework to handle systems with model uncertainty, parameter variations, and external disturbances. Unlike standard MPC, which assumes perfect knowledge of the system model, Robust MPC explicitly accounts for uncertainty in the system dynamics and ensures that constraints are satisfied and stability is maintained under all possible realizations of the uncertainty.
+
+  This approach is essential in applications where system models are uncertain or where the system operates in changing environments. Robust MPC provides theoretical guarantees for constraint satisfaction and stability, making it particularly valuable for safety-critical applications in aerospace, automotive, and process industries. The key challenge is to design controllers that are robust to uncertainty while maintaining good performance.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    For uncertain system: x(k+1) = A(θ)x(k) + B(θ)u(k) + Ed(k)
+    where θ ∈ Θ represents model uncertainty and d(k) ∈ D represents disturbances.
+    
+    The robust MPC formulation is:
+    
+    min_{U_k} max_{θ∈Θ, d∈D} J(x(k), U_k, θ, d)
+    
+    Subject to:
+    - x(k+i+1|k) = A(θ)x(k+i|k) + B(θ)u(k+i) + Ed(k+i)
+    - y(k+i|k) = Cx(k+i|k) + Du(k+i)
+    - g(x(k+i|k), u(k+i)) ≤ 0, ∀θ ∈ Θ, ∀d ∈ D
+    - u_min ≤ u(k+i) ≤ u_max
+    - x_min ≤ x(k+i|k) ≤ x_max, ∀θ ∈ Θ, ∀d ∈ D
+    
+    Where:
+    - Θ is the uncertainty set
+    - D is the disturbance set
+    - The min-max formulation ensures robustness
+
+  discrete_time_form: |
+    Tube-based Robust MPC approach:
+    
+    1. Design nominal controller for nominal system
+    2. Compute robust positively invariant (RPI) set
+    3. Ensure state remains within tube around nominal trajectory
+    4. Handle disturbances and uncertainty within tube
+    
+    Tube constraint: x(k) ∈ {x_nom(k)} ⊕ S
+    where S is the RPI set and ⊕ denotes Minkowski sum.
+
+  key_properties:
+    - name: "Min-Max Optimization"
+      formula: "min_{U} max_{θ,d} J(x, U, θ, d)"
+      description: "Optimizes worst-case performance over uncertainty set"
+    - name: "Tube-based Control"
+      formula: "x(k) ∈ {x_nom(k)} ⊕ S"
+      description: "Ensures state remains within robust tube"
+    - name: "Robust Constraints"
+      formula: "g(x,u) ≤ 0, ∀θ ∈ Θ, ∀d ∈ D"
+      description: "Constraints satisfied for all uncertainty realizations"
+
+# Key properties and characteristics
+properties:
+  - name: "Uncertainty Handling"
+    description: "Explicitly accounts for model uncertainty and disturbances"
+    importance: "fundamental"
+  - name: "Robust Stability"
+    description: "Guarantees stability under all uncertainty realizations"
+    importance: "theoretical"
+  - name: "Constraint Satisfaction"
+    description: "Ensures constraints are met despite uncertainty"
+    importance: "fundamental"
+  - name: "Conservative Design"
+    description: "May be conservative to ensure robustness"
+    importance: "trade-off"
+  - name: "Computational Complexity"
+    description: "Higher computational cost due to robust optimization"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "tube_based_robust_mpc"
+    name: "Tube-based Robust MPC Controller"
+    description: "Robust MPC using tube-based approach with RPI sets"
+    complexity:
+      time: "O(N⁴)"
+      space: "O(N³)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import Optional, Tuple, List
+
+      class TubeBasedRobustMPCController:
+          """
+          Tube-based Robust MPC Controller implementation.
+
+          Args:
+              A_nom: Nominal state matrix
+              B_nom: Nominal input matrix
+              C: Output matrix
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              Qf: Terminal state weight matrix
+              uncertainty_set: Set of possible system matrices
+              disturbance_set: Set of possible disturbances
+          """
+
+          def __init__(self, A_nom: np.ndarray, B_nom: np.ndarray, C: np.ndarray,
+                       prediction_horizon: int, control_horizon: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       Qf: np.ndarray = None,
+                       uncertainty_set: Optional[List[Tuple[np.ndarray, np.ndarray]]] = None,
+                       disturbance_set: Optional[np.ndarray] = None):
+
+              self.A_nom = A_nom
+              self.B_nom = B_nom
+              self.C = C
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              
+              # State and input dimensions
+              self.nx = A_nom.shape[0]
+              self.nu = B_nom.shape[1]
+              self.ny = C.shape[0]
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+              self.Qf = Qf if Qf is not None else self.Q
+
+              # Uncertainty and disturbance sets
+              self.uncertainty_set = uncertainty_set if uncertainty_set is not None else [(A_nom, B_nom)]
+              self.disturbance_set = disturbance_set if disturbance_set is not None else np.zeros((self.nx, 1))
+
+              # Compute robust positively invariant (RPI) set
+              self.rpi_set = self._compute_rpi_set()
+
+          def _compute_rpi_set(self) -> np.ndarray:
+              """
+              Compute robust positively invariant set.
+
+              Returns:
+                  RPI set vertices
+              """
+              # Simplified RPI set computation
+              # In practice, this would use more sophisticated methods
+              max_disturbance = np.max(np.abs(self.disturbance_set), axis=1)
+              rpi_radius = max_disturbance * 2.0  # Conservative estimate
+              
+              # Create hypercube RPI set
+              rpi_vertices = []
+              for i in range(2**self.nx):
+                  vertex = np.zeros(self.nx)
+                  for j in range(self.nx):
+                      if (i >> j) & 1:
+                          vertex[j] = rpi_radius[j]
+                      else:
+                          vertex[j] = -rpi_radius[j]
+                  rpi_vertices.append(vertex)
+              
+              return np.array(rpi_vertices)
+
+          def _robust_constraints(self, x0: np.ndarray, U: np.ndarray) -> List[dict]:
+              """
+              Compute robust constraints for all uncertainty realizations.
+
+              Args:
+                  x0: Initial state
+                  U: Control sequence
+
+              Returns:
+                  List of constraint dictionaries
+              """
+              constraints = []
+              
+              for A, B in self.uncertainty_set:
+                  # Predict trajectory for this uncertainty realization
+                  X = self._predict_trajectory(x0, U, A, B)
+                  
+                  # Add constraints for this realization
+                  for i in range(self.Np):
+                      # State constraints
+                      for j in range(self.nx):
+                          constraints.append({
+                              'type': 'ineq',
+                              'fun': lambda x, i=i, j=j: 1.0 - X[i, j]  # x ≤ 1
+                          })
+                          constraints.append({
+                              'type': 'ineq',
+                              'fun': lambda x, i=i, j=j: X[i, j] + 1.0  # x ≥ -1
+                          })
+              
+              return constraints
+
+          def _predict_trajectory(self, x0: np.ndarray, U: np.ndarray, 
+                                A: np.ndarray, B: np.ndarray) -> np.ndarray:
+              """
+              Predict state trajectory for given system matrices.
+
+              Args:
+                  x0: Initial state
+                  U: Control sequence
+                  A: State matrix
+                  B: Input matrix
+
+              Returns:
+                  State trajectory
+              """
+              X = np.zeros((self.Np, self.nx))
+              x = x0.copy()
+              
+              for i in range(self.Np):
+                  if i < self.Nc:
+                      u = U[i]
+                  else:
+                      u = U[-1]  # Hold last control action
+                  
+                  x = A @ x + B @ u
+                  X[i] = x
+              
+              return X
+
+          def _robust_objective(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
+              """
+              Robust objective function (worst-case over uncertainty set).
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+                  r: Reference trajectory
+
+              Returns:
+                  Worst-case objective value
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              
+              worst_case_cost = -np.inf
+              
+              for A, B in self.uncertainty_set:
+                  X = self._predict_trajectory(x0, U, A, B)
+                  
+                  # Compute cost for this realization
+                  cost = 0.0
+                  for i in range(self.Np):
+                      y = self.C @ X[i]
+                      error = y - r[i]
+                      cost += error.T @ self.Q @ error
+                  
+                  for i in range(self.Nc):
+                      cost += U[i].T @ self.R @ U[i]
+                  
+                  worst_case_cost = max(worst_case_cost, cost)
+              
+              return worst_case_cost
+
+          def solve_robust_mpc(self, x0: np.ndarray, r: np.ndarray,
+                              u_min: Optional[np.ndarray] = None,
+                              u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve Robust MPC optimization problem.
+
+              Args:
+                  x0: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal control sequence
+              """
+              # Initial guess
+              U0 = np.zeros(self.Nc * self.nu)
+              
+              # Bounds
+              bounds = []
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Robust constraints
+              constraints = self._robust_constraints(x0, U0.reshape(self.Nc, self.nu))
+
+              # Solve robust optimization problem
+              result = minimize(
+                  fun=lambda u: self._robust_objective(u, x0, r),
+                  x0=U0,
+                  method='SLSQP',
+                  bounds=bounds,
+                  constraints=constraints,
+                  options={'maxiter': 1000}
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def control_step(self, x: np.ndarray, r: np.ndarray,
+                          u_min: Optional[np.ndarray] = None,
+                          u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Perform one Robust MPC control step.
+
+              Args:
+                  x: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Control action to apply
+              """
+              # Solve robust MPC problem
+              U_opt = self.solve_robust_mpc(x, r, u_min, u_max)
+              
+              # Return first control action
+              return U_opt[0]
+    advantages:
+      - "Handles model uncertainty and disturbances"
+      - "Guarantees constraint satisfaction under uncertainty"
+      - "Provides robust stability guarantees"
+      - "Suitable for safety-critical applications"
+    disadvantages:
+      - "Computationally intensive due to robust optimization"
+      - "May be conservative in performance"
+      - "Requires knowledge of uncertainty bounds"
+      - "Complex implementation and tuning"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Tube-based Robust MPC"
+      time: "O(N⁴)"
+      space: "O(N³)"
+      notes: "Complexity depends on prediction horizon N and uncertainty set size"
+    - approach: "Min-Max Optimization"
+      time: "O(N³ × |Θ|)"
+      space: "O(N² × |Θ|)"
+      notes: "Scales with size of uncertainty set Θ"
+
+  performance_notes:
+    - "Robust optimization requires solving min-max problems"
+    - "Computational complexity scales with uncertainty set size"
+    - "Memory requirements scale with system dimensions and uncertainty"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Aircraft control with aerodynamic uncertainty"
+      - "Spacecraft Guidance: Orbital maneuvers with gravitational perturbations"
+      - "UAV Control: Autonomous flight with wind disturbances"
+      - "Satellite Control: Attitude control with environmental disturbances"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Vehicle Dynamics: Trajectory tracking with tire parameter uncertainty"
+      - "Engine Control: Combustion control with fuel quality variations"
+      - "Hybrid Vehicles: Energy management with battery degradation"
+      - "Autonomous Driving: Path planning with sensor uncertainty"
+
+  - category: "Process Industries"
+    examples:
+      - "Chemical Plants: Process control with catalyst deactivation"
+      - "Oil Refineries: Distillation control with feed composition variations"
+      - "Power Plants: Load control with demand uncertainty"
+      - "Manufacturing: Quality control with material property variations"
+
+  - category: "Robotics"
+    examples:
+      - "Manipulator Control: Joint control with payload uncertainty"
+      - "Mobile Robot Navigation: Path planning with map uncertainty"
+      - "Humanoid Robots: Balance control with ground contact uncertainty"
+      - "Industrial Robots: Precision control with tool wear"
+
+  - category: "Energy Systems"
+    examples:
+      - "Smart Grids: Power flow control with renewable energy uncertainty"
+      - "Wind Turbines: Power control with wind speed variations"
+      - "Solar Systems: Power management with irradiance uncertainty"
+      - "Battery Management: Charging control with aging effects"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Robust control and uncertainty handling"
+  - "Optimization: Min-max optimization and robust optimization"
+  - "System Analysis: Uncertainty modeling and robust stability"
+  - "Real-time Systems: Implementation of robust control algorithms"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/robust_mpc.py"
+      description: "Main implementation with tube-based approach"
+    - path: "tests/unit/mpc/test_robust_mpc.py"
+      description: "Comprehensive test suite including robustness tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Cannon, M., & Kouvaritakis, B."
+        year: "2017"
+        title: "Model Predictive Control: Classical, Robust and Stochastic"
+        publisher: "Springer"
+        note: "ISBN 978-3-319-42053-9"
+
+  - category: "Robust MPC Theory"
+    items:
+      - author: "Mayne, D. Q., Seron, M. M., & Raković, S. V."
+        year: "2005"
+        title: "Robust model predictive control of constrained linear systems with bounded disturbances"
+        publisher: "Automatica"
+        note: "Volume 41, pages 219-224"
+      - author: "Raković, S. V., Kerrigan, E. C., Kouramas, K. I., & Mayne, D. Q."
+        year: "2005"
+        title: "Invariant approximations of the minimal robust positively invariant set"
+        publisher: "IEEE Transactions on Automatic Control"
+        note: "Volume 50, pages 406-410"
+
+  - category: "Online Resources"
+    items:
+      - title: "Robust MPC"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "Tube-based MPC"
+        url: "https://www.controleng.com/articles/robust-model-predictive-control/"
+        note: "Control Engineering article on robust MPC"
+      - title: "Uncertainty in Control Systems"
+        url: "https://www.mathworks.com/help/robust/"
+        note: "MATLAB Robust Control Toolbox"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "YALMIP"
+        url: "https://yalmip.github.io/"
+        note: "MATLAB toolbox for optimization modeling"
+      - title: "MOSEK"
+        url: "https://www.mosek.com/"
+        note: "Optimization solver for robust optimization"
+      - title: "CVX"
+        url: "http://cvxr.com/cvx/"
+        note: "MATLAB software for disciplined convex programming"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "robust-mpc"
+  - "robust-control"
+  - "uncertainty-handling"
+  - "tube-based-control"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "model-predictive-control"
+    relationship: "extension"
+    description: "Robust MPC extends standard MPC to handle uncertainty"
+  - slug: "linear-mpc"
+    relationship: "extension"
+    description: "Robust MPC can be applied to linear systems with uncertainty"
+  - slug: "nonlinear-mpc"
+    relationship: "extension"
+    description: "Robust MPC can be applied to nonlinear systems with uncertainty"

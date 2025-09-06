@@ -1,0 +1,181 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: gaussian-process
+name: Gaussian Process
+slug: gaussian-process
+# Brief one-sentence summary for cards and navigation
+summary: "Gaussian Process algorithms provide probabilistic machine learning methods for regression, classification, and optimization with uncertainty quantification."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Gaussian Process (GP) algorithms are powerful probabilistic machine learning methods that provide
+  a flexible framework for regression, classification, and optimization problems. Unlike traditional
+  machine learning approaches, GPs provide not only predictions but also uncertainty estimates,
+  making them particularly valuable for applications where understanding prediction confidence is crucial.
+
+  Gaussian Processes are based on the mathematical foundation of multivariate Gaussian distributions
+  and kernel functions. They offer a principled approach to machine learning that naturally handles
+  uncertainty, provides interpretable results, and can be applied to both small and large datasets
+  with appropriate approximations.
+
+# Family characteristics
+key_characteristics:
+  - name: "Uncertainty Quantification"
+    description: "Provide both predictions and uncertainty estimates for decision making"
+    importance: "fundamental"
+  - name: "Non-parametric"
+    description: "Flexible models that adapt to data without fixed parametric assumptions"
+    importance: "fundamental"
+  - name: "Kernel-based Learning"
+    description: "Use kernel functions to capture complex patterns and relationships"
+    importance: "fundamental"
+  - name: "Bayesian Framework"
+    description: "Provide principled probabilistic inference with prior knowledge integration"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Regression and Function Approximation"
+    examples: ["time series prediction", "sensor calibration", "surrogate modeling", "interpolation"]
+  - category: "Classification"
+    examples: ["binary classification", "multi-class problems", "anomaly detection", "pattern recognition"]
+  - category: "Optimization"
+    examples: ["Bayesian optimization", "hyperparameter tuning", "experimental design", "global optimization"]
+  - category: "Scientific Computing"
+    examples: ["computer experiments", "uncertainty propagation", "sensitivity analysis", "emulation"]
+  - category: "Robotics and Control"
+    examples: ["trajectory learning", "system identification", "adaptive control", "sensor fusion"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Gaussian Process"
+    description: "A collection of random variables where any finite subset has a joint Gaussian distribution"
+    type: "mathematical"
+  - name: "Kernel Function"
+    description: "Function that defines similarity between data points and determines GP behavior"
+    type: "mathematical"
+  - name: "Mean Function"
+    description: "Prior expectation of the function being modeled"
+    type: "mathematical"
+  - name: "Covariance Function"
+    description: "Defines the relationship and correlation between different points in the input space"
+    type: "mathematical"
+  - name: "Hyperparameters"
+    description: "Parameters of the kernel and mean functions that control GP behavior"
+    type: "concept"
+  - name: "Marginal Likelihood"
+    description: "Probability of observed data given the model, used for hyperparameter optimization"
+    type: "mathematical"
+  - name: "Posterior Distribution"
+    description: "Updated belief about the function after observing data"
+    type: "mathematical"
+  - name: "Sparse Approximation"
+    description: "Methods to reduce computational complexity for large datasets"
+    type: "technique"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "reinforcement-learning"
+    relationship: "application"
+    description: "GPs used for value function approximation and policy optimization in RL"
+  - id: "optimization"
+    relationship: "application"
+    description: "Bayesian optimization uses GPs for efficient global optimization"
+  - id: "machine-learning"
+    relationship: "foundation"
+    description: "GPs are fundamental probabilistic machine learning methods"
+  - id: "statistics"
+    relationship: "foundation"
+    description: "GPs build on statistical theory and Bayesian inference"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(n³) to O(nm²)"
+  typical_space: "O(n²) to O(nm)"
+  notes: "Standard GP is O(n³) for n training points. Sparse methods reduce to O(nm²) where m << n is the number of inducing points"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Kernel Functions"
+    content: |
+      !!! info "Common Kernel Types"
+
+          **Stationary Kernels**:
+
+          - **RBF (Gaussian)**: Smooth, infinitely differentiable functions
+          - **Matérn**: Control smoothness, good for less smooth functions
+          - **Exponential**: Non-differentiable, suitable for rough functions
+
+          **Non-stationary Kernels**:
+
+          - **Linear**: For linear relationships
+          - **Polynomial**: For polynomial relationships
+          - **Periodic**: For periodic patterns
+          - **Composite**: Combine multiple kernels for complex patterns
+
+  - name: "GP Variants"
+    content: |
+      !!! info "Gaussian Process Types"
+
+          1. **Standard GP**: Full covariance matrix, exact inference
+          2. **Sparse GP**: Use inducing points for computational efficiency
+          3. **Variational GP**: Approximate inference for large datasets
+          4. **Deep GP**: Stack multiple GPs for hierarchical modeling
+          5. **Multi-output GP**: Handle multiple correlated outputs
+          6. **Heteroscedastic GP**: Handle input-dependent noise
+
+  - name: "Computational Considerations"
+    content: |
+      !!! info "Scalability and Approximation Methods"
+
+          **Exact Methods**:
+          - Cholesky decomposition for matrix inversion
+          - Direct computation of log marginal likelihood
+          - Suitable for n < 1000 points
+
+          **Approximate Methods**:
+          - Sparse GP with inducing points
+          - Variational inference
+          - Stochastic variational inference
+          - Random Fourier features
+          - Suitable for n > 1000 points
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "rasmussen2006"  # Points to entry in shared/refs.bib
+  - bib_key: "williams2006"  # Points to entry in shared/refs.bib
+  - bib_key: "murphy2012"  # Points to entry in shared/refs.bib
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "gaussian-process"  # Primary family tag
+  - "machine-learning"
+  - "probabilistic"
+  - "bayesian"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

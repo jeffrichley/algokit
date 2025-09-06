@@ -1,0 +1,702 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: temporal-dmps
+name: Temporal Dynamic Movement Primitives
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs that generate time-based movements with rhythmic pattern learning, beat and tempo adaptation for temporal movement generation."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Temporal Dynamic Movement Primitives extend the basic DMP framework to handle time-based movement generation with emphasis on rhythmic patterns, beat adaptation, and tempo control. These DMPs are particularly valuable for applications requiring precise temporal coordination, such as musical performance, dance, rhythmic locomotion, and any task that requires synchronization with external timing cues.
+
+  The key innovation of temporal DMPs is the integration of:
+  - Time-based canonical systems that can adapt to external timing cues
+  - Rhythmic pattern learning and generation
+  - Beat and tempo adaptation mechanisms
+  - Synchronization with external rhythms and metronomes
+  - Temporal scaling and modulation capabilities
+
+  These DMPs are particularly valuable in applications requiring precise temporal coordination, such as musical instrument playing, dance performance, rhythmic locomotion, and synchronized multi-agent systems.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Time-based canonical system: τφ̇ = ω(t) where ω(t) is the time-varying frequency
+    - Rhythmic DMP: τẏ = α_y(β_y(g - y) - ẏ) + f(φ)
+    - Beat adaptation: ω(t) = ω_0 + k_beat * (t_beat - t_expected)
+    - Tempo adaptation: τ(t) = τ_0 + k_tempo * (tempo_target - tempo_current)
+    - Phase synchronization: φ_sync = φ + k_sync * (φ_external - φ)
+
+    The temporal DMP becomes:
+    τ(t)ẏ = α_y(β_y(g - y) - ẏ) + f(φ_sync)
+    τ(t)φ̇ = ω(t)
+    
+    Where:
+    - ω(t) is the adaptive frequency
+    - τ(t) is the adaptive time constant
+    - φ_sync is the synchronized phase
+
+  key_properties:
+    - name: "Adaptive Frequency"
+      formula: "ω(t) = ω_0 + k_beat * (t_beat - t_expected)"
+      description: "Frequency adapts to external beat cues"
+    - name: "Tempo Adaptation"
+      formula: "τ(t) = τ_0 + k_tempo * (tempo_target - tempo_current)"
+      description: "Time constant adapts to target tempo"
+    - name: "Phase Synchronization"
+      formula: "φ_sync = φ + k_sync * (φ_external - φ)"
+      description: "Phase synchronizes with external rhythm"
+
+# Key properties and characteristics
+properties:
+  - name: "Rhythmic Generation"
+    description: "Generates rhythmic movements with precise timing"
+    importance: "fundamental"
+  - name: "Beat Adaptation"
+    description: "Adapts to external beat cues and timing"
+    importance: "fundamental"
+  - name: "Tempo Control"
+    description: "Controls movement tempo and speed"
+    importance: "fundamental"
+  - name: "Phase Synchronization"
+    description: "Synchronizes with external rhythms and metronomes"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "rhythmic_temporal_dmp"
+    name: "Rhythmic Temporal DMPs"
+    description: "Temporal DMPs for rhythmic movement generation with beat adaptation"
+    complexity:
+      time: "O(T × K)"
+      space: "O(K)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Tuple, List, Optional, Callable
+      import matplotlib.pyplot as plt
+
+      class TemporalDMP:
+          """
+          Temporal DMP for rhythmic movement generation with beat and tempo adaptation.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, omega_0: float = 2*np.pi, k_beat: float = 1.0,
+                       k_tempo: float = 1.0, k_sync: float = 1.0):
+              """
+              Initialize temporal DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  omega_0: Base frequency
+                  k_beat: Beat adaptation gain
+                  k_tempo: Tempo adaptation gain
+                  k_sync: Phase synchronization gain
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.omega_0 = omega_0
+              self.k_beat = k_beat
+              self.k_tempo = k_tempo
+              self.k_sync = k_sync
+              
+              # Basis function parameters (uniformly distributed in [0, 2π])
+              self.c = np.linspace(0, 2*np.pi, n_basis, endpoint=False)
+              self.h = np.ones(n_basis) * n_basis / (2*np.pi)
+              
+              # DMP weights
+              self.w = np.zeros((n_dims, n_basis))
+              
+              # Temporal parameters
+              self.tau_0 = 1.0
+              self.tempo_target = 1.0
+              self.beat_times = []
+              self.external_phase = 0.0
+              
+              # Adaptation flags
+              self.beat_adaptation = True
+              self.tempo_adaptation = True
+              self.phase_synchronization = True
+
+          def set_tempo_target(self, tempo: float) -> None:
+              """
+              Set the target tempo.
+
+              Args:
+                  tempo: Target tempo (beats per second)
+              """
+              self.tempo_target = tempo
+
+          def add_beat_time(self, beat_time: float) -> None:
+              """
+              Add a beat time for beat adaptation.
+
+              Args:
+                  beat_time: Time of the beat
+              """
+              self.beat_times.append(beat_time)
+
+          def set_external_phase(self, phase: float) -> None:
+              """
+              Set the external phase for synchronization.
+
+              Args:
+                  phase: External phase [0, 2π]
+              """
+              self.external_phase = phase
+
+          def compute_adaptive_frequency(self, t: float) -> float:
+              """
+              Compute adaptive frequency based on beat adaptation.
+
+              Args:
+                  t: Current time
+
+              Returns:
+                  Adaptive frequency
+              """
+              if not self.beat_adaptation or len(self.beat_times) < 2:
+                  return self.omega_0
+              
+              # Find the most recent beat
+              recent_beats = [bt for bt in self.beat_times if bt <= t]
+              if len(recent_beats) < 2:
+                  return self.omega_0
+              
+              # Compute expected beat time
+              beat_interval = recent_beats[-1] - recent_beats[-2]
+              expected_beat_time = recent_beats[-1] + beat_interval
+              
+              # Beat adaptation
+              beat_error = t - expected_beat_time
+              omega_adaptive = self.omega_0 + self.k_beat * beat_error
+              
+              return omega_adaptive
+
+          def compute_adaptive_tempo(self, t: float) -> float:
+              """
+              Compute adaptive tempo based on tempo adaptation.
+
+              Args:
+                  t: Current time
+
+              Returns:
+                  Adaptive tempo
+              """
+              if not self.tempo_adaptation:
+                  return self.tau_0
+              
+              # Compute current tempo
+              if len(self.beat_times) >= 2:
+                  recent_beats = [bt for bt in self.beat_times if bt <= t]
+                  if len(recent_beats) >= 2:
+                      beat_interval = recent_beats[-1] - recent_beats[-2]
+                      current_tempo = 1.0 / beat_interval
+                  else:
+                      current_tempo = 1.0
+              else:
+                  current_tempo = 1.0
+              
+              # Tempo adaptation
+              tempo_error = self.tempo_target - current_tempo
+              tau_adaptive = self.tau_0 + self.k_tempo * tempo_error
+              
+              return tau_adaptive
+
+          def compute_synchronized_phase(self, phi: float) -> float:
+              """
+              Compute synchronized phase based on external phase.
+
+              Args:
+                  phi: Current phase
+
+              Returns:
+                  Synchronized phase
+              """
+              if not self.phase_synchronization:
+                  return phi
+              
+              # Phase synchronization
+              phase_error = self.external_phase - phi
+              phi_sync = phi + self.k_sync * phase_error
+              
+              return phi_sync
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float, beat_times: Optional[List[float]] = None) -> None:
+              """
+              Learn temporal DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+                  beat_times: Optional beat times for the demonstration
+              """
+              T = len(y_demo)
+              
+              # Generate phase trajectory
+              if beat_times is not None:
+                  # Use provided beat times
+                  phi = np.zeros(T)
+                  for i, t in enumerate(np.linspace(0, 1, T)):
+                      # Find phase based on beat times
+                      beat_index = np.searchsorted(beat_times, t)
+                      if beat_index > 0:
+                          beat_interval = beat_times[beat_index] - beat_times[beat_index-1]
+                          phase_in_beat = (t - beat_times[beat_index-1]) / beat_interval
+                          phi[i] = 2 * np.pi * phase_in_beat
+                      else:
+                          phi[i] = 0.0
+              else:
+                  # Generate uniform phase trajectory
+                  phi = np.linspace(0, 2*np.pi, T, endpoint=False)
+              
+              # Compute forcing function target
+              f_target = np.zeros((T, self.n_dims))
+              for t in range(T):
+                  f_target[t] = (ddy_demo[t] - 
+                               self.alpha_y * (self.beta_y * (0 - y_demo[t]) - dy_demo[t]))
+              
+              # Learn weights using locally weighted regression
+              for d in range(self.n_dims):
+                  for i in range(self.n_basis):
+                      # Compute basis function values
+                      psi = np.exp(-self.h[i] * (phi - self.c[i])**2)
+                      
+                      # Locally weighted regression
+                      numerator = np.sum(psi * np.sin(phi) * f_target[:, d])
+                      denominator = np.sum(psi * np.sin(phi)**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                duration: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate temporal trajectory from learned DMP.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  duration: Duration of the movement
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration, phase) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, duration, dt)
+              T = len(t_span)
+              
+              # Initial state [y, dy, phi]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [0.0]])
+              
+              def temporal_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  phi = state[2*self.n_dims]
+                  
+                  # Compute adaptive parameters
+                  omega = self.compute_adaptive_frequency(t)
+                  tau = self.compute_adaptive_tempo(t)
+                  phi_sync = self.compute_synchronized_phase(phi)
+                  
+                  # Canonical system
+                  dphi = omega / tau
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (phi_sync - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * np.sin(phi_sync)) / (np.sum(psi) + 1e-10)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dphi]])
+              
+              # Integrate
+              sol = odeint(temporal_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              phi_traj = sol[:, 2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj, phi_traj
+
+          def visualize_trajectory(self, y_traj: np.ndarray, phi_traj: np.ndarray,
+                                 title: str = "Temporal Trajectory") -> None:
+              """
+              Visualize the generated temporal trajectory.
+
+              Args:
+                  y_traj: Generated trajectory
+                  phi_traj: Generated phase trajectory
+                  title: Plot title
+              """
+              fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+              
+              # Plot trajectory
+              if self.n_dims == 2:
+                  ax1.plot(y_traj[:, 0], y_traj[:, 1], 'b-', linewidth=2, label='Trajectory')
+                  ax1.plot(y_traj[0, 0], y_traj[0, 1], 'go', markersize=8, label='Start')
+                  ax1.plot(y_traj[-1, 0], y_traj[-1, 1], 'ro', markersize=8, label='Goal')
+                  ax1.set_xlabel('X Position')
+                  ax1.set_ylabel('Y Position')
+                  ax1.set_title('Spatial Trajectory')
+                  ax1.legend()
+                  ax1.grid(True)
+                  ax1.axis('equal')
+              else:
+                  for d in range(self.n_dims):
+                      ax1.plot(y_traj[:, d], label=f'Dimension {d+1}')
+                  ax1.set_xlabel('Time')
+                  ax1.set_ylabel('Position')
+                  ax1.set_title('Trajectory')
+                  ax1.legend()
+                  ax1.grid(True)
+              
+              # Plot phase
+              ax2.plot(phi_traj, 'g-', linewidth=2, label='Phase')
+              ax2.set_xlabel('Time')
+              ax2.set_ylabel('Phase')
+              ax2.set_title('Phase Trajectory')
+              ax2.legend()
+              ax2.grid(True)
+              
+              plt.suptitle(title)
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Rhythmic movement generation"
+      - "Beat and tempo adaptation"
+      - "Phase synchronization"
+      - "Temporal scaling capabilities"
+    disadvantages:
+      - "Requires external timing cues"
+      - "Complex parameter tuning"
+      - "May not handle all temporal patterns"
+
+  - type: "metronome_synchronized_dmp"
+    name: "Metronome Synchronized DMPs"
+    description: "Temporal DMPs that synchronize with external metronomes"
+    complexity:
+      time: "O(T × K + T × M)"
+      space: "O(K + M)"
+    code: |
+      class MetronomeSynchronizedDMP(TemporalDMP):
+          """
+          Temporal DMP that synchronizes with external metronomes.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, omega_0: float = 2*np.pi, k_beat: float = 1.0,
+                       k_tempo: float = 1.0, k_sync: float = 1.0, k_metronome: float = 1.0):
+              """
+              Initialize metronome synchronized DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  omega_0: Base frequency
+                  k_beat: Beat adaptation gain
+                  k_tempo: Tempo adaptation gain
+                  k_sync: Phase synchronization gain
+                  k_metronome: Metronome synchronization gain
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, omega_0, k_beat, k_tempo, k_sync)
+              self.k_metronome = k_metronome
+              
+              # Metronome parameters
+              self.metronome_times = []
+              self.metronome_active = False
+              self.metronome_phase = 0.0
+
+          def set_metronome_times(self, metronome_times: List[float]) -> None:
+              """
+              Set metronome beat times.
+
+              Args:
+                  metronome_times: List of metronome beat times
+              """
+              self.metronome_times = metronome_times.copy()
+              self.metronome_active = True
+
+          def compute_metronome_phase(self, t: float) -> float:
+              """
+              Compute metronome phase at time t.
+
+              Args:
+                  t: Current time
+
+              Returns:
+                  Metronome phase
+              """
+              if not self.metronome_active or len(self.metronome_times) == 0:
+                  return 0.0
+              
+              # Find the most recent metronome beat
+              recent_beats = [mt for mt in self.metronome_times if mt <= t]
+              if len(recent_beats) == 0:
+                  return 0.0
+              
+              # Compute phase based on metronome
+              if len(recent_beats) >= 2:
+                  beat_interval = recent_beats[-1] - recent_beats[-2]
+                  phase_in_beat = (t - recent_beats[-1]) / beat_interval
+                  metronome_phase = 2 * np.pi * phase_in_beat
+              else:
+                  metronome_phase = 0.0
+              
+              return metronome_phase
+
+          def compute_synchronized_phase(self, phi: float, t: float) -> float:
+              """
+              Compute synchronized phase based on metronome.
+
+              Args:
+                  phi: Current phase
+                  t: Current time
+
+              Returns:
+                  Synchronized phase
+              """
+              if not self.phase_synchronization:
+                  return phi
+              
+              # Get metronome phase
+              metronome_phase = self.compute_metronome_phase(t)
+              
+              # Phase synchronization with metronome
+              phase_error = metronome_phase - phi
+              phi_sync = phi + self.k_metronome * phase_error
+              
+              return phi_sync
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                duration: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate metronome-synchronized trajectory.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  duration: Duration of the movement
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration, phase) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, duration, dt)
+              T = len(t_span)
+              
+              # Initial state [y, dy, phi]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [0.0]])
+              
+              def metronome_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  phi = state[2*self.n_dims]
+                  
+                  # Compute adaptive parameters
+                  omega = self.compute_adaptive_frequency(t)
+                  tau = self.compute_adaptive_tempo(t)
+                  phi_sync = self.compute_synchronized_phase(phi, t)
+                  
+                  # Canonical system
+                  dphi = omega / tau
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (phi_sync - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * np.sin(phi_sync)) / (np.sum(psi) + 1e-10)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dphi]])
+              
+              # Integrate
+              sol = odeint(metronome_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              phi_traj = sol[:, 2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj, phi_traj
+
+    advantages:
+      - "Metronome synchronization"
+      - "External timing cue integration"
+      - "Robust temporal coordination"
+      - "Musical performance capabilities"
+    disadvantages:
+      - "Requires external metronome"
+      - "Sensitive to metronome accuracy"
+      - "Higher computational cost"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Rhythmic Temporal DMP"
+      time: "O(T × K)"
+      space: "O(K)"
+      notes: "Time complexity scales with trajectory length and basis functions"
+    
+    - approach: "Metronome Synchronized DMP"
+      time: "O(T × K + T × M)"
+      space: "O(K + M)"
+      notes: "Additional complexity for metronome processing"
+    
+    - approach: "Beat Adaptation"
+      time: "O(T)"
+      space: "O(B)"
+      notes: "Beat adaptation scales with trajectory length and number of beats"
+
+# Applications and use cases
+applications:
+  - category: "Musical Performance"
+    examples:
+      - "Instrument Playing: Playing musical instruments with precise timing"
+      - "Conducting: Conducting orchestras with precise beat patterns"
+      - "Dancing: Dancing with precise rhythm and timing"
+      - "Singing: Singing with precise tempo and rhythm"
+
+  - category: "Rhythmic Locomotion"
+    examples:
+      - "Walking: Walking with precise gait timing"
+      - "Running: Running with precise stride timing"
+      - "Swimming: Swimming with precise stroke timing"
+      - "Cycling: Cycling with precise pedal timing"
+
+  - category: "Synchronized Systems"
+    examples:
+      - "Multi-Robot Coordination: Coordinating multiple robots with precise timing"
+      - "Human-Robot Interaction: Interacting with humans with precise timing"
+      - "Synchronized Manipulation: Manipulating objects with precise timing"
+      - "Synchronized Assembly: Assembling parts with precise timing"
+
+  - category: "Entertainment and Arts"
+    examples:
+      - "Dance: Dancing with precise rhythm and timing"
+      - "Theater: Performing theatrical movements with precise timing"
+      - "Sports: Performing sports movements with precise timing"
+      - "Gaming: Performing game movements with precise timing"
+
+  - category: "Rehabilitation and Therapy"
+    examples:
+      - "Physical Therapy: Performing therapeutic exercises with precise timing"
+      - "Speech Therapy: Performing speech exercises with precise timing"
+      - "Occupational Therapy: Performing occupational tasks with precise timing"
+      - "Music Therapy: Performing music therapy with precise timing"
+
+# Educational value and learning objectives
+educational_value:
+  - "Temporal Coordination: Understanding temporal coordination in robotics"
+  - "Rhythmic Patterns: Understanding rhythmic pattern generation"
+  - "Beat Adaptation: Understanding beat adaptation mechanisms"
+  - "Phase Synchronization: Understanding phase synchronization techniques"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/temporal_dmps.py"
+      description: "Main implementation with rhythmic and metronome-synchronized DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_temporal_dmps.py"
+      description: "Comprehensive test suite including temporal coordination tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Gams, A., Ijspeert, A. J., Schaal, S., & Lenarčič, J."
+        year: "2009"
+        title: "On-line learning and modulation of periodic movements with nonlinear dynamical systems"
+        publisher: "Autonomous Robots"
+        note: "Original work on rhythmic DMPs and temporal adaptation"
+      - author: "Ijspeert, A. J., Nakanishi, J., Hoffmann, H., Pastor, P., & Schaal, S."
+        year: "2013"
+        title: "Dynamical movement primitives: Learning attractor landscapes for motor skills"
+        publisher: "Biological Cybernetics"
+        note: "Comprehensive review of DMPs including temporal aspects"
+
+  - category: "Temporal Coordination"
+    items:
+      - author: "Repp, B. H."
+        year: "2005"
+        title: "Sensorimotor synchronization: A review of the tapping literature"
+        publisher: "Psychonomic Bulletin & Review"
+        note: "Review of sensorimotor synchronization in humans"
+      - author: "Large, E. W., & Jones, M. R."
+        year: "1999"
+        title: "The dynamics of attending: How people track time-varying events"
+        publisher: "Psychological Review"
+        note: "Dynamics of temporal attention and synchronization"
+
+  - category: "Online Resources"
+    items:
+      - title: "Rhythmic Movement"
+        url: "https://en.wikipedia.org/wiki/Rhythmic_movement"
+        note: "Wikipedia article on rhythmic movement"
+      - title: "Temporal Coordination"
+        url: "https://en.wikipedia.org/wiki/Temporal_coordination"
+        note: "Wikipedia article on temporal coordination"
+      - title: "Beat Synchronization"
+        url: "https://en.wikipedia.org/wiki/Beat_synchronization"
+        note: "Wikipedia article on beat synchronization"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "MIDI"
+        url: "https://en.wikipedia.org/wiki/MIDI"
+        note: "MIDI protocol for musical instrument communication"
+      - title: "Audio Processing"
+        url: "https://en.wikipedia.org/wiki/Audio_signal_processing"
+        note: "Audio signal processing for rhythm detection"
+      - title: "Tempo Detection"
+        url: "https://en.wikipedia.org/wiki/Tempo_detection"
+        note: "Tempo detection algorithms"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "temporal-dmps"
+  - "rhythmic-movement"
+  - "beat-adaptation"
+  - "tempo-control"
+  - "phase-synchronization"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that temporal DMPs extend with temporal coordination"
+  - slug: "spatially-coupled-bimanual-dmps"
+    relationship: "same_family"
+    description: "Bimanual DMPs that can be combined with temporal coordination"

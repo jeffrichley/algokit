@@ -1,0 +1,402 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: option-critic
+name: Option-Critic
+family_id: hierarchical-rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "A hierarchical reinforcement learning algorithm that learns options (temporally extended actions) end-to-end using policy gradient methods."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Option-Critic is a hierarchical reinforcement learning algorithm that learns options (temporally
+  extended actions) end-to-end using policy gradient methods. The algorithm automatically discovers
+  useful options that can be reused across different tasks, enabling temporal abstraction and
+  improved sample efficiency.
+
+  This approach learns three components simultaneously: an option policy that selects actions given
+  an option, an option selection policy that chooses which option to execute, and termination
+  functions that determine when to end options. Option-Critic is particularly powerful in domains
+  where tasks have natural temporal structure, such as robotics manipulation, navigation, and
+  game playing.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Option space: Ω
+    - Action space: A
+    - Option policy: π_ω(a|s) for option ω
+    - Option selection policy: π_Ω(ω|s)
+    - Termination function: β_ω(s) for option ω
+    - Reward function: R(s,a,s')
+
+    Find option-critic policies that maximize expected cumulative reward:
+
+    π(a_t|s_t) = ∑_{ω_t} π_Ω(ω_t|s_t) · π_ω_t(a_t|s_t)
+
+  key_properties:
+    - name: "Option-Critic Policy Gradient Theorem"
+      formula: "∇_θ J(θ) = E_{τ ~ π_θ}[∑_{t=0}^T ∇_θ log π_Ω(ω_t|s_t) A_Ω(s_t, ω_t) + ∇_θ log π_ω(a_t|s_t, ω_t) A_ω(s_t, ω_t, a_t)]"
+      description: "Policy gradient decomposes into option selection and action selection components"
+    - name: "Option Advantage Function"
+      formula: "A_Ω(s_t, ω_t) = Q_Ω(s_t, ω_t) - V_Ω(s_t)"
+      description: "Advantage function for option selection"
+    - name: "Action Advantage Function"
+      formula: "A_ω(s_t, ω_t, a_t) = Q_ω(s_t, ω_t, a_t) - V_ω(s_t, ω_t)"
+      description: "Advantage function for action selection within options"
+
+# Key properties and characteristics
+properties:
+  - name: "End-to-End Learning"
+    description: "All components (option policy, selection policy, termination) learned simultaneously"
+    importance: "fundamental"
+  - name: "Automatic Option Discovery"
+    description: "Useful options emerge from learning without manual design"
+    importance: "fundamental"
+  - name: "Temporal Abstraction"
+    description: "Options operate over extended time horizons"
+    importance: "fundamental"
+  - name: "Reusability"
+    description: "Learned options can be applied to new tasks"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_option_critic"
+    name: "Basic Option-Critic (Recommended)"
+    description: "Standard Option-Critic implementation with option policy, selection policy, and termination networks"
+    complexity:
+      time: "O(batch_size × (option_policy_params + option_selection_params + termination_params))"
+      space: "O(batch_size × (state_size + option_size))"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import torch.nn.functional as F
+      import numpy as np
+
+      class OptionPolicyNetwork(nn.Module):
+          """Option policy network that selects actions given an option."""
+
+          def __init__(self, state_size: int, option_size: int, action_size: int, hidden_size: int = 128):
+              super(OptionPolicyNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size + option_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, action_size)
+
+          def forward(self, state: torch.Tensor, option: torch.Tensor) -> torch.Tensor:
+              # Concatenate state and option
+              combined = torch.cat([state, option], dim=-1)
+              x = F.relu(self.fc1(combined))
+              x = F.relu(self.fc2(x))
+              action_probs = F.softmax(self.fc3(x), dim=-1)
+              return action_probs
+
+      class OptionSelectionNetwork(nn.Module):
+          """Network that selects which option to execute."""
+
+          def __init__(self, state_size: int, option_size: int, hidden_size: int = 128):
+              super(OptionSelectionNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, option_size)
+
+          def forward(self, state: torch.Tensor) -> torch.Tensor:
+              x = F.relu(self.fc1(state))
+              x = F.relu(self.fc2(x))
+              option_probs = F.softmax(self.fc3(x), dim=-1)
+              return option_probs
+
+      class TerminationNetwork(nn.Module):
+          """Network that determines when to terminate options."""
+
+          def __init__(self, state_size: int, option_size: int, hidden_size: int = 128):
+              super(TerminationNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size + option_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, 1)
+
+          def forward(self, state: torch.Tensor, option: torch.Tensor) -> torch.Tensor:
+              # Concatenate state and option
+              combined = torch.cat([state, option], dim=-1)
+              x = F.relu(self.fc1(combined))
+              x = F.relu(self.fc2(x))
+              termination_prob = torch.sigmoid(self.fc3(x))
+              return termination_prob
+
+      class OptionCriticAgent:
+          """
+          Option-Critic agent implementation.
+
+          Args:
+              state_size: Dimension of state space
+              option_size: Number of options
+              action_size: Number of possible actions
+              option_policy_lr: Learning rate for option policy (default: 0.001)
+              option_selection_lr: Learning rate for option selection (default: 0.001)
+              termination_lr: Learning rate for termination function (default: 0.001)
+              discount_factor: Discount factor gamma (default: 0.99)
+          """
+
+          def __init__(self, state_size: int, option_size: int, action_size: int,
+                       option_policy_lr: float = 0.001, option_selection_lr: float = 0.001,
+                       termination_lr: float = 0.001, discount_factor: float = 0.99):
+
+              self.state_size = state_size
+              self.option_size = option_size
+              self.action_size = action_size
+              self.gamma = discount_factor
+
+              # Networks
+              self.option_policy = OptionPolicyNetwork(state_size, option_size, action_size)
+              self.option_selection = OptionSelectionNetwork(state_size, option_size)
+              self.termination = TerminationNetwork(state_size, option_size)
+
+              # Optimizers
+              self.option_policy_optimizer = optim.Adam(self.option_policy.parameters(), lr=option_policy_lr)
+              self.option_selection_optimizer = optim.Adam(self.option_selection.parameters(), lr=option_selection_lr)
+              self.termination_optimizer = optim.Adam(self.termination.parameters(), lr=termination_lr)
+
+              # Experience buffer
+              self.buffer = []
+
+              # Current option tracking
+              self.current_option = None
+
+          def get_option(self, state: np.ndarray) -> tuple[int, float]:
+              """Select option using option selection network."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              option_probs = self.option_selection(state_tensor)
+
+              # Sample option
+              dist = torch.distributions.Categorical(option_probs)
+              option = dist.sample()
+              log_prob = dist.log_prob(option)
+
+              return option.item(), log_prob.item()
+
+          def get_action(self, state: np.ndarray, option: int) -> tuple[int, float]:
+              """Get action using option policy network given option."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              option_tensor = torch.FloatTensor([option]).unsqueeze(0)
+
+              action_probs = self.option_policy(state_tensor, option_tensor)
+
+              # Sample action
+              dist = torch.distributions.Categorical(action_probs)
+              action = dist.sample()
+              log_prob = dist.log_prob(action)
+
+              return action.item(), log_prob.item()
+
+          def should_terminate(self, state: np.ndarray, option: int) -> bool:
+              """Check if current option should be terminated."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              option_tensor = torch.FloatTensor([option]).unsqueeze(0)
+
+              termination_prob = self.termination(state_tensor, option_tensor)
+              return torch.rand(1).item() < termination_prob.item()
+
+          def step(self, state: np.ndarray, action: int, reward: float,
+                  next_state: np.ndarray, done: bool) -> None:
+              """Process one step and potentially update option."""
+              # Store transition
+              self.buffer.append((state, self.current_option, action, reward, next_state, done))
+
+              # Check if option should be terminated
+              if (self.current_option is not None and 
+                  (self.should_terminate(next_state, self.current_option) or done)):
+                  # Select new option
+                  if not done:
+                      new_option, _ = self.get_option(next_state)
+                      self.current_option = new_option
+              elif self.current_option is None:
+                  # Initialize option
+                  self.current_option, _ = self.get_option(state)
+
+          def update_networks(self) -> None:
+              """Update all option-critic networks."""
+              if len(self.buffer) < 10:
+                  return
+
+              # Sample batch from buffer
+              batch = np.random.choice(len(self.buffer), min(32, len(self.buffer)), replace=False)
+
+              states, options, actions, rewards, next_states, dones = zip(*[self.buffer[i] for i in batch])
+
+              # Convert to tensors
+              states = torch.FloatTensor(states)
+              options = torch.LongTensor(options)
+              actions = torch.LongTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Update option policy
+              action_probs = self.option_policy(states, F.one_hot(options, self.option_size).float())
+              dist = torch.distributions.Categorical(action_probs)
+              log_probs = dist.log_prob(actions)
+
+              # Compute advantages (simplified)
+              advantages = rewards + self.gamma * torch.zeros_like(rewards) - torch.zeros_like(rewards)
+              policy_loss = -(log_probs * advantages.detach()).mean()
+
+              self.option_policy_optimizer.zero_grad()
+              policy_loss.backward()
+              self.option_policy_optimizer.step()
+
+              # Update option selection
+              option_probs = self.option_selection(states)
+              dist = torch.distributions.Categorical(option_probs)
+              log_probs = dist.log_prob(options)
+
+              # Compute advantages (simplified)
+              advantages = rewards + self.gamma * torch.zeros_like(rewards) - torch.zeros_like(rewards)
+              selection_loss = -(log_probs * advantages.detach()).mean()
+
+              self.option_selection_optimizer.zero_grad()
+              selection_loss.backward()
+              self.option_selection_optimizer.step()
+
+              # Update termination function
+              termination_probs = self.termination(states, F.one_hot(options, self.option_size).float())
+              
+              # Termination loss (simplified)
+              termination_loss = F.mse_loss(termination_probs, torch.zeros_like(termination_probs))
+
+              self.termination_optimizer.zero_grad()
+              termination_loss.backward()
+              self.termination_optimizer.step()
+    advantages:
+      - "End-to-end learning of all option components"
+      - "Automatic discovery of useful options"
+      - "Temporal abstraction enables learning at different time scales"
+      - "Options can be reused across different tasks"
+    disadvantages:
+      - "Requires careful coordination between three networks"
+      - "Option discovery can be challenging and slow"
+      - "Three networks increase complexity and training time"
+      - "Termination function learning can be unstable"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Option-Critic"
+      time: "O(batch_size × (option_policy_params + option_selection_params + termination_params))"
+      space: "O(batch_size × (state_size + option_size))"
+      notes: "Three-network architecture requires careful coordination and training"
+    
+    - approach: "Option-Critic with Value Functions"
+      time: "O(batch_size × (option_policy_params + option_selection_params + termination_params + value_params))"
+      space: "O(batch_size × (state_size + option_size))"
+      notes: "Value functions reduce variance but increase computational complexity"
+
+# Applications and use cases
+applications:
+  - category: "Robotics and Control"
+    examples:
+      - "Robot Manipulation: Complex manipulation tasks with reusable options"
+      - "Autonomous Navigation: Multi-level navigation with temporal abstraction"
+      - "Industrial Automation: Process control with learned options"
+      - "Swarm Robotics: Coordinated behavior with shared options"
+
+  - category: "Game AI and Strategy"
+    examples:
+      - "Strategy Games: Multi-level decision making with learned strategies"
+      - "Puzzle Games: Complex puzzles with reusable solution patterns"
+      - "Adventure Games: Quest completion with learned option sequences"
+      - "Simulation Games: Resource management with learned option policies"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Autonomous Vehicles: Multi-level driving with learned driving options"
+      - "Healthcare: Treatment planning with learned medical options"
+      - "Finance: Portfolio management with learned investment options"
+      - "Network Control: Traffic management with learned routing options"
+
+  - category: "Educational Value"
+    examples:
+      - "Option Learning: Understanding temporally extended actions"
+      - "Automatic Discovery: Learning useful behaviors without manual design"
+      - "Temporal Abstraction: Understanding different time scales in learning"
+      - "Transfer Learning: Learning reusable skills across different tasks"
+
+# Educational value and learning objectives
+educational_value:
+  - "Option Learning: Perfect introduction to temporally extended actions"
+  - "Automatic Discovery: Shows how useful behaviors can emerge from learning"
+  - "Temporal Abstraction: Demonstrates learning at different time scales"
+  - "Transfer Learning: Illustrates how options can be reused across tasks"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/hierarchical_rl/option_critic.py"
+      description: "Main implementation with option policy, selection, and termination networks"
+    - path: "tests/unit/hierarchical_rl/test_option_critic.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - bib_key: "bacon2017"
+        note: "Original Option-Critic paper introducing end-to-end option learning"
+      - bib_key: "sutton1999"
+        note: "Foundational work on options and temporal abstraction"
+
+  - category: "Hierarchical RL Textbooks"
+    items:
+      - bib_key: "sutton2018"
+        note: "Comprehensive introduction to reinforcement learning including options"
+      - bib_key: "szepesvari2010"
+        note: "Algorithms for reinforcement learning with option-based approaches"
+
+  - category: "Online Resources"
+    items:
+      - title: "Option-Critic Architecture"
+        url: "https://github.com/jeanleh/option-critic"
+        note: "Official Option-Critic implementation repository"
+      - title: "Options in Reinforcement Learning"
+        url: "https://en.wikipedia.org/wiki/Option_(reinforcement_learning)"
+        note: "Wikipedia article on options in reinforcement learning"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyTorch Documentation"
+        url: "https://pytorch.org/docs/"
+        note: "PyTorch deep learning framework documentation"
+      - title: "OpenAI Gym"
+        url: "https://www.gymlibrary.dev/"
+        note: "RL environments for testing option-based algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+
+# Tags for categorization and search
+tags:
+  - "hierarchical-rl"
+  - "option-critic"
+  - "temporal-abstraction"
+  - "options"
+  - "termination"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "feudal-networks"
+    relationship: "same_family"
+    description: "Another hierarchical RL approach with manager-worker architecture"
+  - slug: "hierarchical-actor-critic"
+    relationship: "same_family"
+    description: "Actor-critic version of hierarchical learning"

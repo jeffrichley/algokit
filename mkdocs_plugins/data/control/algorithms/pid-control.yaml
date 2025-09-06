@@ -1,0 +1,356 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: pid-control
+name: PID Control
+family_id: control
+
+# Brief one-sentence summary for cards and navigation
+summary: "Fundamental feedback control algorithm combining proportional, integral, and derivative actions to achieve desired system behavior."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  PID Control (Proportional-Integral-Derivative Control) is a fundamental feedback control algorithm that combines three control actions to achieve desired system behavior. The algorithm continuously calculates an error value as the difference between a desired setpoint and a measured process variable, then applies a correction based on proportional, integral, and derivative terms.
+
+  This approach is widely used in industrial control systems, robotics, automotive applications, and many other domains where precise control is required. PID controllers are valued for their simplicity, effectiveness, and ability to handle a wide range of control problems with minimal tuning.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    u(t) = K_p e(t) + K_i ∫₀ᵗ e(τ) dτ + K_d (d/dt) e(t)
+
+    Where:
+    - u(t) is the control output at time t
+    - e(t) = r(t) - y(t) is the error (setpoint - process variable)
+    - K_p is the proportional gain
+    - K_i is the integral gain
+    - K_d is the derivative gain
+
+  discrete_time_form: |
+    u_k = K_p e_k + K_i T_s ∑ᵢ₌₀ᵏ e_i + K_d (e_k - e_{k-1})/T_s
+
+    Where k represents the discrete time step and T_s is the sampling period.
+
+  key_properties:
+    - name: "Proportional Term"
+      formula: "K_p e(t)"
+      description: "Provides immediate response proportional to current error"
+    - name: "Integral Term"
+      formula: "K_i ∫₀ᵗ e(τ) dτ"
+      description: "Eliminates steady-state error by accumulating past errors"
+    - name: "Derivative Term"
+      formula: "K_d (d/dt) e(t)"
+      description: "Improves transient response and reduces overshoot"
+
+# Key properties and characteristics
+properties:
+  - name: "Linear Control"
+    description: "Simple linear combination of error terms"
+    importance: "fundamental"
+  - name: "Robust Performance"
+    description: "Works well across many different systems"
+    importance: "fundamental"
+  - name: "Easy Tuning"
+    description: "Three parameters provide intuitive control design"
+    importance: "implementation"
+  - name: "Wide Applicability"
+    description: "Suitable for many control problems"
+    importance: "application"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_pid"
+    name: "Basic PID Controller"
+    description: "Standard PID implementation with anti-windup and output limits"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      import numpy as np
+      from typing import Tuple, Optional
+
+      class PIDController:
+          """
+          Basic PID Controller implementation.
+
+          Args:
+              kp: Proportional gain
+              ki: Integral gain
+              kd: Derivative gain
+              setpoint: Desired target value
+              sample_time: Sampling time in seconds (default: 0.01)
+              output_limits: Tuple of (min, max) output limits (default: None)
+              anti_windup: Enable anti-windup for integral term (default: True)
+          """
+
+          def __init__(self, kp: float, ki: float, kd: float, setpoint: float = 0.0,
+                       sample_time: float = 0.01, output_limits: Optional[Tuple[float, float]] = None,
+                       anti_windup: bool = True):
+
+              # PID gains
+              self.kp = kp
+              self.ki = ki
+              self.kd = kd
+
+              # Control parameters
+              self.setpoint = setpoint
+              self.sample_time = sample_time
+              self.output_limits = output_limits
+              self.anti_windup = anti_windup
+
+              # State variables
+              self.prev_error = 0.0
+              self.integral = 0.0
+              self.output = 0.0
+
+          def set_setpoint(self, setpoint: float) -> None:
+              """Update the setpoint value."""
+              self.setpoint = setpoint
+
+          def compute(self, process_variable: float) -> float:
+              """
+              Compute the control output.
+
+              Args:
+                  process_variable: Current measured value
+
+              Returns:
+                  Control output value
+              """
+              # Calculate error
+              error = self.setpoint - process_variable
+
+              # Proportional term
+              proportional = self.kp * error
+
+              # Integral term with anti-windup
+              self.integral += error * self.sample_time
+              if self.anti_windup and self.output_limits:
+                  # Anti-windup: limit integral term
+                  if self.output >= self.output_limits[1] and error > 0:
+                      self.integral -= error * self.sample_time
+                  elif self.output <= self.output_limits[0] and error < 0:
+                      self.integral -= error * self.sample_time
+
+              integral = self.ki * self.integral
+
+              # Derivative term
+              derivative = self.kd * (error - self.prev_error) / self.sample_time
+
+              # Total output
+              self.output = proportional + integral + derivative
+
+              # Apply output limits
+              if self.output_limits:
+                  self.output = np.clip(self.output, self.output_limits[0], self.output_limits[1])
+
+              # Update previous error
+              self.prev_error = error
+
+              return self.output
+    advantages:
+      - "Simple and intuitive implementation"
+      - "Widely applicable to many systems"
+      - "Easy to tune with three parameters"
+      - "Includes anti-windup protection"
+    disadvantages:
+      - "May not work well for highly nonlinear systems"
+      - "Requires manual tuning for optimal performance"
+      - "Can be sensitive to measurement noise"
+
+  - type: "adaptive_pid"
+    name: "Adaptive PID Controller"
+    description: "PID with automatic gain adjustment based on system performance"
+    complexity:
+      time: "O(1)"
+      space: "O(1)"
+    code: |
+      class AdaptivePIDController(PIDController):
+          """
+          Adaptive PID Controller with automatic gain adjustment.
+          """
+
+          def __init__(self, kp: float, ki: float, kd: float, setpoint: float = 0.0,
+                       adaptation_rate: float = 0.01, **kwargs):
+
+              super().__init__(kp, ki, kd, setpoint, **kwargs)
+              self.adaptation_rate = adaptation_rate
+              self.performance_history = []
+
+          def adapt_gains(self, performance_metric: float) -> None:
+              """
+              Adapt PID gains based on performance metric.
+
+              Args:
+                  performance_metric: Performance measure (e.g., error magnitude)
+              """
+              self.performance_history.append(performance_metric)
+
+              if len(self.performance_history) > 10:
+                  # Calculate performance trend
+                  recent_performance = np.mean(self.performance_history[-5:])
+                  older_performance = np.mean(self.performance_history[-10:-5])
+
+                  if recent_performance > older_performance:
+                      # Performance degrading, increase gains
+                      self.kp *= (1 + self.adaptation_rate)
+                      self.ki *= (1 + self.adaptation_rate)
+                      self.kd *= (1 + self.adaptation_rate)
+                  else:
+                      # Performance improving, decrease gains slightly
+                      self.kp *= (1 - self.adaptation_rate * 0.5)
+                      self.ki *= (1 - self.adaptation_rate * 0.5)
+                      self.kd *= (1 - self.adaptation_rate * 0.5)
+    advantages:
+      - "Automatic gain adjustment"
+      - "Adapts to changing system conditions"
+      - "Reduces manual tuning effort"
+    disadvantages:
+      - "More complex than basic PID"
+      - "May require careful tuning of adaptation parameters"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic PID Controller"
+      time: "O(1)"
+      space: "O(1)"
+      notes: "Constant time and space complexity per control step"
+    - approach: "Adaptive PID Controller"
+      time: "O(1)"
+      space: "O(1)"
+      notes: "Still constant time, but with adaptation overhead"
+
+  performance_notes:
+    - "PID controllers are computationally efficient"
+    - "Suitable for real-time applications"
+    - "Memory requirements are minimal"
+
+# Applications and use cases
+applications:
+  - category: "Industrial Automation"
+    examples:
+      - "Process Control: Temperature, pressure, flow control in chemical plants"
+      - "Manufacturing: Position control in CNC machines and robotics"
+      - "Power Systems: Voltage and frequency regulation in power grids"
+      - "Quality Control: Maintaining product specifications in production lines"
+
+  - category: "Robotics and Mechatronics"
+    examples:
+      - "Robot Control: Joint position and velocity control"
+      - "Autonomous Vehicles: Steering, throttle, and brake control"
+      - "Drones: Altitude, attitude, and position control"
+      - "Manipulation: Force and position control in robotic arms"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Engine Control: Fuel injection and ignition timing"
+      - "Cruise Control: Maintaining constant vehicle speed"
+      - "ABS Systems: Wheel slip control during braking"
+      - "Steering Control: Lane keeping and parking assistance"
+
+  - category: "Consumer Electronics"
+    examples:
+      - "Camera Stabilization: Image stabilization in cameras and phones"
+      - "Audio Systems: Volume and equalizer control"
+      - "HVAC Systems: Temperature and humidity control"
+      - "Washing Machines: Water level and temperature control"
+
+  - category: "Aerospace"
+    examples:
+      - "Flight Control: Aircraft attitude and altitude control"
+      - "Satellite Control: Attitude and orbit control"
+      - "Missile Guidance: Target tracking and navigation"
+      - "Spacecraft Control: Docking and station-keeping"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Introduction to feedback control concepts"
+  - "System Analysis: Understanding system response characteristics"
+  - "Parameter Tuning: Learning to adjust controller parameters"
+  - "Real-time Systems: Understanding continuous control implementation"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/control/pid_control.py"
+      description: "Main implementation with basic and adaptive variants"
+    - path: "tests/unit/control/test_pid_control.py"
+      description: "Comprehensive test suite including performance tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Åström, K. J., & Hägglund, T."
+        year: "2006"
+        title: "Advanced PID Control"
+        publisher: "ISA - The Instrumentation, Systems and Automation Society"
+        note: "ISBN 978-1-55617-942-6"
+      - author: "Ogata, K."
+        year: "2010"
+        title: "Modern Control Engineering"
+        publisher: "Prentice Hall"
+        note: "ISBN 978-0-13-615673-4"
+
+  - category: "PID Control"
+    items:
+      - author: "Ziegler, J. G., & Nichols, N. B."
+        year: "1942"
+        title: "Optimum Settings for Automatic Controllers"
+        publisher: "Transactions of the ASME"
+        note: "Volume 64, pages 759-768"
+      - author: "Cohen, G. H., & Coon, G. A."
+        year: "1953"
+        title: "Theoretical Consideration of Retarded Control"
+        publisher: "Transactions of the ASME"
+        note: "Volume 75, pages 827-834"
+
+  - category: "Online Resources"
+    items:
+      - title: "PID Controller"
+        url: "https://en.wikipedia.org/wiki/PID_controller"
+        note: "Wikipedia article on PID controllers"
+      - title: "PID Control Tutorial"
+        url: "https://www.controleng.com/articles/pid-control-tutorial/"
+        note: "Control Engineering PID tutorial"
+      - title: "PID Tuning Methods"
+        url: "https://www.mathworks.com/help/control/ug/pid-tuning-guide.html"
+        note: "MATLAB PID tuning guide"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "Control Systems Toolbox"
+        url: "https://www.mathworks.com/products/control.html"
+        note: "MATLAB toolbox for control system design"
+      - title: "PID Controller Design"
+        url: "https://www.ni.com/en-us/innovations/white-papers/06/pid-theory-explained.html"
+        note: "National Instruments PID theory guide"
+
+# Tags for categorization and search
+tags:
+  - "control"
+  - "pid-control"
+  - "feedback-control"
+  - "linear-control"
+  - "real-time-control"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "adaptive-control"
+    relationship: "same_family"
+    description: "Advanced control method that can adapt PID parameters automatically"
+  - slug: "robust-control"
+    relationship: "same_family"
+    description: "More sophisticated control for systems with uncertainties"

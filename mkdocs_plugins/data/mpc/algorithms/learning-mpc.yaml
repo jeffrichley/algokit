@@ -1,0 +1,550 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: learning-mpc
+name: Learning MPC
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control that learns system dynamics and improves performance through data-driven approaches, combining machine learning with predictive control."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Learning MPC combines the predictive control framework with machine learning techniques to learn system dynamics and improve control performance over time. Unlike traditional MPC, which relies on pre-specified system models, Learning MPC uses data-driven approaches to identify system behavior and adapt the control strategy accordingly.
+
+  This approach is particularly valuable when system models are unknown, complex, or time-varying. Learning MPC can handle nonlinear systems, adapt to changing conditions, and improve performance through experience. The key challenge is to balance exploration (learning about the system) with exploitation (using learned knowledge for control) while maintaining stability and constraint satisfaction.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    For unknown system: x(k+1) = f(x(k), u(k), d(k)) + ε(k)
+    where f(·) is unknown and ε(k) represents model uncertainty.
+    
+    The Learning MPC formulation is:
+    
+    min_{U_k} J(x(k), U_k) = Σ_{i=0}^{N_p-1} ||y(k+i|k) - r(k+i)||_Q² + Σ_{i=0}^{N_c-1} ||u(k+i)||_R²
+    
+    Subject to:
+    - x(k+i+1|k) = f̂(x(k+i|k), u(k+i), d(k+i)) (learned model)
+    - y(k+i|k) = ĥ(x(k+i|k), u(k+i)) (learned output function)
+    - g(x(k+i|k), u(k+i)) ≤ 0
+    - u_min ≤ u(k+i) ≤ u_max
+    - x_min ≤ x(k+i|k) ≤ x_max
+    
+    Where:
+    - f̂(·) and ĥ(·) are learned models
+    - Models are updated using collected data
+    - Uncertainty bounds can be incorporated
+
+  discrete_time_form: |
+    Learning and control cycle:
+    
+    1. Collect data: D = {(x(k), u(k), x(k+1))}
+    2. Update model: f̂ ← Learn(D)
+    3. Solve MPC: U_k ← MPC(x(k), f̂)
+    4. Apply control: u(k) ← U_k[0]
+    5. Observe result: x(k+1)
+    6. Repeat
+    
+    Model learning approaches:
+    - Neural networks: f̂(x,u) = NN(x,u; θ)
+    - Gaussian processes: f̂(x,u) ~ GP(μ(x,u), k(x,u,x',u'))
+    - Linear regression: f̂(x,u) = Ax + Bu
+
+  key_properties:
+    - name: "Data-driven Learning"
+      formula: "f̂ ← Learn(D)"
+      description: "Learns system dynamics from data"
+    - name: "Adaptive Control"
+      formula: "U_k ← MPC(x(k), f̂)"
+      description: "Adapts control strategy based on learned model"
+    - name: "Uncertainty Quantification"
+      formula: "f̂(x,u) ± σ(x,u)"
+      description: "Provides uncertainty bounds for robust control"
+
+# Key properties and characteristics
+properties:
+  - name: "Data-driven Learning"
+    description: "Learns system dynamics from collected data"
+    importance: "fundamental"
+  - name: "Adaptive Control"
+    description: "Adapts control strategy based on learned knowledge"
+    importance: "fundamental"
+  - name: "Uncertainty Quantification"
+    description: "Provides uncertainty bounds for robust control"
+    importance: "theoretical"
+  - name: "Exploration vs Exploitation"
+    description: "Balances learning with control performance"
+    importance: "implementation"
+  - name: "Online Learning"
+    description: "Continuously updates models during operation"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "neural_network_learning_mpc"
+    name: "Neural Network Learning MPC Controller"
+    description: "Learning MPC using neural networks for system identification"
+    complexity:
+      time: "O(N³ + M)"
+      space: "O(N² + M)"
+    code: |
+      import numpy as np
+      import torch
+      import torch.nn as nn
+      from scipy.optimize import minimize
+      from typing import Optional, Tuple, List, Dict
+
+      class NeuralNetworkModel(nn.Module):
+          """Neural network model for system identification."""
+          
+          def __init__(self, state_dim: int, input_dim: int, hidden_dim: int = 64):
+              super().__init__()
+              self.state_dim = state_dim
+              self.input_dim = input_dim
+              
+              self.network = nn.Sequential(
+                  nn.Linear(state_dim + input_dim, hidden_dim),
+                  nn.ReLU(),
+                  nn.Linear(hidden_dim, hidden_dim),
+                  nn.ReLU(),
+                  nn.Linear(hidden_dim, state_dim)
+              )
+          
+          def forward(self, x: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+              """Forward pass through the network."""
+              xu = torch.cat([x, u], dim=-1)
+              return self.network(xu)
+
+      class LearningMPCController:
+          """
+          Learning MPC Controller using neural networks.
+
+          Args:
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              state_dim: Dimension of state vector
+              input_dim: Dimension of input vector
+              output_dim: Dimension of output vector
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              learning_rate: Learning rate for neural network
+              exploration_rate: Rate of exploration for learning
+          """
+
+          def __init__(self, prediction_horizon: int, control_horizon: int,
+                       state_dim: int, input_dim: int, output_dim: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       learning_rate: float = 0.001, exploration_rate: float = 0.1):
+
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              self.nx = state_dim
+              self.nu = input_dim
+              self.ny = output_dim
+              self.exploration_rate = exploration_rate
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+
+              # Neural network model
+              self.model = NeuralNetworkModel(state_dim, input_dim)
+              self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+              self.criterion = nn.MSELoss()
+
+              # Data storage for learning
+              self.data_buffer = []
+              self.max_buffer_size = 10000
+
+              # System functions (to be set by user)
+              self.h = None  # Output function
+              self.g = None  # Inequality constraints
+
+          def set_system_functions(self, h: callable, g: Optional[callable] = None) -> None:
+              """
+              Set system functions.
+
+              Args:
+                  h: Output function h(x, u) -> y
+                  g: Inequality constraints g(x, u) -> g_val
+              """
+              self.h = h
+              self.g = g
+
+          def add_data(self, x: np.ndarray, u: np.ndarray, x_next: np.ndarray) -> None:
+              """
+              Add new data point to the learning buffer.
+
+              Args:
+                  x: Current state
+                  u: Applied input
+                  x_next: Next state
+              """
+              self.data_buffer.append((x.copy(), u.copy(), x_next.copy()))
+              
+              # Maintain buffer size
+              if len(self.data_buffer) > self.max_buffer_size:
+                  self.data_buffer.pop(0)
+
+          def update_model(self, batch_size: int = 32, epochs: int = 10) -> None:
+              """
+              Update the neural network model using collected data.
+
+              Args:
+                  batch_size: Batch size for training
+                  epochs: Number of training epochs
+              """
+              if len(self.data_buffer) < batch_size:
+                  return
+
+              # Convert data to tensors
+              data = np.array(self.data_buffer)
+              x_data = torch.FloatTensor(data[:, 0, :])
+              u_data = torch.FloatTensor(data[:, 1, :])
+              x_next_data = torch.FloatTensor(data[:, 2, :])
+
+              # Training loop
+              for epoch in range(epochs):
+                  # Create batches
+                  indices = torch.randperm(len(x_data))
+                  for i in range(0, len(x_data), batch_size):
+                      batch_indices = indices[i:i+batch_size]
+                      x_batch = x_data[batch_indices]
+                      u_batch = u_data[batch_indices]
+                      x_next_batch = x_next_data[batch_indices]
+
+                      # Forward pass
+                      x_pred = self.model(x_batch, u_batch)
+                      
+                      # Compute loss
+                      loss = self.criterion(x_pred, x_next_batch)
+                      
+                      # Backward pass
+                      self.optimizer.zero_grad()
+                      loss.backward()
+                      self.optimizer.step()
+
+          def _predict_trajectory(self, x0: np.ndarray, U: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Predict state and output trajectories using learned model.
+
+              Args:
+                  x0: Initial state
+                  U: Control sequence
+
+              Returns:
+                  Tuple of (state_trajectory, output_trajectory)
+              """
+              X = np.zeros((self.Np, self.nx))
+              Y = np.zeros((self.Np, self.ny))
+              
+              x = x0.copy()
+              for i in range(self.Np):
+                  if i < self.Nc:
+                      u = U[i]
+                  else:
+                      u = U[-1]  # Hold last control action
+                  
+                  # Predict next state using learned model
+                  x_tensor = torch.FloatTensor(x).unsqueeze(0)
+                  u_tensor = torch.FloatTensor(u).unsqueeze(0)
+                  with torch.no_grad():
+                      x_next_tensor = self.model(x_tensor, u_tensor)
+                      x = x_next_tensor.squeeze(0).numpy()
+                  
+                  X[i] = x
+                  
+                  # Predict output
+                  if self.h is not None:
+                      Y[i] = self.h(x, u)
+              
+              return X, Y
+
+          def _objective_function(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
+              """
+              Objective function for optimization.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+                  r: Reference trajectory
+
+              Returns:
+                  Objective function value
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_trajectory(x0, U)
+              
+              # Tracking cost
+              tracking_cost = 0.0
+              for i in range(self.Np):
+                  error = Y[i] - r[i]
+                  tracking_cost += error.T @ self.Q @ error
+              
+              # Control cost
+              control_cost = 0.0
+              for i in range(self.Nc):
+                  control_cost += U[i].T @ self.R @ U[i]
+              
+              return tracking_cost + control_cost
+
+          def _constraints(self, U_flat: np.ndarray, x0: np.ndarray) -> List[dict]:
+              """
+              Constraint functions for optimization.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+
+              Returns:
+                  List of constraint dictionaries
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_trajectory(x0, U)
+              
+              constraints = []
+              
+              # Inequality constraints
+              if self.g is not None:
+                  for i in range(self.Np):
+                      if i < self.Nc:
+                          u = U[i]
+                      else:
+                          u = U[-1]
+                      
+                      g_val = self.g(X[i], u)
+                      if g_val.size > 0:
+                          constraints.append({
+                              'type': 'ineq',
+                              'fun': lambda x, i=i, u=u: -self.g(X[i], u)
+                          })
+              
+              return constraints
+
+          def solve_learning_mpc(self, x0: np.ndarray, r: np.ndarray,
+                                u_min: Optional[np.ndarray] = None,
+                                u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve Learning MPC optimization problem.
+
+              Args:
+                  x0: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal control sequence
+              """
+              if self.h is None:
+                  raise ValueError("System functions must be set before solving")
+
+              # Initial guess
+              U0 = np.zeros(self.Nc * self.nu)
+              
+              # Bounds
+              bounds = []
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Constraints
+              constraints = self._constraints(U0, x0)
+
+              # Solve optimization problem
+              result = minimize(
+                  fun=lambda u: self._objective_function(u, x0, r),
+                  x0=U0,
+                  method='SLSQP',
+                  bounds=bounds,
+                  constraints=constraints,
+                  options={'maxiter': 1000}
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def control_step(self, x: np.ndarray, r: np.ndarray,
+                          u_min: Optional[np.ndarray] = None,
+                          u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Perform one Learning MPC control step.
+
+              Args:
+                  x: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Control action to apply
+              """
+              # Solve learning MPC problem
+              U_opt = self.solve_learning_mpc(x, r, u_min, u_max)
+              
+              # Add exploration noise
+              if np.random.random() < self.exploration_rate:
+                  exploration_noise = np.random.normal(0, 0.1, self.nu)
+                  U_opt[0] += exploration_noise
+              
+              # Return first control action
+              return U_opt[0]
+    advantages:
+      - "Learns system dynamics from data"
+      - "Adapts to changing system conditions"
+      - "Handles unknown or complex systems"
+      - "Improves performance over time"
+    disadvantages:
+      - "Requires sufficient data for learning"
+      - "May be unstable during learning phase"
+      - "Computationally intensive due to learning"
+      - "Requires careful tuning of learning parameters"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Neural Network Learning MPC"
+      time: "O(N³ + M)"
+      space: "O(N² + M)"
+      notes: "Complexity depends on prediction horizon N and model size M"
+    - approach: "Gaussian Process Learning MPC"
+      time: "O(N³ + D³)"
+      space: "O(N² + D²)"
+      notes: "Scales with data size D"
+
+  performance_notes:
+    - "Learning adds computational overhead"
+    - "Model complexity affects prediction accuracy"
+    - "Memory requirements scale with data size"
+
+# Applications and use cases
+applications:
+  - category: "Robotics and Mechatronics"
+    examples:
+      - "Manipulator Control: Learning robot dynamics for precise control"
+      - "Mobile Robot Navigation: Learning terrain and obstacle dynamics"
+      - "Humanoid Robots: Learning balance and locomotion patterns"
+      - "Industrial Robots: Learning task-specific dynamics"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Autonomous Vehicles: Learning vehicle dynamics and traffic patterns"
+      - "Engine Control: Learning combustion dynamics and fuel efficiency"
+      - "Vehicle Dynamics: Learning tire and suspension characteristics"
+      - "Hybrid Vehicles: Learning energy management strategies"
+
+  - category: "Process Industries"
+    examples:
+      - "Chemical Plants: Learning reactor dynamics and catalyst behavior"
+      - "Oil Refineries: Learning distillation column dynamics"
+      - "Power Plants: Learning boiler and turbine characteristics"
+      - "Manufacturing: Learning production process dynamics"
+
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Learning aircraft dynamics and aerodynamic effects"
+      - "Spacecraft Guidance: Learning orbital dynamics and perturbations"
+      - "UAV Control: Learning flight dynamics and environmental effects"
+      - "Satellite Control: Learning attitude dynamics and disturbances"
+
+  - category: "Energy Systems"
+    examples:
+      - "Smart Grids: Learning power system dynamics and demand patterns"
+      - "Renewable Energy: Learning wind and solar power generation"
+      - "Battery Management: Learning battery aging and charging dynamics"
+      - "Microgrids: Learning distributed energy resource dynamics"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Learning-based control and adaptive systems"
+  - "Machine Learning: Neural networks and system identification"
+  - "Optimization: Real-time optimization with learned models"
+  - "System Analysis: Data-driven modeling and uncertainty quantification"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/learning_mpc.py"
+      description: "Main implementation with neural network learning"
+    - path: "tests/unit/mpc/test_learning_mpc.py"
+      description: "Comprehensive test suite including learning performance tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+
+  - category: "Learning MPC Theory"
+    items:
+      - author: "Hewing, L., Wabersich, K. P., Menner, M., & Zeilinger, M. N."
+        year: "2020"
+        title: "Learning-based model predictive control: Toward safe learning in control"
+        publisher: "Annual Review of Control, Robotics, and Autonomous Systems"
+        note: "Volume 3, pages 269-296"
+      - author: "Kocijan, J., Murray-Smith, R., Rasmussen, C. E., & Girard, A."
+        year: "2004"
+        title: "Gaussian process model based predictive control"
+        publisher: "Proceedings of the 2004 American Control Conference"
+        note: "Pages 2214-2219"
+
+  - category: "Online Resources"
+    items:
+      - title: "Learning MPC"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "Neural Network Control"
+        url: "https://www.controleng.com/articles/neural-network-model-predictive-control/"
+        note: "Control Engineering article on neural network MPC"
+      - title: "Gaussian Process Control"
+        url: "https://www.mathworks.com/help/stats/gaussian-process-regression.html"
+        note: "MATLAB Gaussian Process Regression documentation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyTorch"
+        url: "https://pytorch.org/"
+        note: "Deep learning framework for neural networks"
+      - title: "GPyTorch"
+        url: "https://gpytorch.ai/"
+        note: "Gaussian process library built on PyTorch"
+      - title: "Scikit-learn"
+        url: "https://scikit-learn.org/"
+        note: "Machine learning library for Python"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "learning-mpc"
+  - "machine-learning"
+  - "neural-networks"
+  - "adaptive-control"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "model-predictive-control"
+    relationship: "extension"
+    description: "Learning MPC extends standard MPC with machine learning"
+  - slug: "nonlinear-mpc"
+    relationship: "extension"
+    description: "Learning MPC can learn nonlinear system dynamics"
+  - slug: "robust-mpc"
+    relationship: "complementary"
+    description: "Learning MPC can be combined with robust MPC for uncertainty handling"

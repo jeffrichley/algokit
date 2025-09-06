@@ -5,8 +5,6 @@
 slug: coin-change
 name: Coin Change Problem
 family_id: dp
-aliases: [coin_change, minimum_coins]
-order: 20
 
 # Brief one-sentence summary for cards and navigation
 summary: "Find the minimum number of coins needed to make a given amount using dynamic programming."

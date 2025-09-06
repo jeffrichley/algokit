@@ -1,0 +1,340 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: feudal-networks
+name: Feudal Networks (FuN)
+family_id: hierarchical-rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "A hierarchical reinforcement learning algorithm that implements a manager-worker architecture for temporal abstraction and goal-based learning."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Feudal Networks (FuN) is a hierarchical reinforcement learning algorithm that implements a manager-worker
+  architecture for temporal abstraction. The algorithm consists of two neural networks: a manager that operates
+  at a high level and sets abstract goals, and a worker that operates at a low level and executes actions
+  to achieve these goals.
+
+  This hierarchical approach enables the agent to solve complex, long-horizon tasks by breaking them down
+  into manageable subproblems. The manager learns to set useful goals, while the worker learns to achieve
+  specific goals efficiently. Feudal Networks are particularly powerful in domains where tasks have natural
+  hierarchical structure, such as robotics manipulation, navigation, and game playing.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Goal space: G
+    - Action space: A
+    - Manager policy: π_m(g_t|s_t)
+    - Worker policy: π_w(a_t|s_t, g_t)
+    - Reward function: R(s,a,s')
+
+    Find hierarchical policies that maximize expected cumulative reward:
+
+    π_h(a_t|s_t) = ∑_{g_t} π_m(g_t|s_t) · π_w(a_t|s_t, g_t)
+
+  key_properties:
+    - name: "Manager-Worker Architecture"
+      formula: "π_m(g_t|s_t) = softmax(f_m(s_t))"
+      description: "Manager selects goals using neural network f_m"
+    - name: "Worker Policy"
+      formula: "π_w(a_t|s_t, g_t) = softmax(f_w(s_t, g_t))"
+      description: "Worker executes actions given state and goal"
+    - name: "Hierarchical Value Function"
+      formula: "V_h(s_t) = E_{g_t ~ π_m}[V_w(s_t, g_t)]"
+      description: "Value function decomposes into manager and worker components"
+
+# Key properties and characteristics
+properties:
+  - name: "Manager-Worker Architecture"
+    description: "Clear separation of high-level planning and low-level execution"
+    importance: "fundamental"
+  - name: "Temporal Abstraction"
+    description: "Manager operates over longer time horizons than worker"
+    importance: "fundamental"
+  - name: "Goal-Based Learning"
+    description: "Worker learns to achieve abstract goals set by manager"
+    importance: "fundamental"
+  - name: "Hierarchical Learning"
+    description: "Both networks learn simultaneously with different objectives"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_feudal_networks"
+    name: "Basic Feudal Networks (Recommended)"
+    description: "Standard FuN implementation with manager and worker networks"
+    complexity:
+      time: "O(batch_size × (manager_params + worker_params))"
+      space: "O(batch_size × (state_size + goal_size))"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import torch.nn.functional as F
+      import numpy as np
+
+      class ManagerNetwork(nn.Module):
+          """Manager network that selects abstract goals."""
+
+          def __init__(self, state_size: int, goal_size: int, hidden_size: int = 128):
+              super(ManagerNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, goal_size)
+
+          def forward(self, state: torch.Tensor) -> torch.Tensor:
+              x = F.relu(self.fc1(state))
+              x = F.relu(self.fc2(x))
+              goal_probs = F.softmax(self.fc3(x), dim=-1)
+              return goal_probs
+
+      class WorkerNetwork(nn.Module):
+          """Worker network that executes actions given goals."""
+
+          def __init__(self, state_size: int, goal_size: int, action_size: int, hidden_size: int = 128):
+              super(WorkerNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size + goal_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, action_size)
+
+          def forward(self, state: torch.Tensor, goal: torch.Tensor) -> torch.Tensor:
+              # Concatenate state and goal
+              combined = torch.cat([state, goal], dim=-1)
+              x = F.relu(self.fc1(combined))
+              x = F.relu(self.fc2(x))
+              action_probs = F.softmax(self.fc3(x), dim=-1)
+              return action_probs
+
+      class FeudalNetworkAgent:
+          """
+          Feudal Networks agent implementation.
+
+          Args:
+              state_size: Dimension of state space
+              goal_size: Dimension of goal space
+              action_size: Number of possible actions
+              manager_lr: Learning rate for manager network (default: 0.001)
+              worker_lr: Learning rate for worker network (default: 0.001)
+              discount_factor: Discount factor gamma (default: 0.99)
+              goal_horizon: Maximum steps to achieve goal (default: 50)
+          """
+
+          def __init__(self, state_size: int, goal_size: int, action_size: int,
+                       manager_lr: float = 0.001, worker_lr: float = 0.001,
+                       discount_factor: float = 0.99, goal_horizon: int = 50):
+
+              self.state_size = state_size
+              self.goal_size = goal_size
+              self.action_size = action_size
+              self.gamma = discount_factor
+              self.goal_horizon = goal_horizon
+
+              # Networks
+              self.manager = ManagerNetwork(state_size, goal_size)
+              self.worker = WorkerNetwork(state_size, goal_size, action_size)
+
+              # Optimizers
+              self.manager_optimizer = optim.Adam(self.manager.parameters(), lr=manager_lr)
+              self.worker_optimizer = optim.Adam(self.worker.parameters(), lr=worker_lr)
+
+              # Experience buffers
+              self.manager_buffer = []
+              self.worker_buffer = []
+
+              # Current goal tracking
+              self.current_goal = None
+              self.goal_steps = 0
+
+          def get_goal(self, state: np.ndarray) -> tuple[int, float]:
+              """Select goal using manager network."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              goal_probs = self.manager(state_tensor)
+
+              # Sample goal
+              dist = torch.distributions.Categorical(goal_probs)
+              goal = dist.sample()
+              log_prob = dist.log_prob(goal)
+
+              return goal.item(), log_prob.item()
+
+          def get_action(self, state: np.ndarray, goal: int) -> tuple[int, float]:
+              """Get action using worker network given goal."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              goal_tensor = torch.FloatTensor([goal]).unsqueeze(0)
+
+              action_probs = self.worker(state_tensor, goal_tensor)
+
+              # Sample action
+              dist = torch.distributions.Categorical(action_probs)
+              action = dist.sample()
+              log_prob = dist.log_prob(action)
+
+              return action.item(), log_prob.item()
+
+          def step(self, state: np.ndarray, action: int, reward: float,
+                  next_state: np.ndarray, done: bool) -> None:
+              """Process one step and potentially update goal."""
+              # Store worker transition
+              if self.current_goal is not None:
+                  self.worker_buffer.append((state, self.current_goal, action, reward, next_state, done))
+
+              # Check if goal should be updated
+              self.goal_steps += 1
+              if (self.goal_steps >= self.goal_horizon or
+                  self.is_goal_achieved(state, next_state) or done):
+
+                  # Store manager transition
+                  if len(self.worker_buffer) > 0:
+                      total_reward = sum(r for _, _, _, r, _, _ in self.worker_buffer)
+                      self.manager_buffer.append((state, self.current_goal, total_reward, next_state, done))
+
+                  # Select new goal
+                  if not done:
+                      new_goal, _ = self.get_goal(next_state)
+                      self.current_goal = new_goal
+                      self.goal_steps = 0
+
+                  # Clear worker buffer
+                  self.worker_buffer.clear()
+
+          def is_goal_achieved(self, state: np.ndarray, next_state: np.ndarray) -> bool:
+              """Check if current goal has been achieved."""
+              # Simple distance-based goal achievement
+              # In practice, this would be domain-specific
+              return np.linalg.norm(next_state - state) < 0.1
+
+          def update_networks(self) -> None:
+              """Update both manager and worker networks."""
+              self.update_worker_network()
+              self.update_manager_network()
+    advantages:
+      - "Clear separation of high-level planning and low-level execution"
+      - "Temporal abstraction enables learning at different time scales"
+      - "Goal-based learning allows for skill reuse"
+      - "Hierarchical structure improves sample efficiency"
+    disadvantages:
+      - "Requires careful coordination between manager and worker"
+      - "Goal achievement detection can be challenging"
+      - "Two networks increase complexity and training time"
+      - "Goal horizon parameter needs careful tuning"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic FuN"
+      time: "O(batch_size × (manager_params + worker_params))"
+      space: "O(batch_size × (state_size + goal_size))"
+      notes: "Two-network architecture requires coordination and careful training"
+    
+    - approach: "FuN with Experience Replay"
+      time: "O(batch_size × (manager_params + worker_params))"
+      space: "O(batch_size × (state_size + goal_size) + buffer_size)"
+      notes: "Experience replay improves sample efficiency but increases memory usage"
+
+# Applications and use cases
+applications:
+  - category: "Robotics and Control"
+    examples:
+      - "Robot Manipulation: Complex manipulation tasks with hierarchical goals"
+      - "Autonomous Navigation: Multi-level navigation planning and execution"
+      - "Industrial Automation: Process optimization with temporal abstraction"
+      - "Swarm Robotics: Coordinated multi-agent behavior with hierarchical control"
+
+  - category: "Game AI and Entertainment"
+    examples:
+      - "Strategy Games: Multi-level decision making and planning"
+      - "Open-World Games: Complex task decomposition and execution"
+      - "Simulation Games: Resource management with hierarchical objectives"
+      - "Virtual Environments: NPC behavior with long-term objectives"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Autonomous Vehicles: Multi-level driving behavior and navigation"
+      - "Healthcare: Treatment planning with hierarchical objectives"
+      - "Finance: Portfolio management with temporal abstraction"
+      - "Network Control: Traffic management with hierarchical policies"
+
+  - category: "Educational Value"
+    examples:
+      - "Manager-Worker Architecture: Understanding hierarchical control systems"
+      - "Goal-Based Learning: Learning to set and achieve abstract goals"
+      - "Temporal Abstraction: Understanding different time scales in learning"
+      - "Transfer Learning: Learning reusable worker skills across tasks"
+
+# Educational value and learning objectives
+educational_value:
+  - "Hierarchical Control: Perfect example of manager-worker architecture"
+  - "Goal Setting: Shows how to set abstract goals for workers"
+  - "Temporal Abstraction: Demonstrates learning at different time scales"
+  - "Skill Reuse: Illustrates how worker skills can be reused across tasks"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/hierarchical_rl/feudal_networks.py"
+      description: "Main implementation with manager-worker architecture"
+    - path: "tests/unit/hierarchical_rl/test_feudal_networks.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - bib_key: "vezhnevets2017"
+        note: "Original Feudal Networks paper introducing manager-worker architecture"
+
+  - category: "Hierarchical RL Textbooks"
+    items:
+      - bib_key: "sutton2018"
+        note: "Comprehensive introduction to reinforcement learning including hierarchical methods"
+      - bib_key: "kaelbling1998"
+        note: "Foundational work on hierarchical reinforcement learning"
+
+  - category: "Online Resources"
+    items:
+      - title: "Feudal Networks - Wikipedia"
+        url: "https://en.wikipedia.org/wiki/Feudal_networks"
+        note: "Wikipedia article on Feudal Networks"
+      - title: "Hierarchical RL Tutorial"
+        url: "https://spinningup.openai.com/en/latest/spinningup/rl_intro3.html"
+        note: "OpenAI Spinning Up tutorial on hierarchical RL"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyTorch Documentation"
+        url: "https://pytorch.org/docs/"
+        note: "PyTorch deep learning framework documentation"
+      - title: "OpenAI Gym"
+        url: "https://www.gymlibrary.dev/"
+        note: "RL environments for testing algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+
+# Tags for categorization and search
+tags:
+  - "hierarchical-rl"
+  - "feudal-networks"
+  - "manager-worker"
+  - "temporal-abstraction"
+  - "goal-based-learning"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "hierarchical-actor-critic"
+    relationship: "same_family"
+    description: "Another hierarchical RL approach with actor-critic architecture"
+  - slug: "option-critic"
+    relationship: "same_family"
+    description: "Option-based hierarchical RL with automatic option discovery"

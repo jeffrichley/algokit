@@ -1,0 +1,562 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: ppo
+name: Proximal Policy Optimization (PPO)
+family_id: rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "A state-of-the-art policy gradient algorithm that uses clipped objective to ensure stable policy updates with improved sample efficiency."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Proximal Policy Optimization (PPO) is a state-of-the-art policy gradient algorithm that
+  addresses the stability issues of traditional policy gradient methods. It uses a clipped
+  objective function to prevent large policy updates that could destabilize learning,
+  while maintaining the sample efficiency benefits of policy gradient methods.
+
+  PPO is particularly effective because it combines the benefits of both policy gradient
+  and trust region methods. It uses a clipped surrogate objective that constrains the
+  policy update to stay within a trust region, preventing the policy from changing too
+  dramatically in a single update. This makes PPO more stable and reliable than previous
+  policy gradient methods like REINFORCE or basic Actor-Critic.
+
+  The algorithm has become one of the most popular and successful reinforcement learning
+  algorithms, achieving state-of-the-art performance on a wide range of tasks including
+  continuous control, game playing, and robotics applications.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Action space: A
+    - Policy: π(a|s;θ) parameterized by θ
+    - Value function: V(s;φ) parameterized by φ
+    - Reward function: R(s,a,s')
+    - Discount factor: γ ∈ [0,1]
+    - Clipping parameter: ε ∈ (0,1)
+
+    Find parameters θ and φ that maximize the clipped surrogate objective:
+
+    L^CLIP(θ) = E[min(r_t(θ)A_t, clip(r_t(θ), 1-ε, 1+ε)A_t)]
+
+    Where:
+    - r_t(θ) = π(a_t|s_t;θ) / π(a_t|s_t;θ_old) is the probability ratio
+    - A_t is the advantage estimate
+    - clip(x, a, b) = min(max(x, a), b)
+
+  key_properties:
+    - name: "Clipped Surrogate Objective"
+      formula: "L^CLIP(θ) = E[min(r_t(θ)A_t, clip(r_t(θ), 1-ε, 1+ε)A_t)]"
+      description: "Prevents large policy updates by clipping the probability ratio"
+    - name: "Trust Region Constraint"
+      formula: "|r_t(θ) - 1| ≤ ε"
+      description: "Ensures policy updates stay within trust region"
+    - name: "Advantage Estimation"
+      formula: "A_t = Q^π(s_t,a_t) - V^π(s_t)"
+      description: "Advantage computed as difference between Q-value and state value"
+
+# Key properties and characteristics
+properties:
+  - name: "Stable Learning"
+    description: "Clipped objective prevents large policy updates"
+    importance: "fundamental"
+  - name: "Sample Efficient"
+    description: "Can reuse data for multiple policy updates"
+    importance: "fundamental"
+  - name: "Easy to Implement"
+    description: "Simple algorithm with few hyperparameters"
+    importance: "implementation"
+  - name: "Versatile"
+    description: "Works well on both discrete and continuous action spaces"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_ppo"
+    name: "Basic PPO"
+    description: "Standard PPO with clipped objective and value function"
+    complexity:
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import numpy as np
+      from typing import List, Tuple
+      from collections import deque
+
+      class PPONetwork(nn.Module):
+          """
+          PPO network combining actor and critic.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
+              """
+              Initialize PPO network.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  hidden_dim: Hidden layer dimension
+              """
+              super(PPONetwork, self).__init__()
+              
+              # Shared layers
+              self.shared_fc1 = nn.Linear(state_dim, hidden_dim)
+              self.shared_fc2 = nn.Linear(hidden_dim, hidden_dim)
+              
+              # Actor head
+              self.actor_mean = nn.Linear(hidden_dim, action_dim)
+              self.actor_log_std = nn.Linear(hidden_dim, action_dim)
+              
+              # Critic head
+              self.critic = nn.Linear(hidden_dim, 1)
+              
+              self.relu = nn.ReLU()
+
+          def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+              """
+              Forward pass through the network.
+
+              Args:
+                  x: Input state tensor
+
+              Returns:
+                  Tuple of (mean, log_std, value)
+              """
+              x = self.relu(self.shared_fc1(x))
+              x = self.relu(self.shared_fc2(x))
+              
+              mean = self.actor_mean(x)
+              log_std = self.actor_log_std(x)
+              value = self.critic(x)
+              
+              return mean, log_std, value
+
+          def get_action(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+              """
+              Sample action from policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Tuple of (action, log_prob, value)
+              """
+              mean, log_std, value = self.forward(state)
+              std = torch.exp(log_std)
+              normal = torch.distributions.Normal(mean, std)
+              action = normal.sample()
+              log_prob = normal.log_prob(action).sum(dim=-1)
+              return action, log_prob, value
+
+      class PPOAgent:
+          """
+          PPO agent for reinforcement learning.
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.0003,
+                       gamma: float = 0.99, lambda_param: float = 0.95, clip_ratio: float = 0.2,
+                       value_coef: float = 0.5, entropy_coef: float = 0.01, 
+                       max_grad_norm: float = 0.5, n_epochs: int = 4):
+              """
+              Initialize PPO agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizer
+                  gamma: Discount factor
+                  lambda_param: GAE lambda parameter
+                  clip_ratio: Clipping parameter for PPO
+                  value_coef: Value function loss coefficient
+                  entropy_coef: Entropy bonus coefficient
+                  max_grad_norm: Maximum gradient norm for clipping
+                  n_epochs: Number of epochs for policy updates
+              """
+              self.state_dim = state_dim
+              self.action_dim = action_dim
+              self.gamma = gamma
+              self.lambda_param = lambda_param
+              self.clip_ratio = clip_ratio
+              self.value_coef = value_coef
+              self.entropy_coef = entropy_coef
+              self.max_grad_norm = max_grad_norm
+              self.n_epochs = n_epochs
+
+              # Initialize network
+              self.network = PPONetwork(state_dim, action_dim)
+              self.optimizer = optim.Adam(self.network.parameters(), lr=learning_rate)
+
+          def act(self, state: np.ndarray) -> Tuple[np.ndarray, float, float]:
+              """
+              Choose action using current policy.
+
+              Args:
+                  state: Current state
+
+              Returns:
+                  Tuple of (action, log_prob, value)
+              """
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              with torch.no_grad():
+                  action, log_prob, value = self.network.get_action(state_tensor)
+              return action.numpy().flatten(), log_prob.item(), value.item()
+
+          def update(self, states: List[np.ndarray], actions: List[np.ndarray],
+                    rewards: List[float], old_log_probs: List[float], 
+                    values: List[float], dones: List[bool]) -> None:
+              """
+              Update policy using PPO algorithm.
+
+              Args:
+                  states: List of states
+                  actions: List of actions
+                  rewards: List of rewards
+                  old_log_probs: List of old log probabilities
+                  values: List of old values
+                  dones: List of done flags
+              """
+              states = torch.FloatTensor(states)
+              actions = torch.FloatTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              old_log_probs = torch.FloatTensor(old_log_probs)
+              values = torch.FloatTensor(values)
+              dones = torch.BoolTensor(dones)
+
+              # Calculate advantages using GAE
+              advantages = []
+              advantage = 0
+              for i in reversed(range(len(rewards))):
+                  if dones[i]:
+                      advantage = 0
+                  advantage = rewards[i] + self.gamma * values[i + 1] * (1 - dones[i]) - values[i] + self.gamma * self.lambda_param * advantage
+                  advantages.insert(0, advantage)
+
+              advantages = torch.FloatTensor(advantages)
+              returns = advantages + values[:-1]
+
+              # Normalize advantages
+              advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+              # PPO update
+              for _ in range(self.n_epochs):
+                  # Get current policy outputs
+                  _, new_log_probs, new_values = self.network.get_action(states)
+                  
+                  # Calculate probability ratio
+                  ratio = torch.exp(new_log_probs - old_log_probs)
+                  
+                  # Calculate clipped surrogate objective
+                  surr1 = ratio * advantages
+                  surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * advantages
+                  actor_loss = -torch.min(surr1, surr2).mean()
+                  
+                  # Calculate value function loss
+                  value_loss = nn.MSELoss()(new_values.squeeze(), returns)
+                  
+                  # Calculate entropy bonus
+                  entropy = -new_log_probs.mean()
+                  
+                  # Total loss
+                  total_loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+                  
+                  # Update network
+                  self.optimizer.zero_grad()
+                  total_loss.backward()
+                  torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.max_grad_norm)
+                  self.optimizer.step()
+    advantages:
+      - "Stable learning with clipped objective"
+      - "Sample efficient with multiple epochs"
+      - "Easy to implement and tune"
+      - "Works well on both discrete and continuous actions"
+    disadvantages:
+      - "Requires careful hyperparameter tuning"
+      - "Can be sample inefficient in some environments"
+      - "May not work well with very sparse rewards"
+      - "Requires more computation per update than simpler methods"
+
+  - type: "ppo_with_gae"
+    name: "PPO with Generalized Advantage Estimation (GAE)"
+    description: "PPO with GAE for better advantage estimation"
+    complexity:
+      time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+    code: |
+      class PPOGAEAgent(PPOAgent):
+          """
+          PPO agent with Generalized Advantage Estimation (GAE).
+          """
+
+          def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.0003,
+                       gamma: float = 0.99, lambda_param: float = 0.95, clip_ratio: float = 0.2,
+                       value_coef: float = 0.5, entropy_coef: float = 0.01, 
+                       max_grad_norm: float = 0.5, n_epochs: int = 4):
+              """
+              Initialize PPO-GAE agent.
+
+              Args:
+                  state_dim: Dimension of state space
+                  action_dim: Dimension of action space
+                  learning_rate: Learning rate for optimizer
+                  gamma: Discount factor
+                  lambda_param: GAE lambda parameter
+                  clip_ratio: Clipping parameter for PPO
+                  value_coef: Value function loss coefficient
+                  entropy_coef: Entropy bonus coefficient
+                  max_grad_norm: Maximum gradient norm for clipping
+                  n_epochs: Number of epochs for policy updates
+              """
+              super().__init__(state_dim, action_dim, learning_rate, gamma, lambda_param,
+                             clip_ratio, value_coef, entropy_coef, max_grad_norm, n_epochs)
+
+          def calculate_gae(self, rewards: torch.Tensor, values: torch.Tensor, 
+                           dones: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+              """
+              Calculate Generalized Advantage Estimation.
+
+              Args:
+                  rewards: Tensor of rewards
+                  values: Tensor of value estimates
+                  dones: Tensor of done flags
+
+              Returns:
+                  Tuple of (advantages, returns)
+              """
+              advantages = []
+              advantage = 0
+              
+              for i in reversed(range(len(rewards))):
+                  if dones[i]:
+                      advantage = 0
+                  advantage = rewards[i] + self.gamma * values[i + 1] * (1 - dones[i]) - values[i] + self.gamma * self.lambda_param * advantage
+                  advantages.insert(0, advantage)
+              
+              advantages = torch.FloatTensor(advantages)
+              returns = advantages + values[:-1]
+              
+              return advantages, returns
+
+          def update(self, states: List[np.ndarray], actions: List[np.ndarray],
+                    rewards: List[float], old_log_probs: List[float], 
+                    values: List[float], dones: List[bool]) -> None:
+              """
+              Update policy using PPO with GAE.
+
+              Args:
+                  states: List of states
+                  actions: List of actions
+                  rewards: List of rewards
+                  old_log_probs: List of old log probabilities
+                  values: List of old values
+                  dones: List of done flags
+              """
+              states = torch.FloatTensor(states)
+              actions = torch.FloatTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              old_log_probs = torch.FloatTensor(old_log_probs)
+              values = torch.FloatTensor(values)
+              dones = torch.BoolTensor(dones)
+
+              # Calculate advantages and returns using GAE
+              advantages, returns = self.calculate_gae(rewards, values, dones)
+
+              # Normalize advantages
+              advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+              # PPO update
+              for _ in range(self.n_epochs):
+                  # Get current policy outputs
+                  _, new_log_probs, new_values = self.network.get_action(states)
+                  
+                  # Calculate probability ratio
+                  ratio = torch.exp(new_log_probs - old_log_probs)
+                  
+                  # Calculate clipped surrogate objective
+                  surr1 = ratio * advantages
+                  surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * advantages
+                  actor_loss = -torch.min(surr1, surr2).mean()
+                  
+                  # Calculate value function loss
+                  value_loss = nn.MSELoss()(new_values.squeeze(), returns)
+                  
+                  # Calculate entropy bonus
+                  entropy = -new_log_probs.mean()
+                  
+                  # Total loss
+                  total_loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+                  
+                  # Update network
+                  self.optimizer.zero_grad()
+                  total_loss.backward()
+                  torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.max_grad_norm)
+                  self.optimizer.step()
+    advantages:
+      - "Better advantage estimation with GAE"
+      - "More stable learning"
+      - "Better sample efficiency"
+      - "Reduced variance in advantage estimates"
+    disadvantages:
+      - "More complex advantage calculation"
+      - "Requires tuning of lambda parameter"
+      - "Still requires careful hyperparameter tuning"
+      - "May not work well with very sparse rewards"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic PPO"
+      time: "O(episodes × steps_per_episode × n_epochs × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+      notes: "Time complexity includes multiple epochs per update. Space complexity includes parameters for both actor and critic"
+    
+    - approach: "PPO with GAE"
+      time: "O(episodes × steps_per_episode × n_epochs × (policy_forward_pass + value_forward_pass))"
+      space: "O(policy_parameters + value_parameters)"
+      notes: "Similar complexity to basic PPO but with more sophisticated advantage estimation"
+
+# Applications and use cases
+applications:
+  - category: "Continuous Control"
+    examples:
+      - "Robot Control: Learning continuous control policies for robots"
+      - "Autonomous Vehicles: Learning driving policies"
+      - "Game Playing: Learning continuous control in games"
+      - "Physics Simulation: Learning control policies in physics engines"
+
+  - category: "Discrete Control"
+    examples:
+      - "Game Playing: Learning discrete action policies in games"
+      - "Resource Allocation: Learning allocation policies"
+      - "Scheduling: Learning scheduling policies"
+      - "Routing: Learning routing policies in networks"
+
+  - category: "High-Dimensional State Spaces"
+    examples:
+      - "Computer Vision: Learning from image inputs"
+      - "Natural Language Processing: Learning from text inputs"
+      - "Robotics: Learning from sensor data"
+      - "Finance: Learning from market data"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Trading: Learning trading strategies"
+      - "Robotics: Learning control policies for real robots"
+      - "Gaming: Learning game strategies"
+      - "Resource Management: Learning allocation policies"
+
+  - category: "Educational Value"
+    examples:
+      - "Policy Gradient Methods: Understanding advanced policy gradient techniques"
+      - "Trust Region Methods: Understanding trust region constraints"
+      - "Clipping: Understanding clipping techniques for stability"
+      - "Advantage Estimation: Understanding advantage estimation methods"
+
+# Educational value and learning objectives
+educational_value:
+  - "Policy Gradient Methods: Understanding advanced policy gradient techniques"
+  - "Trust Region Methods: Learning about trust region constraints in RL"
+  - "Clipping: Understanding clipping techniques for training stability"
+  - "Advantage Estimation: Understanding advantage estimation methods"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/reinforcement_learning/ppo.py"
+      description: "Main implementation with basic PPO and GAE variants"
+    - path: "tests/unit/reinforcement_learning/test_ppo.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+      - author: "François-Lavet, V., et al."
+        year: "2018"
+        title: "An Introduction to Deep Reinforcement Learning"
+        publisher: "Foundations and Trends in Machine Learning"
+        note: "Volume 11, pages 219-354"
+
+  - category: "PPO"
+    items:
+      - author: "Schulman, J., et al."
+        year: "2017"
+        title: "Proximal Policy Optimization Algorithms"
+        publisher: "arXiv preprint arXiv:1707.06347"
+        note: "Original PPO paper"
+      - author: "Schulman, J., et al."
+        year: "2015"
+        title: "Trust Region Policy Optimization"
+        publisher: "ICML"
+        note: "TRPO paper (predecessor to PPO)"
+
+  - category: "GAE"
+    items:
+      - author: "Schulman, J., et al."
+        year: "2016"
+        title: "High-Dimensional Continuous Control Using Generalized Advantage Estimation"
+        publisher: "ICLR"
+        note: "GAE paper"
+      - author: "Schulman, J., et al."
+        year: "2017"
+        title: "Proximal Policy Optimization Algorithms"
+        publisher: "arXiv preprint arXiv:1707.06347"
+        note: "PPO with GAE implementation"
+
+  - category: "Online Resources"
+    items:
+      - title: "Proximal Policy Optimization"
+        url: "https://en.wikipedia.org/wiki/Proximal_policy_optimization"
+        note: "Wikipedia article on PPO"
+      - title: "Reinforcement Learning Tutorial"
+        url: "https://spinningup.openai.com/en/latest/"
+        note: "OpenAI Spinning Up RL tutorial"
+      - title: "PPO Algorithm"
+        url: "https://www.geeksforgeeks.org/proximal-policy-optimization-ppo/"
+        note: "GeeksforGeeks PPO implementation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Gymnasium (OpenAI Gym)"
+        url: "https://gymnasium.farama.org/"
+        note: "RL environment library for testing algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "rl"
+  - "ppo"
+  - "proximal-policy-optimization"
+  - "policy-gradient"
+  - "trust-region"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "actor-critic"
+    relationship: "same_family"
+    description: "PPO builds on Actor-Critic methods with trust region constraints"
+  - slug: "policy-gradient"
+    relationship: "same_family"
+    description: "PPO is an advanced policy gradient method"

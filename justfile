@@ -39,6 +39,14 @@ docs-serve: install-docs
 docs-dev: install-docs
     uv run mkdocs serve --livereload --watch docs/
 
+# Validate YAML files
+validate-yaml: install-docs
+    uv run --group docs python scripts/validate_yaml.py validate
+
+# Validate YAML files with verbose output
+validate-yaml-verbose: install-docs
+    uv run --group docs python scripts/validate_yaml.py validate --verbose
+
 # Run all quality checks
 quality: install-dev install-docs
     uv run ruff check src tests --fix

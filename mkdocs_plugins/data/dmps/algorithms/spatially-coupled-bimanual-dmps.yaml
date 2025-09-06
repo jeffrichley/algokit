@@ -1,0 +1,645 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: spatially-coupled-bimanual-dmps
+name: Spatially Coupled Bimanual DMPs
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs for coordinated dual-arm movements with spatial coupling between arms for synchronized manipulation tasks and hand-eye coordination."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Spatially Coupled Bimanual DMPs extend the basic DMP framework to handle coordinated dual-arm movements where the two arms must work together in a synchronized manner. This approach enables complex manipulation tasks that require both arms to coordinate their movements spatially and temporally.
+
+  The key innovation of spatially coupled bimanual DMPs is the integration of:
+  - Spatial coupling between the two arms through coupling terms
+  - Synchronized movement execution with temporal coordination
+  - Hand-eye coordination for precise manipulation tasks
+  - Adaptive coupling strength based on task requirements
+  - Robust coordination even in the presence of disturbances
+
+  These DMPs are particularly valuable in applications requiring coordinated manipulation, such as assembly tasks, object manipulation, tool use, and complex manipulation behaviors that cannot be performed with a single arm.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Left arm DMP: τẏ_L = α_y(β_y(g_L - y_L) - ẏ_L) + f_L(x_L) + C_L(y_R, ẏ_R)
+    - Right arm DMP: τẏ_R = α_y(β_y(g_R - y_R) - ẏ_R) + f_R(x_R) + C_R(y_L, ẏ_L)
+    - Coupling functions: C_L(y_R, ẏ_R) and C_R(y_L, ẏ_L)
+    - Coupling strength: k_couple
+    - Synchronization parameter: τ_sync
+
+    The spatially coupled bimanual DMPs are:
+    τẏ_L = α_y(β_y(g_L - y_L) - ẏ_L) + f_L(x_L) + k_couple * C_L(y_R, ẏ_R)
+    τẏ_R = α_y(β_y(g_R - y_R) - ẏ_R) + f_R(x_R) + k_couple * C_R(y_L, ẏ_L)
+    
+    Where the coupling functions ensure spatial coordination:
+    C_L(y_R, ẏ_R) = k_spatial * (y_R - y_L) + k_velocity * (ẏ_R - ẏ_L)
+    C_R(y_L, ẏ_L) = k_spatial * (y_L - y_R) + k_velocity * (ẏ_L - ẏ_R)
+
+  key_properties:
+    - name: "Spatial Coupling"
+      formula: "C_L(y_R, ẏ_R) = k_spatial * (y_R - y_L) + k_velocity * (ẏ_R - ẏ_L)"
+      description: "Coupling function that maintains spatial relationships between arms"
+    - name: "Synchronization"
+      formula: "τ_sync = τ_L = τ_R"
+      description: "Temporal synchronization parameter ensures both arms move in sync"
+    - name: "Adaptive Coupling"
+      formula: "k_couple = k_couple(t) based on task requirements"
+      description: "Coupling strength can be adapted based on task phase"
+
+# Key properties and characteristics
+properties:
+  - name: "Dual-Arm Coordination"
+    description: "Coordinates movements of both arms simultaneously"
+    importance: "fundamental"
+  - name: "Spatial Coupling"
+    description: "Maintains spatial relationships between arms"
+    importance: "fundamental"
+  - name: "Temporal Synchronization"
+    description: "Synchronizes movement timing between arms"
+    importance: "fundamental"
+  - name: "Hand-Eye Coordination"
+    description: "Coordinates arm movements with visual feedback"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_bimanual_dmp"
+    name: "Basic Bimanual DMPs"
+    description: "Basic spatially coupled bimanual DMPs with position and velocity coupling"
+    complexity:
+      time: "O(T × K × 2)"
+      space: "O(K × 2)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Tuple, List, Optional
+      import matplotlib.pyplot as plt
+
+      class SpatiallyCoupledBimanualDMP:
+          """
+          Spatially coupled bimanual DMP for coordinated dual-arm movements.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_couple: float = 1.0,
+                       k_spatial: float = 1.0, k_velocity: float = 1.0):
+              """
+              Initialize spatially coupled bimanual DMP.
+
+              Args:
+                  n_dims: Number of dimensions per arm
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  k_couple: Overall coupling strength
+                  k_spatial: Spatial coupling strength
+                  k_velocity: Velocity coupling strength
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.k_couple = k_couple
+              self.k_spatial = k_spatial
+              self.k_velocity = k_velocity
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP weights for both arms
+              self.w_L = np.zeros((n_dims, n_basis))  # Left arm weights
+              self.w_R = np.zeros((n_dims, n_basis))  # Right arm weights
+              
+              # Coupling parameters
+              self.coupling_active = True
+              self.adaptive_coupling = False
+
+          def set_coupling_strength(self, k_couple: float) -> None:
+              """
+              Set the overall coupling strength.
+
+              Args:
+                  k_couple: Coupling strength
+              """
+              self.k_couple = k_couple
+
+          def set_adaptive_coupling(self, adaptive: bool) -> None:
+              """
+              Enable or disable adaptive coupling.
+
+              Args:
+                  adaptive: Whether to use adaptive coupling
+              """
+              self.adaptive_coupling = adaptive
+
+          def compute_coupling_force(self, y_L: np.ndarray, y_R: np.ndarray, 
+                                   dy_L: np.ndarray, dy_R: np.ndarray, 
+                                   t: float) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Compute coupling forces for both arms.
+
+              Args:
+                  y_L: Left arm position
+                  y_R: Right arm position
+                  dy_L: Left arm velocity
+                  dy_R: Right arm velocity
+                  t: Current time
+
+              Returns:
+                  Tuple of (coupling_force_L, coupling_force_R)
+              """
+              if not self.coupling_active:
+                  return np.zeros(self.n_dims), np.zeros(self.n_dims)
+              
+              # Adaptive coupling strength
+              if self.adaptive_coupling:
+                  # Coupling strength decreases over time
+                  k_couple_t = self.k_couple * np.exp(-t)
+              else:
+                  k_couple_t = self.k_couple
+              
+              # Spatial coupling
+              spatial_coupling_L = self.k_spatial * (y_R - y_L)
+              spatial_coupling_R = self.k_spatial * (y_L - y_R)
+              
+              # Velocity coupling
+              velocity_coupling_L = self.k_velocity * (dy_R - dy_L)
+              velocity_coupling_R = self.k_velocity * (dy_L - dy_R)
+              
+              # Total coupling forces
+              coupling_L = k_couple_t * (spatial_coupling_L + velocity_coupling_L)
+              coupling_R = k_couple_t * (spatial_coupling_R + velocity_coupling_R)
+              
+              return coupling_L, coupling_R
+
+          def learn_from_demo(self, y_L_demo: np.ndarray, y_R_demo: np.ndarray,
+                            dy_L_demo: np.ndarray, dy_R_demo: np.ndarray,
+                            ddy_L_demo: np.ndarray, ddy_R_demo: np.ndarray, 
+                            dt: float) -> None:
+              """
+              Learn DMP weights from bimanual demonstration.
+
+              Args:
+                  y_L_demo: Left arm demonstrated trajectory [T, n_dims]
+                  y_R_demo: Right arm demonstrated trajectory [T, n_dims]
+                  dy_L_demo: Left arm demonstrated velocity [T, n_dims]
+                  dy_R_demo: Right arm demonstrated velocity [T, n_dims]
+                  ddy_L_demo: Left arm demonstrated acceleration [T, n_dims]
+                  ddy_R_demo: Right arm demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_L_demo)
+              y_L_0 = y_L_demo[0]
+              y_R_0 = y_R_demo[0]
+              g_L = y_L_demo[-1]
+              g_R = y_R_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights for left arm
+              for d in range(self.n_dims):
+                  f_target = (ddy_L_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g_L[d] - y_L_demo[:, d]) - dy_L_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w_L[d, i] = numerator / denominator
+              
+              # Learn weights for right arm
+              for d in range(self.n_dims):
+                  f_target = (ddy_R_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g_R[d] - y_R_demo[:, d]) - dy_R_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w_R[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_L_0: np.ndarray, y_R_0: np.ndarray,
+                                g_L: np.ndarray, g_R: np.ndarray,
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate coordinated bimanual trajectory.
+
+              Args:
+                  y_L_0: Left arm start position
+                  y_R_0: Right arm start position
+                  g_L: Left arm goal position
+                  g_R: Right arm goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (y_L_traj, y_R_traj, dy_L_traj, dy_R_traj)
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y_L, dy_L, x_L, y_R, dy_R, x_R]
+              y0 = np.concatenate([y_L_0, np.zeros(self.n_dims), [1.0],
+                                 y_R_0, np.zeros(self.n_dims), [1.0]])
+              
+              def bimanual_dmp_dynamics(state, t):
+                  # Extract states
+                  y_L = state[:self.n_dims]
+                  dy_L = state[self.n_dims:2*self.n_dims]
+                  x_L = state[2*self.n_dims]
+                  y_R = state[2*self.n_dims+1:3*self.n_dims+1]
+                  dy_R = state[3*self.n_dims+1:4*self.n_dims+1]
+                  x_R = state[4*self.n_dims+1]
+                  
+                  # Canonical systems
+                  dx_L = -self.alpha_x * x_L
+                  dx_R = -self.alpha_x * x_R
+                  
+                  # Forcing functions
+                  f_L = np.zeros(self.n_dims)
+                  f_R = np.zeros(self.n_dims)
+                  
+                  for d in range(self.n_dims):
+                      psi_L = np.exp(-self.h * (x_L - self.c)**2)
+                      psi_R = np.exp(-self.h * (x_R - self.c)**2)
+                      
+                      f_L[d] = (np.sum(psi_L * self.w_L[d]) * x_L) / (np.sum(psi_L) + 1e-10)
+                      f_R[d] = (np.sum(psi_R * self.w_R[d]) * x_R) / (np.sum(psi_R) + 1e-10)
+                  
+                  # Coupling forces
+                  coupling_L, coupling_R = self.compute_coupling_force(y_L, y_R, dy_L, dy_R, t)
+                  
+                  # Transformation systems with coupling
+                  ddy_L = self.alpha_y * (self.beta_y * (g_L - y_L) - dy_L) + f_L + coupling_L
+                  ddy_R = self.alpha_y * (self.beta_y * (g_R - y_R) - dy_R) + f_R + coupling_R
+                  
+                  return np.concatenate([dy_L, ddy_L, [dx_L], dy_R, ddy_R, [dx_R]])
+              
+              # Integrate
+              sol = odeint(bimanual_dmp_dynamics, y0, t_span)
+              
+              # Extract trajectories
+              y_L_traj = sol[:, :self.n_dims]
+              dy_L_traj = sol[:, self.n_dims:2*self.n_dims]
+              y_R_traj = sol[:, 2*self.n_dims+1:3*self.n_dims+1]
+              dy_R_traj = sol[:, 3*self.n_dims+1:4*self.n_dims+1]
+              
+              return y_L_traj, y_R_traj, dy_L_traj, dy_R_traj
+
+          def visualize_trajectory(self, y_L_traj: np.ndarray, y_R_traj: np.ndarray,
+                                 title: str = "Bimanual Trajectory") -> None:
+              """
+              Visualize the generated bimanual trajectory.
+
+              Args:
+                  y_L_traj: Left arm trajectory
+                  y_R_traj: Right arm trajectory
+                  title: Plot title
+              """
+              if self.n_dims == 2:
+                  plt.figure(figsize=(12, 8))
+                  
+                  # Plot left arm trajectory
+                  plt.plot(y_L_traj[:, 0], y_L_traj[:, 1], 'b-', linewidth=2, label='Left Arm')
+                  plt.plot(y_L_traj[0, 0], y_L_traj[0, 1], 'bo', markersize=8, label='Left Start')
+                  plt.plot(y_L_traj[-1, 0], y_L_traj[-1, 1], 'bs', markersize=8, label='Left Goal')
+                  
+                  # Plot right arm trajectory
+                  plt.plot(y_R_traj[:, 0], y_R_traj[:, 1], 'r-', linewidth=2, label='Right Arm')
+                  plt.plot(y_R_traj[0, 0], y_R_traj[0, 1], 'ro', markersize=8, label='Right Start')
+                  plt.plot(y_R_traj[-1, 0], y_R_traj[-1, 1], 'rs', markersize=8, label='Right Goal')
+                  
+                  # Plot coupling connections
+                  for i in range(0, len(y_L_traj), max(1, len(y_L_traj)//20)):
+                      plt.plot([y_L_traj[i, 0], y_R_traj[i, 0]], 
+                              [y_L_traj[i, 1], y_R_traj[i, 1]], 'g--', alpha=0.3)
+                  
+                  plt.xlabel('X Position')
+                  plt.ylabel('Y Position')
+                  plt.title(title)
+                  plt.legend()
+                  plt.grid(True)
+                  plt.axis('equal')
+                  plt.show()
+              else:
+                  print("Visualization only supported for 2D trajectories")
+
+    advantages:
+      - "Natural bimanual coordination"
+      - "Spatial and temporal coupling"
+      - "Adaptive coupling strength"
+      - "Smooth trajectory generation"
+    disadvantages:
+      - "Higher computational cost"
+      - "Requires careful parameter tuning"
+      - "May not handle all coordination patterns"
+
+  - type: "hand_eye_coordination_dmp"
+    name: "Hand-Eye Coordination DMPs"
+    description: "Bimanual DMPs with hand-eye coordination for precise manipulation"
+    complexity:
+      time: "O(T × K × 2 + T × V)"
+      space: "O(K × 2 + V)"
+    code: |
+      class HandEyeCoordinationDMP(SpatiallyCoupledBimanualDMP):
+          """
+          Bimanual DMP with hand-eye coordination for precise manipulation.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_couple: float = 1.0,
+                       k_spatial: float = 1.0, k_velocity: float = 1.0, k_visual: float = 1.0):
+              """
+              Initialize hand-eye coordination DMP.
+
+              Args:
+                  n_dims: Number of dimensions per arm
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  k_couple: Overall coupling strength
+                  k_spatial: Spatial coupling strength
+                  k_velocity: Velocity coupling strength
+                  k_visual: Visual feedback strength
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, k_couple, k_spatial, k_velocity)
+              self.k_visual = k_visual
+              
+              # Visual feedback parameters
+              self.visual_feedback_active = True
+              self.target_position = None
+              self.visual_error_threshold = 0.01
+
+          def set_visual_target(self, target_position: np.ndarray) -> None:
+              """
+              Set the visual target position.
+
+              Args:
+                  target_position: Target position for visual feedback
+              """
+              self.target_position = target_position.copy()
+
+          def compute_visual_feedback(self, y_L: np.ndarray, y_R: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Compute visual feedback forces.
+
+              Args:
+                  y_L: Left arm position
+                  y_R: Right arm position
+
+              Returns:
+                  Tuple of (visual_feedback_L, visual_feedback_R)
+              """
+              if not self.visual_feedback_active or self.target_position is None:
+                  return np.zeros(self.n_dims), np.zeros(self.n_dims)
+              
+              # Compute visual errors
+              error_L = self.target_position - y_L
+              error_R = self.target_position - y_R
+              
+              # Visual feedback forces
+              visual_L = self.k_visual * error_L
+              visual_R = self.k_visual * error_R
+              
+              return visual_L, visual_R
+
+          def generate_trajectory(self, y_L_0: np.ndarray, y_R_0: np.ndarray,
+                                g_L: np.ndarray, g_R: np.ndarray,
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate coordinated bimanual trajectory with hand-eye coordination.
+
+              Args:
+                  y_L_0: Left arm start position
+                  y_R_0: Right arm start position
+                  g_L: Left arm goal position
+                  g_R: Right arm goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (y_L_traj, y_R_traj, dy_L_traj, dy_R_traj)
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y_L, dy_L, x_L, y_R, dy_R, x_R]
+              y0 = np.concatenate([y_L_0, np.zeros(self.n_dims), [1.0],
+                                 y_R_0, np.zeros(self.n_dims), [1.0]])
+              
+              def hand_eye_dmp_dynamics(state, t):
+                  # Extract states
+                  y_L = state[:self.n_dims]
+                  dy_L = state[self.n_dims:2*self.n_dims]
+                  x_L = state[2*self.n_dims]
+                  y_R = state[2*self.n_dims+1:3*self.n_dims+1]
+                  dy_R = state[3*self.n_dims+1:4*self.n_dims+1]
+                  x_R = state[4*self.n_dims+1]
+                  
+                  # Canonical systems
+                  dx_L = -self.alpha_x * x_L
+                  dx_R = -self.alpha_x * x_R
+                  
+                  # Forcing functions
+                  f_L = np.zeros(self.n_dims)
+                  f_R = np.zeros(self.n_dims)
+                  
+                  for d in range(self.n_dims):
+                      psi_L = np.exp(-self.h * (x_L - self.c)**2)
+                      psi_R = np.exp(-self.h * (x_R - self.c)**2)
+                      
+                      f_L[d] = (np.sum(psi_L * self.w_L[d]) * x_L) / (np.sum(psi_L) + 1e-10)
+                      f_R[d] = (np.sum(psi_R * self.w_R[d]) * x_R) / (np.sum(psi_R) + 1e-10)
+                  
+                  # Coupling forces
+                  coupling_L, coupling_R = self.compute_coupling_force(y_L, y_R, dy_L, dy_R, t)
+                  
+                  # Visual feedback forces
+                  visual_L, visual_R = self.compute_visual_feedback(y_L, y_R)
+                  
+                  # Transformation systems with coupling and visual feedback
+                  ddy_L = self.alpha_y * (self.beta_y * (g_L - y_L) - dy_L) + f_L + coupling_L + visual_L
+                  ddy_R = self.alpha_y * (self.beta_y * (g_R - y_R) - dy_R) + f_R + coupling_R + visual_R
+                  
+                  return np.concatenate([dy_L, ddy_L, [dx_L], dy_R, ddy_R, [dx_R]])
+              
+              # Integrate
+              sol = odeint(hand_eye_dmp_dynamics, y0, t_span)
+              
+              # Extract trajectories
+              y_L_traj = sol[:, :self.n_dims]
+              dy_L_traj = sol[:, self.n_dims:2*self.n_dims]
+              y_R_traj = sol[:, 2*self.n_dims+1:3*self.n_dims+1]
+              dy_R_traj = sol[:, 3*self.n_dims+1:4*self.n_dims+1]
+              
+              return y_L_traj, y_R_traj, dy_L_traj, dy_R_traj
+
+    advantages:
+      - "Hand-eye coordination"
+      - "Visual feedback integration"
+      - "Precise manipulation capabilities"
+      - "Adaptive to visual targets"
+    disadvantages:
+      - "Requires visual feedback system"
+      - "Higher computational cost"
+      - "Sensitive to visual noise"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Bimanual DMP"
+      time: "O(T × K × 2)"
+      space: "O(K × 2)"
+      notes: "Time complexity scales with trajectory length, basis functions, and two arms"
+    
+    - approach: "Hand-Eye Coordination DMP"
+      time: "O(T × K × 2 + T × V)"
+      space: "O(K × 2 + V)"
+      notes: "Additional complexity for visual feedback processing"
+    
+    - approach: "Coupling Computation"
+      time: "O(T)"
+      space: "O(1)"
+      notes: "Coupling computation scales with trajectory length"
+
+# Applications and use cases
+applications:
+  - category: "Assembly Tasks"
+    examples:
+      - "Bimanual Assembly: Assembling parts that require both hands"
+      - "Precision Assembly: Precise assembly tasks with hand-eye coordination"
+      - "Complex Assembly: Complex assembly tasks with multiple components"
+      - "Quality Control: Quality control tasks requiring both hands"
+
+  - category: "Manipulation"
+    examples:
+      - "Object Manipulation: Manipulating large or complex objects"
+      - "Tool Use: Using tools that require both hands"
+      - "Packaging: Packaging tasks requiring coordinated movements"
+      - "Sorting: Sorting tasks with coordinated hand movements"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Collaborative Tasks: Working with humans on collaborative tasks"
+      - "Handover: Handing over objects between human and robot"
+      - "Assistive Tasks: Assisting humans with tasks requiring both hands"
+      - "Social Interaction: Social interaction tasks with coordinated movements"
+
+  - category: "Service Robotics"
+    examples:
+      - "Household Tasks: Household tasks requiring both hands"
+      - "Cooking: Cooking tasks with coordinated hand movements"
+      - "Cleaning: Cleaning tasks requiring both hands"
+      - "Maintenance: Maintenance tasks with coordinated movements"
+
+  - category: "Industrial Automation"
+    examples:
+      - "Manufacturing: Manufacturing tasks requiring both hands"
+      - "Quality Control: Quality control tasks with coordinated movements"
+      - "Packaging: Packaging tasks requiring both hands"
+      - "Inspection: Inspection tasks with coordinated movements"
+
+# Educational value and learning objectives
+educational_value:
+  - "Bimanual Coordination: Understanding how to coordinate dual-arm movements"
+  - "Spatial Coupling: Understanding spatial coupling between robotic systems"
+  - "Hand-Eye Coordination: Understanding hand-eye coordination in robotics"
+  - "Multi-Agent Systems: Understanding coordination in multi-agent systems"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/bimanual_dmps.py"
+      description: "Main implementation with spatially coupled and hand-eye coordination DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_bimanual_dmps.py"
+      description: "Comprehensive test suite including coordination tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "Original work on coupled DMPs for bimanual tasks"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with coupling for bimanual coordination"
+
+  - category: "Bimanual Coordination"
+    items:
+      - author: "Mason, M. T."
+        year: "2001"
+        title: "Mechanics of robotic manipulation"
+        publisher: "MIT Press"
+        note: "Fundamental work on robotic manipulation"
+      - author: "Murray, R. M., Li, Z., & Sastry, S. S."
+        year: "1994"
+        title: "A mathematical introduction to robotic manipulation"
+        publisher: "CRC Press"
+        note: "Mathematical foundations of robotic manipulation"
+
+  - category: "Online Resources"
+    items:
+      - title: "Bimanual Manipulation"
+        url: "https://en.wikipedia.org/wiki/Bimanual_manipulation"
+        note: "Wikipedia article on bimanual manipulation"
+      - title: "Hand-Eye Coordination"
+        url: "https://en.wikipedia.org/wiki/Hand%E2%80%93eye_coordination"
+        note: "Wikipedia article on hand-eye coordination"
+      - title: "Dual-Arm Robotics"
+        url: "https://en.wikipedia.org/wiki/Dual-arm_robotics"
+        note: "Wikipedia article on dual-arm robotics"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "ROS MoveIt"
+        url: "https://moveit.ros.org/"
+        note: "ROS motion planning framework for manipulation"
+      - title: "ROS Control"
+        url: "https://ros.org/reps/rep-0144.html"
+        note: "ROS control framework for robot control"
+      - title: "ROS Perception"
+        url: "https://ros.org/reps/rep-0118.html"
+        note: "ROS perception stack for visual feedback"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "bimanual-dmps"
+  - "spatial-coupling"
+  - "hand-eye-coordination"
+  - "dual-arm-robotics"
+  - "manipulation"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that bimanual DMPs extend with coupling mechanisms"
+  - slug: "constrained-dmps"
+    relationship: "same_family"
+    description: "Constrained DMPs that can be combined with bimanual coordination"

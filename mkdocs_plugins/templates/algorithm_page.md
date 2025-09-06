@@ -96,15 +96,11 @@ family: "{{ family.slug }}"
 
     {% if impl.complexity %}
     **Complexity:**
+
     - **Time**: {{ impl.complexity.time }}
     - **Space**: {{ impl.complexity.space }}
     {% endif %}
 
-    {% if impl.code %}
-    ```python
-    {{ impl.code }}
-    ```
-    {% endif %}
 
     {% if impl.advantages %}
     !!! success "Advantages"

@@ -1,0 +1,473 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: nonlinear-mpc
+name: Nonlinear MPC
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control for nonlinear systems using Sequential Quadratic Programming to handle complex dynamics and constraints."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Nonlinear MPC extends the predictive control framework to handle systems with nonlinear dynamics, constraints, and objectives. Unlike Linear MPC, which can be formulated as a Quadratic Programming problem, Nonlinear MPC requires solving a Nonlinear Programming (NLP) problem at each time step.
+
+  This approach provides the ability to control complex nonlinear systems while maintaining the predictive and constraint-handling capabilities of MPC. Nonlinear MPC is essential in applications where system dynamics are inherently nonlinear, such as chemical processes, robotics, aerospace systems, and many other domains. While computationally more demanding than linear approaches, it offers superior performance for nonlinear systems and can handle complex constraints and objectives.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    For nonlinear system: x(k+1) = f(x(k), u(k), d(k)), y(k) = h(x(k), u(k))
+    
+    The NLP formulation is:
+    
+    min_{U_k} J(x(k), U_k) = Σ_{i=0}^{N_p-1} ||y(k+i|k) - r(k+i)||_Q² + Σ_{i=0}^{N_c-1} ||u(k+i)||_R²
+    
+    Subject to:
+    - x(k+i+1|k) = f(x(k+i|k), u(k+i), d(k+i))
+    - y(k+i|k) = h(x(k+i|k), u(k+i))
+    - g(x(k+i|k), u(k+i)) ≤ 0
+    - h_c(x(k+i|k), u(k+i)) = 0
+    - u_min ≤ u(k+i) ≤ u_max
+    - x_min ≤ x(k+i|k) ≤ x_max
+    
+    Where:
+    - U_k = [u(k), u(k+1), ..., u(k+N_c-1)] is the control sequence
+    - f(·) and h(·) are nonlinear functions
+    - g(·) and h_c(·) are constraint functions
+
+  discrete_time_form: |
+    Sequential Quadratic Programming (SQP) approach:
+    
+    1. Linearize nonlinear constraints around current iterate
+    2. Solve QP subproblem to get search direction
+    3. Perform line search to update iterate
+    4. Repeat until convergence
+    
+    QP subproblem:
+    min_{ΔU_k} (1/2) ΔU_k^T H_k ΔU_k + g_k^T ΔU_k
+    Subject to linearized constraints
+
+  key_properties:
+    - name: "Nonlinear Dynamics"
+      formula: "x(k+1) = f(x(k), u(k))"
+      description: "Handles complex system behaviors"
+    - name: "General Constraints"
+      formula: "g(x,u) ≤ 0, h_c(x,u) = 0"
+      description: "Supports nonlinear equality and inequality constraints"
+    - name: "SQP Solution"
+      formula: "min (1/2) ΔU^T H ΔU + g^T ΔU"
+      description: "Iteratively solves QP subproblems"
+
+# Key properties and characteristics
+properties:
+  - name: "Nonlinear Dynamics"
+    description: "Handles complex system behaviors"
+    importance: "fundamental"
+  - name: "General Constraints"
+    description: "Supports nonlinear equality and inequality constraints"
+    importance: "fundamental"
+  - name: "Global Optimization"
+    description: "Can find globally optimal solutions"
+    importance: "theoretical"
+  - name: "Real-time Capability"
+    description: "Fast convergence with modern solvers"
+    importance: "implementation"
+  - name: "Constraint Satisfaction"
+    description: "Ensures all constraints are met"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_nonlinear_mpc"
+    name: "Basic Nonlinear MPC Controller"
+    description: "Standard Nonlinear MPC implementation with SQP solver"
+    complexity:
+      time: "O(N⁶)"
+      space: "O(N⁴)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import Callable, Optional, Tuple, Dict
+
+      class NonlinearMPCController:
+          """
+          Basic Nonlinear MPC Controller implementation.
+
+          Args:
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              state_dim: Dimension of state vector
+              input_dim: Dimension of input vector
+              output_dim: Dimension of output vector
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              Qf: Terminal state weight matrix
+          """
+
+          def __init__(self, prediction_horizon: int, control_horizon: int,
+                       state_dim: int, input_dim: int, output_dim: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       Qf: np.ndarray = None):
+
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              self.nx = state_dim
+              self.nu = input_dim
+              self.ny = output_dim
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+              self.Qf = Qf if Qf is not None else self.Q
+
+              # System functions (to be set by user)
+              self.f = None  # State dynamics function
+              self.h = None  # Output function
+              self.g = None  # Inequality constraints
+              self.h_c = None  # Equality constraints
+
+          def set_system_functions(self, f: Callable, h: Callable,
+                                 g: Optional[Callable] = None,
+                                 h_c: Optional[Callable] = None) -> None:
+              """
+              Set system functions.
+
+              Args:
+                  f: State dynamics function f(x, u, d) -> x_next
+                  h: Output function h(x, u) -> y
+                  g: Inequality constraints g(x, u) -> g_val
+                  h_c: Equality constraints h_c(x, u) -> h_val
+              """
+              self.f = f
+              self.h = h
+              self.g = g
+              self.h_c = h_c
+
+          def _predict_trajectory(self, x0: np.ndarray, U: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Predict state and output trajectories.
+
+              Args:
+                  x0: Initial state
+                  U: Control sequence
+
+              Returns:
+                  Tuple of (state_trajectory, output_trajectory)
+              """
+              X = np.zeros((self.Np, self.nx))
+              Y = np.zeros((self.Np, self.ny))
+              
+              x = x0.copy()
+              for i in range(self.Np):
+                  if i < self.Nc:
+                      u = U[i]
+                  else:
+                      u = U[-1]  # Hold last control action
+                  
+                  # Predict next state
+                  x = self.f(x, u, np.zeros(self.nx))  # Assume no disturbance
+                  X[i] = x
+                  
+                  # Predict output
+                  Y[i] = self.h(x, u)
+              
+              return X, Y
+
+          def _objective_function(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
+              """
+              Objective function for optimization.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+                  r: Reference trajectory
+
+              Returns:
+                  Objective function value
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_trajectory(x0, U)
+              
+              # Tracking cost
+              tracking_cost = 0.0
+              for i in range(self.Np):
+                  error = Y[i] - r[i]
+                  tracking_cost += error.T @ self.Q @ error
+              
+              # Control cost
+              control_cost = 0.0
+              for i in range(self.Nc):
+                  control_cost += U[i].T @ self.R @ U[i]
+              
+              return tracking_cost + control_cost
+
+          def _constraints(self, U_flat: np.ndarray, x0: np.ndarray) -> Dict:
+              """
+              Constraint functions for optimization.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+
+              Returns:
+                  Dictionary of constraints
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_trajectory(x0, U)
+              
+              constraints = []
+              
+              # Inequality constraints
+              if self.g is not None:
+                  for i in range(self.Np):
+                      if i < self.Nc:
+                          u = U[i]
+                      else:
+                          u = U[-1]
+                      
+                      g_val = self.g(X[i], u)
+                      if g_val.size > 0:
+                          constraints.append({
+                              'type': 'ineq',
+                              'fun': lambda x, i=i, u=u: -self.g(X[i], u)
+                          })
+              
+              # Equality constraints
+              if self.h_c is not None:
+                  for i in range(self.Np):
+                      if i < self.Nc:
+                          u = U[i]
+                      else:
+                          u = U[-1]
+                      
+                      h_val = self.h_c(X[i], u)
+                      if h_val.size > 0:
+                          constraints.append({
+                              'type': 'eq',
+                              'fun': lambda x, i=i, u=u: self.h_c(X[i], u)
+                          })
+              
+              return constraints
+
+          def solve_nmpc(self, x0: np.ndarray, r: np.ndarray,
+                        u_min: Optional[np.ndarray] = None,
+                        u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve Nonlinear MPC optimization problem.
+
+              Args:
+                  x0: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal control sequence
+              """
+              if self.f is None or self.h is None:
+                  raise ValueError("System functions must be set before solving")
+
+              # Initial guess
+              U0 = np.zeros(self.Nc * self.nu)
+              
+              # Bounds
+              bounds = []
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Constraints
+              constraints = self._constraints(U0, x0)
+
+              # Solve NLP problem
+              result = minimize(
+                  fun=lambda u: self._objective_function(u, x0, r),
+                  x0=U0,
+                  method='SLSQP',
+                  bounds=bounds,
+                  constraints=constraints,
+                  options={'maxiter': 1000}
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def control_step(self, x: np.ndarray, r: np.ndarray,
+                          u_min: Optional[np.ndarray] = None,
+                          u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Perform one Nonlinear MPC control step.
+
+              Args:
+                  x: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Control action to apply
+              """
+              # Solve NMPC problem
+              U_opt = self.solve_nmpc(x, r, u_min, u_max)
+              
+              # Return first control action
+              return U_opt[0]
+    advantages:
+      - "Handles nonlinear system dynamics"
+      - "Supports general nonlinear constraints"
+      - "Can achieve superior performance for nonlinear systems"
+      - "Flexible cost function formulation"
+    disadvantages:
+      - "Computationally intensive"
+      - "May not guarantee global optimality"
+      - "Requires careful tuning of optimization parameters"
+      - "Convergence not guaranteed in all cases"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Nonlinear MPC"
+      time: "O(N⁶)"
+      space: "O(N⁴)"
+      notes: "Complexity depends on prediction horizon N and system dimensions"
+    - approach: "SQP Solver"
+      time: "O(N⁴) per iteration"
+      space: "O(N²)"
+      notes: "Iterative solution with QP subproblems"
+
+  performance_notes:
+    - "Nonlinear optimization requires iterative solution"
+    - "Computational complexity scales with prediction horizon"
+    - "Memory requirements scale with system dimensions"
+
+# Applications and use cases
+applications:
+  - category: "Chemical Process Control"
+    examples:
+      - "Reactor Control: Temperature and concentration control in chemical reactors"
+      - "Distillation Columns: Multi-component separation control"
+      - "Polymerization Processes: Molecular weight and conversion control"
+      - "Bioreactors: Cell growth and product formation control"
+
+  - category: "Robotics and Mechatronics"
+    examples:
+      - "Manipulator Control: Joint trajectory tracking with dynamics"
+      - "Mobile Robot Navigation: Path planning with nonholonomic constraints"
+      - "Humanoid Robots: Balance and locomotion control"
+      - "Aerial Vehicles: Attitude and position control with aerodynamics"
+
+  - category: "Aerospace Systems"
+    examples:
+      - "Aircraft Control: Flight dynamics and trajectory optimization"
+      - "Spacecraft Guidance: Orbital maneuvers with gravitational effects"
+      - "Missile Guidance: Target tracking with aerodynamic forces"
+      - "Satellite Control: Attitude control with environmental disturbances"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Vehicle Dynamics: Trajectory tracking with tire dynamics"
+      - "Engine Control: Combustion process optimization"
+      - "Hybrid Vehicles: Energy management with battery dynamics"
+      - "Autonomous Driving: Path planning with vehicle dynamics"
+
+  - category: "Energy Systems"
+    examples:
+      - "Power Systems: Load frequency control with generator dynamics"
+      - "Renewable Energy: Wind turbine control with aerodynamic effects"
+      - "Battery Management: Charging control with electrochemical dynamics"
+      - "Smart Grids: Power flow optimization with network constraints"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Nonlinear system control and optimization"
+  - "Optimization: Nonlinear programming and SQP methods"
+  - "System Modeling: Nonlinear system representation and analysis"
+  - "Real-time Systems: Implementation of complex optimization algorithms"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/nonlinear_mpc.py"
+      description: "Main implementation with SQP solver"
+    - path: "tests/unit/mpc/test_nonlinear_mpc.py"
+      description: "Comprehensive test suite including optimization tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Cannon, M., & Kouvaritakis, B."
+        year: "2017"
+        title: "Model Predictive Control: Classical, Robust and Stochastic"
+        publisher: "Springer"
+        note: "ISBN 978-3-319-42053-9"
+
+  - category: "Nonlinear MPC Theory"
+    items:
+      - author: "Allgöwer, F., Badgwell, T. A., Qin, J. S., Rawlings, J. B., & Wright, S. J."
+        year: "1999"
+        title: "Nonlinear predictive control and moving horizon estimation"
+        publisher: "Nonlinear Predictive Control"
+        note: "Pages 391-449"
+      - author: "Diehl, M., Bock, H. G., Schlöder, J. P., Findeisen, R., Nagy, Z., & Allgöwer, F."
+        year: "2002"
+        title: "Real-time optimization and nonlinear model predictive control of processes governed by differential-algebraic equations"
+        publisher: "Journal of Process Control"
+        note: "Volume 12, pages 577-585"
+
+  - category: "Online Resources"
+    items:
+      - title: "Nonlinear MPC"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "CasADi Documentation"
+        url: "https://web.casadi.org/docs/"
+        note: "Symbolic framework for nonlinear optimization"
+      - title: "ACADO Toolkit"
+        url: "https://acado.github.io/"
+        note: "Software environment for automatic control and dynamic optimization"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "IPOPT"
+        url: "https://coin-or.github.io/Ipopt/"
+        note: "Interior Point OPTimizer for nonlinear programming"
+      - title: "SNOPT"
+        url: "https://ccom.ucsd.edu/~optimizers/solvers/snopt/"
+        note: "Sparse Nonlinear OPTimizer"
+      - title: "WORHP"
+        url: "https://worhp.de/"
+        note: "We Optimize Really Huge Problems - nonlinear programming solver"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "nonlinear-mpc"
+  - "nonlinear-optimization"
+  - "sequential-quadratic-programming"
+  - "real-time-optimization"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "model-predictive-control"
+    relationship: "specialization"
+    description: "Nonlinear MPC is a specialized form of MPC for nonlinear systems"
+  - slug: "linear-mpc"
+    relationship: "alternative"
+    description: "Linear MPC for systems with linear dynamics"
+  - slug: "robust-mpc"
+    relationship: "extension"
+    description: "Robust MPC handles model uncertainty in nonlinear systems"

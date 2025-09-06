@@ -1,0 +1,860 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: online-dmp-adaptation
+name: Online DMP Adaptation
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs with real-time parameter updates, continuous learning from feedback, and adaptive behavior modification during execution."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Online DMP Adaptation extends the basic DMP framework to enable real-time parameter updates and continuous learning from feedback during movement execution. This approach allows robots to adapt their movements based on environmental changes, task requirements, and performance feedback without requiring complete re-learning.
+
+  The key innovation of online DMP adaptation is the integration of:
+  - Real-time parameter updates during movement execution
+  - Continuous learning from sensory feedback and performance metrics
+  - Adaptive behavior modification based on changing conditions
+  - Incremental learning that preserves previously learned behaviors
+  - Robust adaptation mechanisms that handle noisy feedback
+
+  These DMPs are particularly valuable in applications requiring adaptation to changing environments, such as manipulation in dynamic environments, human-robot interaction, and any task where the robot must continuously improve its performance.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Basic DMP: τẏ = α_y(β_y(g - y) - ẏ) + f(x)
+    - Feedback signal: F(t) = {f_sensor(t), f_performance(t), f_environment(t)}
+    - Adaptation rate: η > 0
+    - Learning rate: α_learn > 0
+    - Forgetting factor: λ ∈ [0,1]
+
+    The online adaptation becomes:
+    τẏ = α_y(β_y(g - y) - ẏ) + f(x, w(t))
+    
+    Where the weights are updated online:
+    w(t+1) = w(t) + η * ∇_w J(w(t), F(t))
+    
+    And the objective function is:
+    J(w, F) = α_learn * L_performance(w, F) + λ * L_consistency(w, w_old)
+    
+    Where:
+    - L_performance is the performance loss
+    - L_consistency is the consistency loss with previous weights
+
+  key_properties:
+    - name: "Online Weight Update"
+      formula: "w(t+1) = w(t) + η * ∇_w J(w(t), F(t))"
+      description: "Weights are updated in real-time based on feedback"
+    - name: "Performance Learning"
+      formula: "L_performance(w, F) = ||y_desired - y_actual||²"
+      description: "Learning is driven by performance feedback"
+    - name: "Consistency Preservation"
+      formula: "L_consistency(w, w_old) = ||w - w_old||²"
+      description: "Previous knowledge is preserved through consistency"
+
+# Key properties and characteristics
+properties:
+  - name: "Real-time Adaptation"
+    description: "Adapts parameters in real-time during execution"
+    importance: "fundamental"
+  - name: "Continuous Learning"
+    description: "Continuously learns from feedback and experience"
+    importance: "fundamental"
+  - name: "Incremental Updates"
+    description: "Updates parameters incrementally without complete re-learning"
+    importance: "fundamental"
+  - name: "Feedback Integration"
+    description: "Integrates multiple types of feedback for adaptation"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "gradient_based_adaptation"
+    name: "Gradient-based Online Adaptation"
+    description: "Online DMP adaptation using gradient-based parameter updates"
+    complexity:
+      time: "O(T × K × F)"
+      space: "O(K + F)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Dict, List, Tuple, Optional, Callable
+      import matplotlib.pyplot as plt
+
+      class OnlineDMPAdaptation:
+          """
+          Online DMP adaptation with real-time parameter updates.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
+                       adaptation_rate: float = 0.1, forgetting_factor: float = 0.9):
+              """
+              Initialize online DMP adaptation.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  learning_rate: Learning rate for parameter updates
+                  adaptation_rate: Rate of adaptation
+                  forgetting_factor: Forgetting factor for old knowledge
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.learning_rate = learning_rate
+              self.adaptation_rate = adaptation_rate
+              self.forgetting_factor = forgetting_factor
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP weights
+              self.w = np.zeros((n_dims, n_basis))
+              self.w_old = np.zeros((n_dims, n_basis))
+              
+              # Feedback functions
+              self.feedback_functions = {}
+              self.feedback_weights = {}
+              
+              # Adaptation history
+              self.adaptation_history = []
+              self.performance_history = []
+
+          def add_feedback_function(self, name: str, func: Callable, weight: float = 1.0) -> None:
+              """
+              Add a feedback function for adaptation.
+
+              Args:
+                  name: Name of the feedback function
+                  func: Feedback function that returns feedback value
+                  weight: Weight of this feedback in the objective
+              """
+              self.feedback_functions[name] = func
+              self.feedback_weights[name] = weight
+
+          def compute_feedback(self, y: np.ndarray, dy: np.ndarray, ddy: np.ndarray, 
+                             t: float, context: Dict) -> Dict[str, float]:
+              """
+              Compute feedback from all feedback functions.
+
+              Args:
+                  y: Current position
+                  dy: Current velocity
+                  ddy: Current acceleration
+                  t: Current time
+                  context: Context information
+
+              Returns:
+                  Dictionary of feedback values
+              """
+              feedback = {}
+              for name, func in self.feedback_functions.items():
+                  try:
+                      feedback[name] = func(y, dy, ddy, t, context)
+                  except Exception as e:
+                      print(f"Error in feedback function {name}: {e}")
+                      feedback[name] = 0.0
+              
+              return feedback
+
+          def compute_performance_loss(self, feedback: Dict[str, float]) -> float:
+              """
+              Compute performance loss from feedback.
+
+              Args:
+                  feedback: Dictionary of feedback values
+
+              Returns:
+                  Performance loss
+              """
+              loss = 0.0
+              for name, value in feedback.items():
+                  weight = self.feedback_weights.get(name, 1.0)
+                  loss += weight * (value ** 2)
+              
+              return loss
+
+          def compute_consistency_loss(self) -> float:
+              """
+              Compute consistency loss with previous weights.
+
+              Returns:
+                  Consistency loss
+              """
+              return np.sum((self.w - self.w_old) ** 2)
+
+          def update_weights(self, feedback: Dict[str, float], y: np.ndarray, 
+                           dy: np.ndarray, ddy: np.ndarray, t: float) -> None:
+              """
+              Update DMP weights based on feedback.
+
+              Args:
+                  feedback: Dictionary of feedback values
+                  y: Current position
+                  dy: Current velocity
+                  ddy: Current acceleration
+                  t: Current time
+              """
+              # Store old weights
+              self.w_old = self.w.copy()
+              
+              # Compute performance loss
+              performance_loss = self.compute_performance_loss(feedback)
+              
+              # Compute consistency loss
+              consistency_loss = self.compute_consistency_loss()
+              
+              # Compute gradients
+              grad_performance = self.compute_performance_gradient(feedback, y, dy, ddy, t)
+              grad_consistency = self.compute_consistency_gradient()
+              
+              # Update weights
+              total_grad = self.learning_rate * grad_performance + self.forgetting_factor * grad_consistency
+              self.w += self.adaptation_rate * total_grad
+              
+              # Store adaptation history
+              self.adaptation_history.append({
+                  'time': t,
+                  'performance_loss': performance_loss,
+                  'consistency_loss': consistency_loss,
+                  'feedback': feedback.copy()
+              })
+              
+              self.performance_history.append(performance_loss)
+
+          def compute_performance_gradient(self, feedback: Dict[str, float], y: np.ndarray,
+                                         dy: np.ndarray, ddy: np.ndarray, t: float) -> np.ndarray:
+              """
+              Compute gradient of performance loss with respect to weights.
+
+              Args:
+                  feedback: Dictionary of feedback values
+                  y: Current position
+                  dy: Current velocity
+                  ddy: Current acceleration
+                  t: Current time
+
+              Returns:
+                  Performance gradient
+              """
+              grad = np.zeros((self.n_dims, self.n_basis))
+              
+              # Compute canonical system value
+              x = np.exp(-self.alpha_x * t)
+              
+              # Compute basis functions
+              psi = np.exp(-self.h * (x - self.c)**2)
+              psi_sum = np.sum(psi) + 1e-10
+              
+              # Compute gradient for each dimension
+              for d in range(self.n_dims):
+                  for i in range(self.n_basis):
+                      # Gradient of forcing function with respect to weight
+                      grad_f = psi[i] * x / psi_sum
+                      
+                      # Gradient of performance loss
+                      for name, value in feedback.items():
+                          weight = self.feedback_weights.get(name, 1.0)
+                          grad[d, i] += weight * 2 * value * grad_f
+              
+              return grad
+
+          def compute_consistency_gradient(self) -> np.ndarray:
+              """
+              Compute gradient of consistency loss with respect to weights.
+
+              Returns:
+                  Consistency gradient
+              """
+              return 2 * (self.w - self.w_old)
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn initial DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights
+              for d in range(self.n_dims):
+                  f_target = (ddy_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+              
+              # Store initial weights
+              self.w_old = self.w.copy()
+
+          def generate_adaptive_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                         tau: float = 1.0, dt: float = 0.01,
+                                         context: Optional[Dict] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[Dict]]:
+              """
+              Generate adaptive trajectory with online learning.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+                  context: Optional context information
+
+              Returns:
+                  Tuple of (position, velocity, acceleration, adaptation_history)
+              """
+              if context is None:
+                  context = {}
+              
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              # Storage for trajectory
+              y_traj = np.zeros((T, self.n_dims))
+              dy_traj = np.zeros((T, self.n_dims))
+              ddy_traj = np.zeros((T, self.n_dims))
+              
+              # Clear adaptation history
+              self.adaptation_history.clear()
+              self.performance_history.clear()
+              
+              def adaptive_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate with online adaptation
+              for i, t in enumerate(t_span):
+                  # Get current state
+                  if i == 0:
+                      state = y0
+                  else:
+                      state = np.concatenate([y_traj[i-1], dy_traj[i-1], [np.exp(-self.alpha_x * t)]])
+                  
+                  # Compute dynamics
+                  dydt = adaptive_dmp_dynamics(state, t)
+                  
+                  # Update trajectory
+                  y_traj[i] = state[:self.n_dims]
+                  dy_traj[i] = state[self.n_dims:2*self.n_dims]
+                  ddy_traj[i] = dydt[self.n_dims:2*self.n_dims]
+                  
+                  # Compute feedback
+                  feedback = self.compute_feedback(y_traj[i], dy_traj[i], ddy_traj[i], t, context)
+                  
+                  # Update weights
+                  self.update_weights(feedback, y_traj[i], dy_traj[i], ddy_traj[i], t)
+              
+              return y_traj, dy_traj, ddy_traj, self.adaptation_history
+
+          def visualize_adaptation(self, title: str = "Online Adaptation") -> None:
+              """
+              Visualize the adaptation process.
+
+              Args:
+                  title: Plot title
+              """
+              if not self.adaptation_history:
+                  print("No adaptation history available")
+                  return
+              
+              fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+              
+              # Plot performance history
+              times = [entry['time'] for entry in self.adaptation_history]
+              performance_losses = [entry['performance_loss'] for entry in self.adaptation_history]
+              consistency_losses = [entry['consistency_loss'] for entry in self.adaptation_history]
+              
+              ax1.plot(times, performance_losses, 'b-', label='Performance Loss')
+              ax1.plot(times, consistency_losses, 'r-', label='Consistency Loss')
+              ax1.set_xlabel('Time')
+              ax1.set_ylabel('Loss')
+              ax1.set_title('Adaptation Losses')
+              ax1.legend()
+              ax1.grid(True)
+              
+              # Plot weight changes
+              weight_changes = []
+              for i in range(len(self.adaptation_history)):
+                  if i > 0:
+                      weight_change = np.sum(np.abs(self.w - self.w_old))
+                      weight_changes.append(weight_change)
+              
+              if weight_changes:
+                  ax2.plot(times[1:], weight_changes, 'g-', label='Weight Change')
+                  ax2.set_xlabel('Time')
+                  ax2.set_ylabel('Weight Change')
+                  ax2.set_title('Weight Adaptation')
+                  ax2.legend()
+                  ax2.grid(True)
+              
+              plt.suptitle(title)
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Real-time parameter updates"
+      - "Continuous learning from feedback"
+      - "Incremental adaptation"
+      - "Multiple feedback integration"
+    disadvantages:
+      - "Requires feedback functions"
+      - "May be sensitive to noisy feedback"
+      - "Computational overhead"
+
+  - type: "reinforcement_learning_adaptation"
+    name: "Reinforcement Learning Adaptation"
+    description: "Online DMP adaptation using reinforcement learning"
+    complexity:
+      time: "O(T × K × A)"
+      space: "O(K + A)"
+    code: |
+      class RLAdaptationDMP(OnlineDMPAdaptation):
+          """
+          Online DMP adaptation using reinforcement learning.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
+                       adaptation_rate: float = 0.1, forgetting_factor: float = 0.9,
+                       rl_learning_rate: float = 0.001):
+              """
+              Initialize RL adaptation DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  learning_rate: Learning rate for parameter updates
+                  adaptation_rate: Rate of adaptation
+                  forgetting_factor: Forgetting factor for old knowledge
+                  rl_learning_rate: RL learning rate
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, learning_rate, adaptation_rate, forgetting_factor)
+              self.rl_learning_rate = rl_learning_rate
+              
+              # RL parameters
+              self.policy_weights = np.zeros((n_dims, n_basis))
+              self.value_weights = np.zeros((n_dims, n_basis))
+              self.advantage_estimates = []
+              
+              # Experience buffer
+              self.experience_buffer = []
+              self.buffer_size = 1000
+
+          def add_experience(self, state: np.ndarray, action: np.ndarray, reward: float, 
+                           next_state: np.ndarray, done: bool) -> None:
+              """
+              Add experience to the buffer.
+
+              Args:
+                  state: Current state
+                  action: Action taken
+                  reward: Reward received
+                  next_state: Next state
+                  done: Whether episode is done
+              """
+              experience = {
+                  'state': state.copy(),
+                  'action': action.copy(),
+                  'reward': reward,
+                  'next_state': next_state.copy(),
+                  'done': done
+              }
+              
+              self.experience_buffer.append(experience)
+              
+              # Maintain buffer size
+              if len(self.experience_buffer) > self.buffer_size:
+                  self.experience_buffer.pop(0)
+
+          def compute_reward(self, y: np.ndarray, dy: np.ndarray, ddy: np.ndarray, 
+                           t: float, context: Dict) -> float:
+              """
+              Compute reward for current state.
+
+              Args:
+                  y: Current position
+                  dy: Current velocity
+                  ddy: Current acceleration
+                  t: Current time
+                  context: Context information
+
+              Returns:
+                  Reward value
+              """
+              reward = 0.0
+              
+              # Position reward
+              if 'target_position' in context:
+                  target_pos = context['target_position']
+                  position_error = np.linalg.norm(y - target_pos)
+                  reward += -position_error
+              
+              # Velocity reward
+              if 'target_velocity' in context:
+                  target_vel = context['target_velocity']
+                  velocity_error = np.linalg.norm(dy - target_vel)
+                  reward += -0.1 * velocity_error
+              
+              # Smoothness reward
+              smoothness = -np.linalg.norm(ddy)
+              reward += 0.01 * smoothness
+              
+              return reward
+
+          def update_policy(self, experiences: List[Dict]) -> None:
+              """
+              Update policy using experiences.
+
+              Args:
+                  experiences: List of experiences
+              """
+              if len(experiences) < 2:
+                  return
+              
+              # Compute advantages
+              advantages = []
+              for i, exp in enumerate(experiences):
+                  if i < len(experiences) - 1:
+                      advantage = exp['reward'] + 0.99 * experiences[i+1]['reward'] - exp['reward']
+                  else:
+                      advantage = exp['reward']
+                  advantages.append(advantage)
+              
+              # Update policy weights
+              for i, exp in enumerate(experiences):
+                  state = exp['state']
+                  action = exp['action']
+                  advantage = advantages[i]
+                  
+                  # Compute policy gradient
+                  grad = self.compute_policy_gradient(state, action)
+                  
+                  # Update weights
+                  self.policy_weights += self.rl_learning_rate * advantage * grad
+
+          def compute_policy_gradient(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
+              """
+              Compute policy gradient.
+
+              Args:
+                  state: Current state
+                  action: Action taken
+
+              Returns:
+                  Policy gradient
+              """
+              # Simplified policy gradient computation
+              grad = np.zeros((self.n_dims, self.n_basis))
+              
+              # Compute canonical system value
+              x = np.exp(-self.alpha_x * state[0])  # Assuming first element is time
+              
+              # Compute basis functions
+              psi = np.exp(-self.h * (x - self.c)**2)
+              psi_sum = np.sum(psi) + 1e-10
+              
+              # Compute gradient for each dimension
+              for d in range(self.n_dims):
+                  for i in range(self.n_basis):
+                      grad[d, i] = psi[i] * x / psi_sum
+              
+              return grad
+
+          def generate_adaptive_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                         tau: float = 1.0, dt: float = 0.01,
+                                         context: Optional[Dict] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[Dict]]:
+              """
+              Generate adaptive trajectory with RL learning.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+                  context: Optional context information
+
+              Returns:
+                  Tuple of (position, velocity, acceleration, adaptation_history)
+              """
+              if context is None:
+                  context = {}
+              
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              # Storage for trajectory
+              y_traj = np.zeros((T, self.n_dims))
+              dy_traj = np.zeros((T, self.n_dims))
+              ddy_traj = np.zeros((T, self.n_dims))
+              
+              # Clear adaptation history
+              self.adaptation_history.clear()
+              self.performance_history.clear()
+              
+              def rl_adaptive_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function with policy
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * (self.w[d] + self.policy_weights[d]) * x) / (np.sum(psi) + 1e-10))
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate with RL adaptation
+              for i, t in enumerate(t_span):
+                  # Get current state
+                  if i == 0:
+                      state = y0
+                  else:
+                      state = np.concatenate([y_traj[i-1], dy_traj[i-1], [np.exp(-self.alpha_x * t)]])
+                  
+                  # Compute dynamics
+                  dydt = rl_adaptive_dmp_dynamics(state, t)
+                  
+                  # Update trajectory
+                  y_traj[i] = state[:self.n_dims]
+                  dy_traj[i] = state[self.n_dims:2*self.n_dims]
+                  ddy_traj[i] = dydt[self.n_dims:2*self.n_dims]
+                  
+                  # Compute reward
+                  reward = self.compute_reward(y_traj[i], dy_traj[i], ddy_traj[i], t, context)
+                  
+                  # Add experience
+                  if i > 0:
+                      prev_state = np.concatenate([y_traj[i-1], dy_traj[i-1], [np.exp(-self.alpha_x * t_span[i-1])]])
+                      curr_state = np.concatenate([y_traj[i], dy_traj[i], [np.exp(-self.alpha_x * t)]])
+                      action = ddy_traj[i-1]
+                      
+                      self.add_experience(prev_state, action, reward, curr_state, i == T-1)
+                  
+                  # Update policy
+                  if len(self.experience_buffer) > 10:
+                      recent_experiences = self.experience_buffer[-10:]
+                      self.update_policy(recent_experiences)
+                  
+                  # Store adaptation history
+                  self.adaptation_history.append({
+                      'time': t,
+                      'reward': reward,
+                      'policy_weights': self.policy_weights.copy()
+                  })
+              
+              return y_traj, dy_traj, ddy_traj, self.adaptation_history
+
+    advantages:
+      - "Reinforcement learning integration"
+      - "Reward-based adaptation"
+      - "Experience-based learning"
+      - "Policy gradient methods"
+    disadvantages:
+      - "Requires reward function design"
+      - "May be slow to converge"
+      - "Sensitive to reward shaping"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Gradient-based Adaptation"
+      time: "O(T × K × F)"
+      space: "O(K + F)"
+      notes: "Time complexity scales with trajectory length, basis functions, and feedback functions"
+    
+    - approach: "RL Adaptation"
+      time: "O(T × K × A)"
+      space: "O(K + A)"
+      notes: "Additional complexity for RL policy updates"
+    
+    - approach: "Feedback Processing"
+      time: "O(T × F)"
+      space: "O(F)"
+      notes: "Feedback processing scales with trajectory length and feedback functions"
+
+# Applications and use cases
+applications:
+  - category: "Dynamic Environment Adaptation"
+    examples:
+      - "Changing Obstacles: Adapting to moving or changing obstacles"
+      - "Variable Surfaces: Adapting to different surface properties"
+      - "Weather Conditions: Adapting to changing weather conditions"
+      - "Lighting Changes: Adapting to changing lighting conditions"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Adaptive Assistance: Adapting assistance based on user needs"
+      - "Collaborative Tasks: Adapting to human partner behavior"
+      - "Learning from Humans: Learning from human demonstrations and feedback"
+      - "Personalized Interaction: Personalizing interaction based on user preferences"
+
+  - category: "Manufacturing and Assembly"
+    examples:
+      - "Quality Control: Adapting to quality requirements"
+      - "Product Variations: Adapting to different product specifications"
+      - "Tool Wear: Adapting to tool wear and degradation"
+      - "Process Optimization: Optimizing processes based on performance"
+
+  - category: "Service Robotics"
+    examples:
+      - "Household Tasks: Adapting to different household environments"
+      - "Cleaning: Adapting cleaning strategies based on results"
+      - "Cooking: Adapting cooking techniques based on taste feedback"
+      - "Maintenance: Adapting maintenance procedures based on equipment condition"
+
+  - category: "Medical and Rehabilitation"
+    examples:
+      - "Patient Adaptation: Adapting to individual patient needs"
+      - "Recovery Progress: Adapting to patient recovery progress"
+      - "Therapy Optimization: Optimizing therapy based on patient response"
+      - "Surgical Adaptation: Adapting surgical procedures based on patient anatomy"
+
+# Educational value and learning objectives
+educational_value:
+  - "Online Learning: Understanding online learning and adaptation"
+  - "Feedback Integration: Understanding how to integrate multiple feedback sources"
+  - "Reinforcement Learning: Understanding RL-based adaptation"
+  - "Continuous Improvement: Understanding continuous improvement mechanisms"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/online_adaptation_dmps.py"
+      description: "Main implementation with gradient-based and RL adaptation"
+    - path: "tests/unit/dynamic_movement_primitives/test_online_adaptation_dmps.py"
+      description: "Comprehensive test suite including adaptation tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Gams, A., Ijspeert, A. J., Schaal, S., & Lenarčič, J."
+        year: "2009"
+        title: "On-line learning and modulation of periodic movements with nonlinear dynamical systems"
+        publisher: "Autonomous Robots"
+        note: "Original work on online DMP adaptation"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with online adaptation and learning"
+
+  - category: "Online Learning"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "Comprehensive introduction to reinforcement learning"
+      - author: "Bishop, C. M."
+        year: "2006"
+        title: "Pattern Recognition and Machine Learning"
+        publisher: "Springer"
+        note: "Pattern recognition and machine learning fundamentals"
+
+  - category: "Online Resources"
+    items:
+      - title: "Online Learning"
+        url: "https://en.wikipedia.org/wiki/Online_machine_learning"
+        note: "Wikipedia article on online machine learning"
+      - title: "Reinforcement Learning"
+        url: "https://en.wikipedia.org/wiki/Reinforcement_learning"
+        note: "Wikipedia article on reinforcement learning"
+      - title: "Adaptive Control"
+        url: "https://en.wikipedia.org/wiki/Adaptive_control"
+        note: "Wikipedia article on adaptive control"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "OpenAI Gym"
+        url: "https://gym.openai.com/"
+        note: "Reinforcement learning environment library"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "online-adaptation"
+  - "real-time-learning"
+  - "feedback-integration"
+  - "reinforcement-learning"
+  - "continuous-improvement"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that online adaptation extends with real-time learning"
+  - slug: "multi-task-dmp-learning"
+    relationship: "same_family"
+    description: "Multi-task learning that can be combined with online adaptation"

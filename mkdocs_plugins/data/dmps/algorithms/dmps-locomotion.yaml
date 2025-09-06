@@ -1,0 +1,701 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: dmps-locomotion
+name: DMPs for Locomotion
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs specialized for walking pattern generation, gait adaptation, and terrain-aware movement in legged robots and humanoid systems."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  DMPs for Locomotion extend the basic DMP framework to handle walking pattern generation, gait adaptation, and terrain-aware movement in legged robots and humanoid systems. This approach enables robots to learn and adapt their walking patterns to different terrains, speeds, and environmental conditions.
+
+  The key innovation of locomotion DMPs is the integration of:
+  - Walking pattern generation with proper gait cycles
+  - Gait adaptation mechanisms for different speeds and terrains
+  - Terrain-aware movement with ground contact modeling
+  - Balance and stability considerations
+  - Rhythmic movement coordination for multiple limbs
+
+  These DMPs are particularly valuable in applications requiring legged locomotion, such as humanoid robots, quadruped robots, and any system that needs to walk or run on different terrains.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Leg joint angles: θ(t) = [θ_1(t), θ_2(t), ..., θ_n(t)]
+    - Gait phase: φ(t) ∈ [0, 2π] where φ = 0 is heel strike
+    - Terrain height: h(x, y) at position (x, y)
+    - Desired speed: v_desired
+    - Balance constraints: C_balance(θ, θ̇, θ̈) ≤ 0
+
+    The locomotion DMP becomes:
+    τθ̈ = α_y(β_y(θ_ref - θ) - θ̇) + f(φ) + f_terrain(θ, h) + f_balance(θ, θ̇, θ̈)
+    τφ̇ = ω_gait
+    
+    Where:
+    - f(φ) is the rhythmic forcing function for gait
+    - f_terrain(θ, h) adapts to terrain height
+    - f_balance(θ, θ̇, θ̈) maintains balance
+    - ω_gait is the gait frequency
+
+  key_properties:
+    - name: "Gait Cycle"
+      formula: "φ(t) = ω_gait * t mod 2π"
+      description: "Gait phase cycles through walking phases"
+    - name: "Terrain Adaptation"
+      formula: "f_terrain(θ, h) = k_terrain * (h_desired - h_actual)"
+      description: "Adapts to terrain height variations"
+    - name: "Balance Control"
+      formula: "f_balance(θ, θ̇, θ̈) = k_balance * (COM_desired - COM_actual)"
+      description: "Maintains center of mass balance"
+
+# Key properties and characteristics
+properties:
+  - name: "Walking Pattern Generation"
+    description: "Generates natural walking patterns with proper gait cycles"
+    importance: "fundamental"
+  - name: "Gait Adaptation"
+    description: "Adapts gait to different speeds and terrains"
+    importance: "fundamental"
+  - name: "Terrain Awareness"
+    description: "Adapts to terrain variations and obstacles"
+    importance: "fundamental"
+  - name: "Balance Maintenance"
+    description: "Maintains balance and stability during walking"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "walking_pattern_dmp"
+    name: "Walking Pattern DMPs"
+    description: "DMPs for generating walking patterns with gait cycles"
+    complexity:
+      time: "O(T × K × L)"
+      space: "O(K × L)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Dict, List, Tuple, Optional
+      import matplotlib.pyplot as plt
+
+      class WalkingPatternDMP:
+          """
+          DMP for generating walking patterns with gait cycles.
+          """
+
+          def __init__(self, n_legs: int = 4, n_joints_per_leg: int = 3, n_basis: int = 50,
+                       alpha_y: float = 25.0, beta_y: float = 6.25, alpha_x: float = 1.0,
+                       gait_frequency: float = 1.0, phase_offset: float = 0.0):
+              """
+              Initialize walking pattern DMP.
+
+              Args:
+                  n_legs: Number of legs
+                  n_joints_per_leg: Number of joints per leg
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  gait_frequency: Gait frequency (steps per second)
+                  phase_offset: Phase offset between legs
+              """
+              self.n_legs = n_legs
+              self.n_joints_per_leg = n_joints_per_leg
+              self.n_dims = n_legs * n_joints_per_leg
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.gait_frequency = gait_frequency
+              self.phase_offset = phase_offset
+              
+              # Basis function parameters (for gait phase)
+              self.c = np.linspace(0, 2*np.pi, n_basis, endpoint=False)
+              self.h = np.ones(n_basis) * n_basis / (2*np.pi)
+              
+              # DMP weights for each joint
+              self.w = np.zeros((self.n_dims, n_basis))
+              
+              # Gait parameters
+              self.gait_phases = np.zeros(n_legs)
+              self.leg_phases = np.linspace(0, 2*np.pi, n_legs, endpoint=False)
+              
+              # Walking parameters
+              self.step_length = 0.3
+              self.step_height = 0.1
+              self.stance_phase_ratio = 0.6
+
+          def set_gait_parameters(self, step_length: float, step_height: float, 
+                                stance_phase_ratio: float) -> None:
+              """
+              Set walking parameters.
+
+              Args:
+                  step_length: Length of each step
+                  step_height: Height of foot lift during swing
+                  stance_phase_ratio: Ratio of stance phase to total gait cycle
+              """
+              self.step_length = step_length
+              self.step_height = step_height
+              self.stance_phase_ratio = stance_phase_ratio
+
+          def compute_gait_phase(self, t: float, leg_id: int) -> float:
+              """
+              Compute gait phase for a specific leg.
+
+              Args:
+                  t: Current time
+                  leg_id: Leg ID
+
+              Returns:
+                  Gait phase for the leg
+              """
+              # Base phase
+              base_phase = self.gait_frequency * t * 2 * np.pi
+              
+              # Leg-specific phase offset
+              leg_phase = base_phase + self.leg_phases[leg_id]
+              
+              # Normalize to [0, 2π]
+              leg_phase = leg_phase % (2 * np.pi)
+              
+              return leg_phase
+
+          def is_swing_phase(self, phase: float) -> bool:
+              """
+              Check if leg is in swing phase.
+
+              Args:
+                  phase: Gait phase
+
+              Returns:
+                  True if in swing phase
+              """
+              return phase > 2 * np.pi * self.stance_phase_ratio
+
+          def compute_foot_trajectory(self, phase: float, leg_id: int) -> Tuple[float, float, float]:
+              """
+              Compute foot trajectory for a given phase.
+
+              Args:
+                  phase: Gait phase
+                  leg_id: Leg ID
+
+              Returns:
+                  Tuple of (x, y, z) foot position
+              """
+              if self.is_swing_phase(phase):
+                  # Swing phase - foot moves forward and up
+                  swing_phase = (phase - 2 * np.pi * self.stance_phase_ratio) / (2 * np.pi * (1 - self.stance_phase_ratio))
+                  
+                  # Forward movement
+                  x = self.step_length * swing_phase
+                  
+                  # Vertical movement (parabolic)
+                  z = self.step_height * np.sin(np.pi * swing_phase)
+                  
+                  # Lateral movement (minimal)
+                  y = 0.0
+              else:
+                  # Stance phase - foot stays on ground
+                  x = 0.0
+                  y = 0.0
+                  z = 0.0
+              
+              return x, y, z
+
+          def learn_from_demo(self, joint_angles_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn walking pattern from demonstration.
+
+              Args:
+                  joint_angles_demo: Demonstrated joint angles [T, n_dims]
+                  dt: Time step
+              """
+              T = len(joint_angles_demo)
+              
+              # Generate gait phases
+              phases = np.zeros((T, self.n_legs))
+              for t in range(T):
+                  for leg_id in range(self.n_legs):
+                      phases[t, leg_id] = self.compute_gait_phase(t * dt, leg_id)
+              
+              # Learn weights for each joint
+              for joint_id in range(self.n_dims):
+                  leg_id = joint_id // self.n_joints_per_leg
+                  joint_in_leg = joint_id % self.n_joints_per_leg
+                  
+                  # Compute target forcing function
+                  f_target = np.zeros(T)
+                  for t in range(T):
+                      # Compute desired joint angle from foot trajectory
+                      phase = phases[t, leg_id]
+                      foot_x, foot_y, foot_z = self.compute_foot_trajectory(phase, leg_id)
+                      
+                      # Simple inverse kinematics (simplified)
+                      if joint_in_leg == 0:  # Hip joint
+                          f_target[t] = foot_x * 0.5
+                      elif joint_in_leg == 1:  # Knee joint
+                          f_target[t] = foot_z * 0.3
+                      else:  # Ankle joint
+                          f_target[t] = foot_z * 0.2
+                      
+                      # Add error from demonstration
+                      f_target[t] += joint_angles_demo[t, joint_id] - f_target[t]
+                  
+                  # Learn weights using locally weighted regression
+                  for i in range(self.n_basis):
+                      # Use average phase across legs
+                      avg_phase = np.mean(phases[:, leg_id])
+                      psi = np.exp(-self.h[i] * (avg_phase - self.c[i])**2)
+                      
+                      numerator = np.sum(psi * np.sin(avg_phase) * f_target)
+                      denominator = np.sum(psi * np.sin(avg_phase)**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[joint_id, i] = numerator / denominator
+
+          def generate_walking_pattern(self, duration: float = 10.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate walking pattern.
+
+              Args:
+                  duration: Duration of walking pattern
+                  dt: Time step
+
+              Returns:
+                  Tuple of (joint_angles, joint_velocities, joint_accelerations)
+              """
+              # Time points
+              t_span = np.arange(0, duration, dt)
+              T = len(t_span)
+              
+              # Storage
+              joint_angles = np.zeros((T, self.n_dims))
+              joint_velocities = np.zeros((T, self.n_dims))
+              joint_accelerations = np.zeros((T, self.n_dims))
+              
+              # Initial conditions
+              joint_angles[0] = np.zeros(self.n_dims)
+              joint_velocities[0] = np.zeros(self.n_dims)
+              
+              # Generate walking pattern
+              for t in range(1, T):
+                  # Update gait phases
+                  for leg_id in range(self.n_legs):
+                      self.gait_phases[leg_id] = self.compute_gait_phase(t_span[t], leg_id)
+                  
+                  # Update joint angles
+                  for joint_id in range(self.n_dims):
+                      leg_id = joint_id // self.n_joints_per_leg
+                      phase = self.gait_phases[leg_id]
+                      
+                      # Compute forcing function
+                      f = 0.0
+                      for i in range(self.n_basis):
+                          psi = np.exp(-self.h[i] * (phase - self.c[i])**2)
+                          f += self.w[joint_id, i] * psi * np.sin(phase)
+                      
+                      # DMP dynamics
+                      joint_accelerations[t-1, joint_id] = (self.alpha_y * 
+                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) - 
+                                                           joint_velocities[t-1, joint_id]) + f)
+                      
+                      # Integration
+                      joint_velocities[t, joint_id] = joint_velocities[t-1, joint_id] + joint_accelerations[t-1, joint_id] * dt
+                      joint_angles[t, joint_id] = joint_angles[t-1, joint_id] + joint_velocities[t, joint_id] * dt
+                  
+                  # Compute accelerations
+                  joint_accelerations[t] = (joint_velocities[t] - joint_velocities[t-1]) / dt
+              
+              return joint_angles, joint_velocities, joint_accelerations
+
+          def visualize_walking_pattern(self, joint_angles: np.ndarray, dt: float = 0.01) -> None:
+              """
+              Visualize the walking pattern.
+
+              Args:
+                  joint_angles: Joint angles over time
+                  dt: Time step
+              """
+              T = joint_angles.shape[0]
+              t_span = np.arange(0, T * dt, dt)
+              
+              fig, axes = plt.subplots(self.n_legs, self.n_joints_per_leg, figsize=(15, 10))
+              if self.n_legs == 1:
+                  axes = axes.reshape(1, -1)
+              if self.n_joints_per_leg == 1:
+                  axes = axes.reshape(-1, 1)
+              
+              for leg_id in range(self.n_legs):
+                  for joint_id in range(self.n_joints_per_leg):
+                      joint_idx = leg_id * self.n_joints_per_leg + joint_id
+                      ax = axes[leg_id, joint_id]
+                      
+                      ax.plot(t_span, joint_angles[:, joint_idx], 'b-', linewidth=2)
+                      ax.set_xlabel('Time (s)')
+                      ax.set_ylabel('Joint Angle (rad)')
+                      ax.set_title(f'Leg {leg_id+1}, Joint {joint_id+1}')
+                      ax.grid(True)
+              
+              plt.suptitle('Walking Pattern - Joint Angles')
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Natural walking pattern generation"
+      - "Gait cycle coordination"
+      - "Multi-leg coordination"
+      - "Rhythmic movement patterns"
+    disadvantages:
+      - "Requires gait parameter tuning"
+      - "May not handle all terrain types"
+      - "Complex multi-leg coordination"
+
+  - type: "terrain_adaptive_dmp"
+    name: "Terrain-Adaptive DMPs"
+    description: "DMPs that adapt to different terrains and obstacles"
+    complexity:
+      time: "O(T × K × L + T × T_terrain)"
+      space: "O(K × L + T_terrain)"
+    code: |
+      class TerrainAdaptiveDMP(WalkingPatternDMP):
+          """
+          DMP that adapts to different terrains and obstacles.
+          """
+
+          def __init__(self, n_legs: int = 4, n_joints_per_leg: int = 3, n_basis: int = 50,
+                       alpha_y: float = 25.0, beta_y: float = 6.25, alpha_x: float = 1.0,
+                       gait_frequency: float = 1.0, phase_offset: float = 0.0,
+                       terrain_adaptation_gain: float = 1.0):
+              """
+              Initialize terrain-adaptive DMP.
+
+              Args:
+                  n_legs: Number of legs
+                  n_joints_per_leg: Number of joints per leg
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  gait_frequency: Gait frequency
+                  phase_offset: Phase offset between legs
+                  terrain_adaptation_gain: Gain for terrain adaptation
+              """
+              super().__init__(n_legs, n_joints_per_leg, n_basis, alpha_y, beta_y, alpha_x, gait_frequency, phase_offset)
+              self.terrain_adaptation_gain = terrain_adaptation_gain
+              
+              # Terrain information
+              self.terrain_height = None
+              self.terrain_gradient = None
+              self.obstacles = []
+              
+              # Terrain adaptation parameters
+              self.terrain_weights = np.zeros((self.n_dims, n_basis))
+
+          def set_terrain(self, terrain_height: np.ndarray, terrain_gradient: Optional[np.ndarray] = None) -> None:
+              """
+              Set terrain information.
+
+              Args:
+                  terrain_height: Terrain height map
+                  terrain_gradient: Terrain gradient map
+              """
+              self.terrain_height = terrain_height
+              self.terrain_gradient = terrain_gradient
+
+          def add_obstacle(self, position: Tuple[float, float], radius: float) -> None:
+              """
+              Add an obstacle to the terrain.
+
+              Args:
+                  position: Obstacle position (x, y)
+                  radius: Obstacle radius
+              """
+              self.obstacles.append({'position': position, 'radius': radius})
+
+          def compute_terrain_height(self, x: float, y: float) -> float:
+              """
+              Compute terrain height at given position.
+
+              Args:
+                  x: X position
+                  y: Y position
+
+              Returns:
+                  Terrain height
+              """
+              if self.terrain_height is None:
+                  return 0.0
+              
+              # Simple interpolation (in practice, use more sophisticated methods)
+              x_idx = int(x * 10) % self.terrain_height.shape[0]
+              y_idx = int(y * 10) % self.terrain_height.shape[1]
+              
+              return self.terrain_height[x_idx, y_idx]
+
+          def compute_terrain_adaptation(self, leg_id: int, phase: float, 
+                                       current_position: np.ndarray) -> np.ndarray:
+              """
+              Compute terrain adaptation for a leg.
+
+              Args:
+                  leg_id: Leg ID
+                  phase: Gait phase
+                  current_position: Current leg position
+
+              Returns:
+                  Terrain adaptation force
+              """
+              if not self.is_swing_phase(phase):
+                  # Stance phase - adapt to terrain
+                  x, y, z = current_position
+                  terrain_height = self.compute_terrain_height(x, y)
+                  
+                  # Compute desired foot height
+                  desired_height = terrain_height
+                  
+                  # Compute adaptation force
+                  height_error = desired_height - z
+                  adaptation_force = self.terrain_adaptation_gain * height_error
+                  
+                  return np.array([0.0, 0.0, adaptation_force])
+              else:
+                  # Swing phase - avoid obstacles
+                  x, y, z = current_position
+                  
+                  # Check for obstacles
+                  for obstacle in self.obstacles:
+                      obs_x, obs_y = obstacle['position']
+                      obs_radius = obstacle['radius']
+                      
+                      distance = np.sqrt((x - obs_x)**2 + (y - obs_y)**2)
+                      if distance < obs_radius:
+                          # Avoid obstacle
+                          avoidance_force = (obs_radius - distance) / obs_radius
+                          return np.array([avoidance_force, 0.0, 0.0])
+                  
+                  return np.zeros(3)
+
+          def generate_terrain_adaptive_pattern(self, duration: float = 10.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate terrain-adaptive walking pattern.
+
+              Args:
+                  duration: Duration of walking pattern
+                  dt: Time step
+
+              Returns:
+                  Tuple of (joint_angles, joint_velocities, joint_accelerations)
+              """
+              # Time points
+              t_span = np.arange(0, duration, dt)
+              T = len(t_span)
+              
+              # Storage
+              joint_angles = np.zeros((T, self.n_dims))
+              joint_velocities = np.zeros((T, self.n_dims))
+              joint_accelerations = np.zeros((T, self.n_dims))
+              
+              # Initial conditions
+              joint_angles[0] = np.zeros(self.n_dims)
+              joint_velocities[0] = np.zeros(self.n_dims)
+              
+              # Generate walking pattern
+              for t in range(1, T):
+                  # Update gait phases
+                  for leg_id in range(self.n_legs):
+                      self.gait_phases[leg_id] = self.compute_gait_phase(t_span[t], leg_id)
+                  
+                  # Update joint angles
+                  for joint_id in range(self.n_dims):
+                      leg_id = joint_id // self.n_joints_per_leg
+                      phase = self.gait_phases[leg_id]
+                      
+                      # Compute forcing function
+                      f = 0.0
+                      for i in range(self.n_basis):
+                          psi = np.exp(-self.h[i] * (phase - self.c[i])**2)
+                          f += self.w[joint_id, i] * psi * np.sin(phase)
+                      
+                      # Compute terrain adaptation
+                      current_position = np.array([0.0, 0.0, 0.0])  # Simplified
+                      terrain_adaptation = self.compute_terrain_adaptation(leg_id, phase, current_position)
+                      
+                      # Add terrain adaptation to forcing function
+                      if joint_id % self.n_joints_per_leg == 2:  # Ankle joint
+                          f += terrain_adaptation[2] * 0.1
+                      
+                      # DMP dynamics
+                      joint_accelerations[t-1, joint_id] = (self.alpha_y * 
+                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) - 
+                                                           joint_velocities[t-1, joint_id]) + f)
+                      
+                      # Integration
+                      joint_velocities[t, joint_id] = joint_velocities[t-1, joint_id] + joint_accelerations[t-1, joint_id] * dt
+                      joint_angles[t, joint_id] = joint_angles[t-1, joint_id] + joint_velocities[t, joint_id] * dt
+                  
+                  # Compute accelerations
+                  joint_accelerations[t] = (joint_velocities[t] - joint_velocities[t-1]) / dt
+              
+              return joint_angles, joint_velocities, joint_accelerations
+
+    advantages:
+      - "Terrain adaptation"
+      - "Obstacle avoidance"
+      - "Ground contact modeling"
+      - "Robust locomotion"
+    disadvantages:
+      - "Requires terrain information"
+      - "Complex terrain modeling"
+      - "Higher computational cost"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Walking Pattern DMP"
+      time: "O(T × K × L)"
+      space: "O(K × L)"
+      notes: "Time complexity scales with trajectory length, basis functions, and number of legs"
+    
+    - approach: "Terrain-Adaptive DMP"
+      time: "O(T × K × L + T × T_terrain)"
+      space: "O(K × L + T_terrain)"
+      notes: "Additional complexity for terrain processing"
+    
+    - approach: "Gait Coordination"
+      time: "O(T × L)"
+      space: "O(L)"
+      notes: "Gait coordination scales with trajectory length and number of legs"
+
+# Applications and use cases
+applications:
+  - category: "Humanoid Robotics"
+    examples:
+      - "Walking: Learning to walk on different terrains"
+      - "Running: Learning to run with different speeds"
+      - "Stairs: Learning to climb stairs"
+      - "Balance: Learning to maintain balance during walking"
+
+  - category: "Quadruped Robotics"
+    examples:
+      - "Walking: Learning quadruped walking gaits"
+      - "Running: Learning quadruped running gaits"
+      - "Terrain: Learning to walk on rough terrain"
+      - "Obstacles: Learning to avoid obstacles"
+
+  - category: "Hexapod Robotics"
+    examples:
+      - "Walking: Learning hexapod walking gaits"
+      - "Climbing: Learning to climb over obstacles"
+      - "Rough Terrain: Learning to walk on rough terrain"
+      - "Speed: Learning to walk at different speeds"
+
+  - category: "Bipedal Robotics"
+    examples:
+      - "Walking: Learning bipedal walking"
+      - "Running: Learning bipedal running"
+      - "Balance: Learning to maintain balance"
+      - "Turning: Learning to turn while walking"
+
+  - category: "Research Applications"
+    examples:
+      - "Gait Analysis: Studying human and animal gaits"
+      - "Rehabilitation: Developing rehabilitation techniques"
+      - "Sports: Analyzing sports movements"
+      - "Biomechanics: Studying biomechanical principles"
+
+# Educational value and learning objectives
+educational_value:
+  - "Locomotion: Understanding locomotion principles and gaits"
+  - "Gait Analysis: Understanding gait analysis and generation"
+  - "Terrain Adaptation: Understanding terrain adaptation mechanisms"
+  - "Multi-leg Coordination: Understanding coordination between multiple legs"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/locomotion_dmps.py"
+      description: "Main implementation with walking pattern and terrain-adaptive DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_locomotion_dmps.py"
+      description: "Comprehensive test suite including locomotion tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Ijspeert, A. J., Nakanishi, J., Hoffmann, H., Pastor, P., & Schaal, S."
+        year: "2013"
+        title: "Dynamical movement primitives: Learning attractor landscapes for motor skills"
+        publisher: "Biological Cybernetics"
+        note: "Comprehensive review of DMPs including locomotion applications"
+      - author: "Gams, A., Ijspeert, A. J., Schaal, S., & Lenarčič, J."
+        year: "2009"
+        title: "On-line learning and modulation of periodic movements with nonlinear dynamical systems"
+        publisher: "Autonomous Robots"
+        note: "DMPs for rhythmic movements including locomotion"
+
+  - category: "Locomotion"
+    items:
+      - author: "Raibert, M. H."
+        year: "1986"
+        title: "Legged robots that balance"
+        publisher: "MIT Press"
+        note: "Fundamental work on legged robot locomotion"
+      - author: "Vukobratović, M., & Borovac, B."
+        year: "2004"
+        title: "Zero-moment point—thirty five years of its life"
+        publisher: "International Journal of Humanoid Robotics"
+        note: "Zero moment point for bipedal locomotion"
+
+  - category: "Online Resources"
+    items:
+      - title: "Locomotion"
+        url: "https://en.wikipedia.org/wiki/Locomotion"
+        note: "Wikipedia article on locomotion"
+      - title: "Gait"
+        url: "https://en.wikipedia.org/wiki/Gait"
+        note: "Wikipedia article on gait"
+      - title: "Legged Robot"
+        url: "https://en.wikipedia.org/wiki/Legged_robot"
+        note: "Wikipedia article on legged robots"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "ROS Navigation"
+        url: "https://navigation.ros.org/"
+        note: "ROS navigation stack for mobile robots"
+      - title: "Gazebo"
+        url: "https://gazebosim.org/"
+        note: "Robot simulation environment"
+      - title: "PyBullet"
+        url: "https://pybullet.org/"
+        note: "Physics simulation for robotics"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "locomotion"
+  - "walking-patterns"
+  - "gait-adaptation"
+  - "terrain-aware"
+  - "legged-robots"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that locomotion DMPs extend for walking patterns"
+  - slug: "temporal-dmps"
+    relationship: "same_family"
+    description: "Temporal DMPs that can be combined with locomotion for rhythmic walking"

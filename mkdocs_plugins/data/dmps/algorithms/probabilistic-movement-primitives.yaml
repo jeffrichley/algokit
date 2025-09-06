@@ -1,0 +1,529 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: probabilistic-movement-primitives
+name: Probabilistic Movement Primitives (ProMPs)
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "Probabilistic extension of DMPs that captures movement variability and generates movement distributions from multiple demonstrations."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Probabilistic Movement Primitives (ProMPs) extend the basic DMP framework to handle movement variability and uncertainty. Unlike standard DMPs that learn from single demonstrations, ProMPs learn from multiple demonstrations to capture the natural variability in human movements.
+
+  The key innovation of ProMPs is the probabilistic formulation that allows for:
+  - Learning movement distributions from multiple demonstrations
+  - Generating new movements that respect the learned variability
+  - Handling correlations between different joints or dimensions
+  - Conditioning on via-points or partial observations
+  - Modulating movement characteristics through conditioning
+
+  ProMPs are particularly valuable in robotics applications where movements need to be both reproducible and adaptable to different contexts while maintaining natural variability.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Multiple demonstrations: {y_demo^(i)(t)} for i = 1, ..., N
+    - Basis functions: ψ(t) = [ψ_1(t), ..., ψ_K(t)]^T
+    - Weight vectors: w^(i) ∈ ℝ^K for each demonstration
+
+    Learn a probabilistic model:
+    p(w) = N(w | μ_w, Σ_w)
+    
+    Where:
+    - μ_w = (1/N) Σ_{i=1}^N w^(i)
+    - Σ_w = (1/N) Σ_{i=1}^N (w^(i) - μ_w)(w^(i) - μ_w)^T
+    
+    The trajectory is generated as:
+    y(t) = Ψ(t)^T w + ε(t)
+    
+    Where ε(t) ~ N(0, Σ_y) is observation noise.
+
+  key_properties:
+    - name: "Probabilistic Weights"
+      formula: "p(w) = N(w | μ_w, Σ_w)"
+      description: "Weights follow a multivariate Gaussian distribution"
+    - name: "Movement Distribution"
+      formula: "p(y(t)) = N(y(t) | Ψ(t)^T μ_w, Ψ(t)^T Σ_w Ψ(t) + Σ_y)"
+      description: "Trajectory follows a time-varying Gaussian distribution"
+    - name: "Via-point Conditioning"
+      formula: "p(w | y_obs) = N(w | μ_w|obs, Σ_w|obs)"
+      description: "Can condition on observed via-points using Gaussian conditioning"
+
+# Key properties and characteristics
+properties:
+  - name: "Movement Variability"
+    description: "Captures natural variability in human movements"
+    importance: "fundamental"
+  - name: "Multi-demonstration Learning"
+    description: "Learns from multiple demonstrations to build robust models"
+    importance: "fundamental"
+  - name: "Probabilistic Generation"
+    description: "Generates movements with appropriate variability"
+    importance: "fundamental"
+  - name: "Via-point Conditioning"
+    description: "Can condition on partial observations or via-points"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_promp"
+    name: "Basic ProMPs"
+    description: "Standard ProMP implementation with Gaussian weight distribution"
+    complexity:
+      time: "O(N × T × K + K^3)"
+      space: "O(K^2 + N × K)"
+    code: |
+      import numpy as np
+      from scipy.stats import multivariate_normal
+      from typing import List, Tuple, Optional
+      import matplotlib.pyplot as plt
+
+      class ProbabilisticMovementPrimitive:
+          """
+          Probabilistic Movement Primitive for learning from multiple demonstrations.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, basis_type: str = "rbf"):
+              """
+              Initialize ProMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  basis_type: Type of basis functions ("rbf" or "fourier")
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.basis_type = basis_type
+              
+              # Basis function parameters
+              if basis_type == "rbf":
+                  self.c = np.linspace(0, 1, n_basis)
+                  self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              elif basis_type == "fourier":
+                  self.frequencies = np.arange(1, n_basis + 1)
+              
+              # Weight distribution parameters
+              self.mu_w = np.zeros((n_dims, n_basis))
+              self.Sigma_w = np.zeros((n_dims, n_basis, n_basis))
+              
+              # Observation noise
+              self.Sigma_y = np.eye(n_dims) * 0.01
+
+          def basis_functions(self, t: np.ndarray) -> np.ndarray:
+              """
+              Compute basis function values at time points.
+
+              Args:
+                  t: Time points (normalized to [0,1])
+
+              Returns:
+                  Basis function matrix [T, K]
+              """
+              T = len(t)
+              psi = np.zeros((T, self.n_basis))
+              
+              if self.basis_type == "rbf":
+                  for i in range(self.n_basis):
+                      psi[:, i] = np.exp(-self.h[i] * (t - self.c[i])**2)
+              elif self.basis_type == "fourier":
+                  for i in range(self.n_basis):
+                      psi[:, i] = np.sin(2 * np.pi * self.frequencies[i] * t)
+              
+              return psi
+
+          def learn_from_demos(self, demos: List[np.ndarray], dt: float = 0.01) -> None:
+              """
+              Learn ProMP from multiple demonstrations.
+
+              Args:
+                  demos: List of demonstration trajectories [T_i, n_dims]
+                  dt: Time step
+              """
+              n_demos = len(demos)
+              weights = []
+              
+              # Learn weights for each demonstration
+              for demo in demos:
+                  T = len(demo)
+                  t = np.linspace(0, 1, T)
+                  
+                  # Compute basis functions
+                  psi = self.basis_functions(t)
+                  
+                  # Learn weights using least squares
+                  w = np.zeros((self.n_dims, self.n_basis))
+                  for d in range(self.n_dims):
+                      w[d] = np.linalg.lstsq(psi, demo[:, d], rcond=None)[0]
+                  
+                  weights.append(w)
+              
+              # Compute weight distribution
+              weights = np.array(weights)  # [N, n_dims, n_basis]
+              
+              for d in range(self.n_dims):
+                  # Mean weights
+                  self.mu_w[d] = np.mean(weights[:, d], axis=0)
+                  
+                  # Covariance matrix
+                  centered_weights = weights[:, d] - self.mu_w[d]
+                  self.Sigma_w[d] = np.cov(centered_weights.T)
+
+          def generate_trajectory(self, t: np.ndarray, sample: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Generate trajectory from learned ProMP.
+
+              Args:
+                  t: Time points (normalized to [0,1])
+                  sample: Whether to sample from distribution or use mean
+
+              Returns:
+                  Tuple of (mean_trajectory, std_trajectory)
+              """
+              psi = self.basis_functions(t)
+              T = len(t)
+              
+              y_mean = np.zeros((T, self.n_dims))
+              y_std = np.zeros((T, self.n_dims))
+              
+              for d in range(self.n_dims):
+                  # Mean trajectory
+                  y_mean[:, d] = psi @ self.mu_w[d]
+                  
+                  # Variance trajectory
+                  y_var = np.diag(psi @ self.Sigma_w[d] @ psi.T) + self.Sigma_y[d, d]
+                  y_std[:, d] = np.sqrt(y_var)
+              
+              if sample:
+                  # Sample from distribution
+                  y_sample = np.zeros((T, self.n_dims))
+                  for d in range(self.n_dims):
+                      w_sample = multivariate_normal.rvs(self.mu_w[d], self.Sigma_w[d])
+                      y_sample[:, d] = psi @ w_sample
+                  return y_sample, y_std
+              else:
+                  return y_mean, y_std
+
+          def condition_on_viapoint(self, t_obs: float, y_obs: np.ndarray, 
+                                  Sigma_obs: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Condition ProMP on observed via-point.
+
+              Args:
+                  t_obs: Observation time (normalized to [0,1])
+                  y_obs: Observed position
+                  Sigma_obs: Observation noise covariance
+
+              Returns:
+                  Tuple of (conditioned_mean, conditioned_covariance)
+              """
+              if Sigma_obs is None:
+                  Sigma_obs = self.Sigma_y
+              
+              # Compute basis functions at observation time
+              psi_obs = self.basis_functions(np.array([t_obs]))
+              
+              # Condition each dimension
+              mu_w_cond = np.zeros((self.n_dims, self.n_basis))
+              Sigma_w_cond = np.zeros((self.n_dims, self.n_basis, self.n_basis))
+              
+              for d in range(self.n_dims):
+                  # Gaussian conditioning
+                  Sigma_obs_d = Sigma_obs[d, d]
+                  
+                  # Kalman filter update
+                  S = psi_obs @ self.Sigma_w[d] @ psi_obs.T + Sigma_obs_d
+                  K = self.Sigma_w[d] @ psi_obs.T / S
+                  
+                  # Update mean and covariance
+                  mu_w_cond[d] = self.mu_w[d] + K * (y_obs[d] - psi_obs @ self.mu_w[d])
+                  Sigma_w_cond[d] = self.Sigma_w[d] - K @ psi_obs @ self.Sigma_w[d]
+              
+              return mu_w_cond, Sigma_w_cond
+
+    advantages:
+      - "Captures movement variability naturally"
+      - "Learns from multiple demonstrations"
+      - "Probabilistic trajectory generation"
+      - "Via-point conditioning capabilities"
+    disadvantages:
+      - "Computational cost scales with basis functions"
+      - "Requires multiple demonstrations"
+      - "Gaussian assumption may be limiting"
+
+  - type: "correlated_promp"
+    name: "Correlated ProMPs"
+    description: "ProMPs that capture correlations between different dimensions"
+    complexity:
+      time: "O(N × T × K + K^3 × d^2)"
+      space: "O(K^2 × d^2 + N × K × d)"
+    code: |
+      class CorrelatedProMP:
+          """
+          Correlated ProMP that captures cross-dimensional correlations.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50):
+              """
+              Initialize correlated ProMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              
+              # Basis function parameters
+              self.c = np.linspace(0, 1, n_basis)
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # Joint weight distribution
+              self.mu_w = np.zeros(n_dims * n_basis)
+              self.Sigma_w = np.zeros((n_dims * n_basis, n_dims * n_basis))
+              
+              # Observation noise
+              self.Sigma_y = np.eye(n_dims) * 0.01
+
+          def basis_functions(self, t: np.ndarray) -> np.ndarray:
+              """Compute basis function values at time points."""
+              T = len(t)
+              psi = np.zeros((T, self.n_basis))
+              
+              for i in range(self.n_basis):
+                  psi[:, i] = np.exp(-self.h[i] * (t - self.c[i])**2)
+              
+              return psi
+
+          def learn_from_demos(self, demos: List[np.ndarray], dt: float = 0.01) -> None:
+              """
+              Learn correlated ProMP from multiple demonstrations.
+
+              Args:
+                  demos: List of demonstration trajectories [T_i, n_dims]
+                  dt: Time step
+              """
+              n_demos = len(demos)
+              weights = []
+              
+              # Learn weights for each demonstration
+              for demo in demos:
+                  T = len(demo)
+                  t = np.linspace(0, 1, T)
+                  
+                  # Compute basis functions
+                  psi = self.basis_functions(t)
+                  
+                  # Learn weights for all dimensions jointly
+                  w = np.zeros(n_dims * n_basis)
+                  for d in range(self.n_dims):
+                      w[d * n_basis:(d + 1) * n_basis] = np.linalg.lstsq(psi, demo[:, d], rcond=None)[0]
+                  
+                  weights.append(w)
+              
+              # Compute joint weight distribution
+              weights = np.array(weights)  # [N, n_dims * n_basis]
+              
+              # Mean weights
+              self.mu_w = np.mean(weights, axis=0)
+              
+              # Covariance matrix
+              centered_weights = weights - self.mu_w
+              self.Sigma_w = np.cov(centered_weights.T)
+
+          def generate_trajectory(self, t: np.ndarray, sample: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Generate correlated trajectory from learned ProMP.
+
+              Args:
+                  t: Time points (normalized to [0,1])
+                  sample: Whether to sample from distribution or use mean
+
+              Returns:
+                  Tuple of (mean_trajectory, std_trajectory)
+              """
+              psi = self.basis_functions(t)
+              T = len(t)
+              
+              # Construct full basis matrix
+              Psi = np.zeros((T * self.n_dims, self.n_dims * self.n_basis))
+              for d in range(self.n_dims):
+                  Psi[d * T:(d + 1) * T, d * self.n_basis:(d + 1) * self.n_basis] = psi
+              
+              # Mean trajectory
+              y_mean = Psi @ self.mu_w
+              y_mean = y_mean.reshape(T, self.n_dims)
+              
+              # Variance trajectory
+              y_var = np.diag(Psi @ self.Sigma_w @ Psi.T)
+              y_var = y_var.reshape(T, self.n_dims)
+              y_std = np.sqrt(y_var)
+              
+              if sample:
+                  # Sample from distribution
+                  w_sample = multivariate_normal.rvs(self.mu_w, self.Sigma_w)
+                  y_sample = Psi @ w_sample
+                  y_sample = y_sample.reshape(T, self.n_dims)
+                  return y_sample, y_std
+              else:
+                  return y_mean, y_std
+
+    advantages:
+      - "Captures cross-dimensional correlations"
+      - "More realistic movement modeling"
+      - "Joint learning across dimensions"
+      - "Better generalization"
+    disadvantages:
+      - "Higher computational cost"
+      - "More complex parameter estimation"
+      - "Requires more demonstrations"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic ProMP Learning"
+      time: "O(N × T × K + K^3)"
+      space: "O(K^2 + N × K)"
+      notes: "Learning time scales with demonstrations, trajectory length, and basis functions"
+    
+    - approach: "Correlated ProMP Learning"
+      time: "O(N × T × K + K^3 × d^2)"
+      space: "O(K^2 × d^2 + N × K × d)"
+      notes: "Higher complexity due to cross-dimensional correlations"
+    
+    - approach: "Via-point Conditioning"
+      time: "O(K^3)"
+      space: "O(K^2)"
+      notes: "Conditioning requires matrix inversion for each dimension"
+
+# Applications and use cases
+applications:
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Imitation Learning: Learning from human demonstrations with natural variability"
+      - "Collaborative Tasks: Adapting to human partner's movement style"
+      - "Assistive Robotics: Learning assistive movements with appropriate variability"
+      - "Social Robotics: Generating natural, human-like movements"
+
+  - category: "Robotic Manipulation"
+    examples:
+      - "Grasping: Learning grasping strategies with variability"
+      - "Assembly: Learning assembly movements with natural variation"
+      - "Tool Use: Learning tool manipulation with appropriate variability"
+      - "Packaging: Learning packaging movements with natural variation"
+
+  - category: "Locomotion and Navigation"
+    examples:
+      - "Walking: Learning walking patterns with natural gait variation"
+      - "Running: Learning running patterns with stride variability"
+      - "Navigation: Learning navigation behaviors with path variation"
+      - "Dancing: Learning dance movements with artistic variation"
+
+  - category: "Medical and Rehabilitation"
+    examples:
+      - "Physical Therapy: Learning therapeutic movements with patient-specific variation"
+      - "Surgery: Learning surgical movements with appropriate precision variation"
+      - "Rehabilitation: Learning recovery movements with natural variation"
+      - "Prosthetics: Learning prosthetic control with user-specific variation"
+
+  - category: "Sports and Entertainment"
+    examples:
+      - "Sports Training: Learning athletic movements with natural variation"
+      - "Dance: Learning dance movements with artistic variation"
+      - "Music: Learning musical instrument playing with expressive variation"
+      - "Gaming: Learning game movements with natural variation"
+
+# Educational value and learning objectives
+educational_value:
+  - "Probabilistic Modeling: Understanding how to model uncertainty in movements"
+  - "Multi-demonstration Learning: Learning from multiple examples to build robust models"
+  - "Gaussian Processes: Understanding probabilistic function approximation"
+  - "Conditioning: Understanding how to condition probabilistic models on observations"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/probabilistic_movement_primitives.py"
+      description: "Main implementation with basic and correlated ProMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_probabilistic_movement_primitives.py"
+      description: "Comprehensive test suite including learning and conditioning tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Paraschos, A., Daniel, C., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Probabilistic movement primitives"
+        publisher: "Advances in Neural Information Processing Systems"
+        note: "Original ProMP paper"
+      - author: "Paraschos, A., Daniel, C., Peters, J., & Neumann, G."
+        year: "2018"
+        title: "Using probabilistic movement primitives in robotics"
+        publisher: "Autonomous Robots"
+        note: "Comprehensive ProMP review and applications"
+
+  - category: "ProMP Extensions"
+    items:
+      - author: "Maeda, G., Ewerton, M., Lioutikov, R., Ben Amor, H., Peters, J., & Neumann, G."
+        year: "2016"
+        title: "Learning interaction for collaborative tasks with probabilistic movement primitives"
+        publisher: "IEEE-RAS International Conference on Humanoid Robots"
+        note: "ProMPs for human-robot interaction"
+      - author: "Ewerton, M., Maeda, G., Peters, J., & Neumann, G."
+        year: "2015"
+        title: "Learning motor skills from partially observed movements executed at different speeds"
+        publisher: "IEEE/RSJ International Conference on Intelligent Robots and Systems"
+        note: "ProMPs with partial observations"
+
+  - category: "Online Resources"
+    items:
+      - title: "Probabilistic Movement Primitives"
+        url: "https://en.wikipedia.org/wiki/Probabilistic_movement_primitives"
+        note: "Wikipedia article on ProMPs"
+      - title: "ProMP Tutorial"
+        url: "https://www.researchgate.net/publication/221345789_Probabilistic_Movement_Primitives"
+        note: "ResearchGate tutorial on ProMPs"
+      - title: "ProMP Implementation"
+        url: "https://github.com/studywolf/pydmps"
+        note: "Python implementation of ProMPs"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyDMPs"
+        url: "https://github.com/studywolf/pydmps"
+        note: "Python library for DMPs and ProMPs"
+      - title: "ProMPy"
+        url: "https://github.com/studywolf/prompy"
+        note: "Python implementation of ProMPs"
+      - title: "ROS ProMP Package"
+        url: "https://github.com/ros-planning/moveit_tutorials"
+        note: "ROS integration for ProMPs"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "probabilistic-movement-primitives"
+  - "promps"
+  - "probabilistic-modeling"
+  - "multi-demonstration-learning"
+  - "movement-variability"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that ProMPs extend with probabilistic modeling"
+  - slug: "constrained-dmps"
+    relationship: "same_family"
+    description: "DMPs with safety constraints that can be combined with ProMPs"

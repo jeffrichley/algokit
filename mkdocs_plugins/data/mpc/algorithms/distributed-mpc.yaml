@@ -1,0 +1,546 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: distributed-mpc
+name: Distributed MPC
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control for large-scale systems using distributed optimization and coordination between multiple local controllers to achieve global objectives."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Distributed MPC extends the predictive control framework to handle large-scale systems by decomposing them into smaller subsystems and coordinating multiple local controllers. Unlike centralized MPC, which solves a single large optimization problem, Distributed MPC solves multiple smaller problems in parallel and coordinates their solutions to achieve global objectives.
+
+  This approach is essential for systems that are too large for centralized control, geographically distributed, or have privacy/security constraints. Distributed MPC can handle systems with thousands of variables and constraints while maintaining real-time performance. The key challenge is to design coordination mechanisms that ensure global optimality and stability while maintaining computational efficiency.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    For large-scale system with N subsystems:
+    x_i(k+1) = A_i x_i(k) + B_i u_i(k) + Σ_{j∈N_i} A_{ij} x_j(k) + E_i d_i(k)
+    
+    The Distributed MPC formulation for subsystem i is:
+    
+    min_{U_i} J_i(x_i(k), U_i, U_{-i}) = Σ_{t=0}^{N_p-1} ||y_i(k+t|k) - r_i(k+t)||_{Q_i}² + ||u_i(k+t)||_{R_i}²
+    
+    Subject to:
+    - x_i(k+t+1|k) = A_i x_i(k+t|k) + B_i u_i(k+t) + Σ_{j∈N_i} A_{ij} x_j(k+t|k)
+    - y_i(k+t|k) = C_i x_i(k+t|k) + D_i u_i(k+t)
+    - g_i(x_i(k+t|k), u_i(k+t)) ≤ 0
+    - u_{i,min} ≤ u_i(k+t) ≤ u_{i,max}
+    - x_{i,min} ≤ x_i(k+t|k) ≤ x_{i,max}
+    
+    Where:
+    - U_i = [u_i(k), u_i(k+1), ..., u_i(k+N_c-1)] is local control sequence
+    - U_{-i} represents control sequences of neighboring subsystems
+    - N_i is the set of neighbors of subsystem i
+
+  discrete_time_form: |
+    Distributed coordination algorithm:
+    
+    1. Initialize: Each subsystem i solves local MPC problem
+    2. Exchange information: Share predicted states/inputs with neighbors
+    3. Update: Solve local MPC with updated neighbor information
+    4. Check convergence: If not converged, go to step 2
+    5. Apply control: Implement first control action
+    
+    Coordination methods:
+    - Consensus-based: Minimize disagreement between neighbors
+    - Decomposition-based: Use Lagrangian multipliers for coupling
+    - Game-theoretic: Treat as non-cooperative game
+
+  key_properties:
+    - name: "Distributed Optimization"
+      formula: "min_{U_i} J_i(x_i, U_i, U_{-i})"
+      description: "Each subsystem solves local optimization problem"
+    - name: "Coordination"
+      formula: "U_i ← f(U_{-i}, x_i)"
+      description: "Local solutions coordinated through information exchange"
+    - name: "Scalability"
+      formula: "O(N × n³) vs O(N³n³)"
+      description: "Computational complexity scales linearly with subsystems"
+
+# Key properties and characteristics
+properties:
+  - name: "Distributed Optimization"
+    description: "Each subsystem solves local optimization problem"
+    importance: "fundamental"
+  - name: "Coordination"
+    description: "Local solutions coordinated through information exchange"
+    importance: "fundamental"
+  - name: "Scalability"
+    description: "Computational complexity scales linearly with subsystems"
+    importance: "implementation"
+  - name: "Privacy"
+    description: "Local information remains private to each subsystem"
+    importance: "application"
+  - name: "Fault Tolerance"
+    description: "System remains operational if some subsystems fail"
+    importance: "application"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "consensus_based_distributed_mpc"
+    name: "Consensus-based Distributed MPC Controller"
+    description: "Distributed MPC using consensus algorithm for coordination"
+    complexity:
+      time: "O(N × n³)"
+      space: "O(N × n²)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import Optional, Tuple, List, Dict, Set
+
+      class DistributedMPCController:
+          """
+          Distributed MPC Controller using consensus-based coordination.
+
+          Args:
+              subsystem_id: Unique identifier for this subsystem
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              state_dim: Dimension of local state vector
+              input_dim: Dimension of local input vector
+              output_dim: Dimension of local output vector
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              neighbors: Set of neighboring subsystem IDs
+              consensus_weight: Weight for consensus term
+          """
+
+          def __init__(self, subsystem_id: int, prediction_horizon: int, control_horizon: int,
+                       state_dim: int, input_dim: int, output_dim: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       neighbors: Set[int] = None, consensus_weight: float = 0.1):
+
+              self.subsystem_id = subsystem_id
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              self.nx = state_dim
+              self.nu = input_dim
+              self.ny = output_dim
+              self.consensus_weight = consensus_weight
+              self.neighbors = neighbors if neighbors is not None else set()
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+
+              # Local system matrices
+              self.A = None  # Local state matrix
+              self.B = None  # Local input matrix
+              self.C = None  # Local output matrix
+              self.A_coupling = {}  # Coupling matrices with neighbors
+
+              # Communication data
+              self.neighbor_states = {}  # Predicted states from neighbors
+              self.neighbor_inputs = {}  # Predicted inputs from neighbors
+              self.local_state_prediction = None
+              self.local_input_prediction = None
+
+              # Convergence parameters
+              self.max_iterations = 10
+              self.convergence_tolerance = 1e-4
+
+          def set_local_system(self, A: np.ndarray, B: np.ndarray, C: np.ndarray) -> None:
+              """
+              Set local system matrices.
+
+              Args:
+                  A: Local state matrix
+                  B: Local input matrix
+                  C: Local output matrix
+              """
+              self.A = A
+              self.B = B
+              self.C = C
+
+          def set_coupling_matrices(self, coupling_matrices: Dict[int, np.ndarray]) -> None:
+              """
+              Set coupling matrices with neighboring subsystems.
+
+              Args:
+                  coupling_matrices: Dictionary mapping neighbor ID to coupling matrix
+              """
+              self.A_coupling = coupling_matrices
+
+          def receive_neighbor_data(self, neighbor_id: int, states: np.ndarray, inputs: np.ndarray) -> None:
+              """
+              Receive predicted states and inputs from neighboring subsystem.
+
+              Args:
+                  neighbor_id: ID of the neighboring subsystem
+                  states: Predicted state trajectory
+                  inputs: Predicted input trajectory
+              """
+              self.neighbor_states[neighbor_id] = states.copy()
+              self.neighbor_inputs[neighbor_id] = inputs.copy()
+
+          def _predict_local_trajectory(self, x0: np.ndarray, U: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Predict local state and output trajectories.
+
+              Args:
+                  x0: Initial local state
+                  U: Local control sequence
+
+              Returns:
+                  Tuple of (state_trajectory, output_trajectory)
+              """
+              X = np.zeros((self.Np, self.nx))
+              Y = np.zeros((self.Np, self.ny))
+              
+              x = x0.copy()
+              for i in range(self.Np):
+                  if i < self.Nc:
+                      u = U[i]
+                  else:
+                      u = U[-1]  # Hold last control action
+                  
+                  # Predict next state with coupling effects
+                  x_next = self.A @ x + self.B @ u
+                  
+                  # Add coupling effects from neighbors
+                  for neighbor_id in self.neighbors:
+                      if neighbor_id in self.neighbor_states:
+                          if i < len(self.neighbor_states[neighbor_id]):
+                              x_next += self.A_coupling[neighbor_id] @ self.neighbor_states[neighbor_id][i]
+                  
+                  x = x_next
+                  X[i] = x
+                  
+                  # Predict output
+                  Y[i] = self.C @ x
+              
+              return X, Y
+
+          def _consensus_term(self, U: np.ndarray) -> float:
+              """
+              Compute consensus term to encourage agreement with neighbors.
+
+              Args:
+                  U: Local control sequence
+
+              Returns:
+                  Consensus penalty term
+              """
+              consensus_cost = 0.0
+              
+              for neighbor_id in self.neighbors:
+                  if neighbor_id in self.neighbor_inputs:
+                      neighbor_inputs = self.neighbor_inputs[neighbor_id]
+                      min_len = min(len(U), len(neighbor_inputs))
+                      
+                      for i in range(min_len):
+                          diff = U[i] - neighbor_inputs[i]
+                          consensus_cost += np.dot(diff, diff)
+              
+              return self.consensus_weight * consensus_cost
+
+          def _local_objective(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
+              """
+              Local objective function including consensus term.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+                  r: Reference trajectory
+
+              Returns:
+                  Local objective function value
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_local_trajectory(x0, U)
+              
+              # Tracking cost
+              tracking_cost = 0.0
+              for i in range(self.Np):
+                  error = Y[i] - r[i]
+                  tracking_cost += error.T @ self.Q @ error
+              
+              # Control cost
+              control_cost = 0.0
+              for i in range(self.Nc):
+                  control_cost += U[i].T @ self.R @ U[i]
+              
+              # Consensus cost
+              consensus_cost = self._consensus_term(U)
+              
+              return tracking_cost + control_cost + consensus_cost
+
+          def _constraints(self, U_flat: np.ndarray, x0: np.ndarray) -> List[dict]:
+              """
+              Constraint functions for optimization.
+
+              Args:
+                  U_flat: Flattened control sequence
+                  x0: Initial state
+
+              Returns:
+                  List of constraint dictionaries
+              """
+              U = U_flat.reshape(self.Nc, self.nu)
+              X, Y = self._predict_local_trajectory(x0, U)
+              
+              constraints = []
+              
+              # Add local constraints here
+              # For example, state and input bounds
+              for i in range(self.Np):
+                  for j in range(self.nx):
+                      constraints.append({
+                          'type': 'ineq',
+                          'fun': lambda x, i=i, j=j: 1.0 - X[i, j]  # x ≤ 1
+                      })
+                      constraints.append({
+                          'type': 'ineq',
+                          'fun': lambda x, i=i, j=j: X[i, j] + 1.0  # x ≥ -1
+                      })
+              
+              return constraints
+
+          def solve_local_mpc(self, x0: np.ndarray, r: np.ndarray,
+                             u_min: Optional[np.ndarray] = None,
+                             u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve local MPC optimization problem.
+
+              Args:
+                  x0: Current local state
+                  r: Local reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal local control sequence
+              """
+              if self.A is None or self.B is None or self.C is None:
+                  raise ValueError("Local system matrices must be set before solving")
+
+              # Initial guess
+              U0 = np.zeros(self.Nc * self.nu)
+              
+              # Bounds
+              bounds = []
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Constraints
+              constraints = self._constraints(U0, x0)
+
+              # Solve local optimization problem
+              result = minimize(
+                  fun=lambda u: self._local_objective(u, x0, r),
+                  x0=U0,
+                  method='SLSQP',
+                  bounds=bounds,
+                  constraints=constraints,
+                  options={'maxiter': 1000}
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def distributed_control_step(self, x: np.ndarray, r: np.ndarray,
+                                      u_min: Optional[np.ndarray] = None,
+                                      u_max: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Perform one distributed MPC control step with consensus.
+
+              Args:
+                  x: Current local state
+                  r: Local reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Tuple of (control_action, predicted_trajectory)
+              """
+              # Iterative consensus algorithm
+              for iteration in range(self.max_iterations):
+                  # Solve local MPC problem
+                  U_opt = self.solve_local_mpc(x, r, u_min, u_max)
+                  
+                  # Predict local trajectory
+                  X_pred, Y_pred = self._predict_local_trajectory(x, U_opt)
+                  
+                  # Store predictions for neighbors
+                  self.local_state_prediction = X_pred
+                  self.local_input_prediction = U_opt
+                  
+                  # Check convergence (simplified)
+                  if iteration > 0:
+                      # In practice, would check convergence with neighbors
+                      break
+              
+              # Return first control action and predicted trajectory
+              return U_opt[0], X_pred
+
+          def get_predictions_for_neighbors(self) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Get predicted states and inputs for neighboring subsystems.
+
+              Returns:
+                  Tuple of (predicted_states, predicted_inputs)
+              """
+              return self.local_state_prediction, self.local_input_prediction
+    advantages:
+      - "Scalable to large-scale systems"
+      - "Maintains privacy of local information"
+      - "Fault-tolerant and robust"
+      - "Parallel computation reduces computational burden"
+    disadvantages:
+      - "May not achieve global optimality"
+      - "Requires communication between subsystems"
+      - "Convergence not guaranteed in all cases"
+      - "Complex coordination mechanisms"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Consensus-based Distributed MPC"
+      time: "O(N × n³)"
+      space: "O(N × n²)"
+      notes: "Complexity scales linearly with number of subsystems N"
+    - approach: "Centralized MPC"
+      time: "O(N³n³)"
+      space: "O(N²n²)"
+      notes: "Complexity scales cubically with system size"
+
+  performance_notes:
+    - "Distributed approach enables real-time control of large systems"
+    - "Communication overhead depends on network topology"
+    - "Memory requirements scale with local subsystem size"
+
+# Applications and use cases
+applications:
+  - category: "Smart Grids"
+    examples:
+      - "Power System Control: Coordinated control of distributed generators"
+      - "Load Management: Distributed demand response and load balancing"
+      - "Microgrids: Coordinated control of renewable energy sources"
+      - "Energy Storage: Distributed battery management systems"
+
+  - category: "Transportation Systems"
+    examples:
+      - "Traffic Control: Coordinated traffic signal control"
+      - "Vehicle Platooning: Distributed control of vehicle formations"
+      - "Air Traffic Management: Coordinated aircraft trajectory control"
+      - "Railway Systems: Distributed train scheduling and control"
+
+  - category: "Manufacturing Systems"
+    examples:
+      - "Production Lines: Coordinated control of manufacturing processes"
+      - "Supply Chain: Distributed inventory and production management"
+      - "Quality Control: Coordinated quality assurance across production"
+      - "Maintenance: Distributed predictive maintenance scheduling"
+
+  - category: "Building Systems"
+    examples:
+      - "HVAC Control: Coordinated temperature and ventilation control"
+      - "Energy Management: Distributed energy optimization in buildings"
+      - "Lighting Control: Coordinated lighting systems"
+      - "Security Systems: Distributed surveillance and access control"
+
+  - category: "Environmental Systems"
+    examples:
+      - "Water Distribution: Coordinated control of water networks"
+      - "Waste Management: Distributed waste collection and processing"
+      - "Air Quality: Coordinated control of air pollution sources"
+      - "Ecosystem Management: Distributed environmental monitoring"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Distributed control and coordination"
+  - "Optimization: Distributed optimization and consensus algorithms"
+  - "System Analysis: Large-scale system decomposition and analysis"
+  - "Communication: Networked control systems and information exchange"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/distributed_mpc.py"
+      description: "Main implementation with consensus-based coordination"
+    - path: "tests/unit/mpc/test_distributed_mpc.py"
+      description: "Comprehensive test suite including coordination tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Scattolini, R."
+        year: "2009"
+        title: "Architectures for distributed and hierarchical model predictive control"
+        publisher: "Journal of Process Control"
+        note: "Volume 19, pages 723-731"
+
+  - category: "Distributed MPC Theory"
+    items:
+      - author: "Maestre, J. M., & Negenborn, R. R."
+        year: "2014"
+        title: "Distributed Model Predictive Control Made Easy"
+        publisher: "Springer"
+        note: "ISBN 978-94-007-7006-5"
+      - author: "Stewart, B. T., Venkat, A. N., Rawlings, J. B., Wright, S. J., & Pannocchia, G."
+        year: "2010"
+        title: "Cooperative distributed model predictive control"
+        publisher: "Systems & Control Letters"
+        note: "Volume 59, pages 460-469"
+
+  - category: "Online Resources"
+    items:
+      - title: "Distributed MPC"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "Distributed Control Systems"
+        url: "https://www.controleng.com/articles/distributed-model-predictive-control/"
+        note: "Control Engineering article on distributed MPC"
+      - title: "Consensus Algorithms"
+        url: "https://www.mathworks.com/help/robust/consensus-algorithms.html"
+        note: "MATLAB documentation on consensus algorithms"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "MPC Toolbox"
+        url: "https://www.mathworks.com/help/mpc/"
+        note: "MATLAB Model Predictive Control Toolbox"
+      - title: "YALMIP"
+        url: "https://yalmip.github.io/"
+        note: "MATLAB toolbox for optimization modeling"
+      - title: "CVXPY"
+        url: "https://www.cvxpy.org/"
+        note: "Python-embedded modeling language for convex optimization"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "distributed-mpc"
+  - "distributed-control"
+  - "consensus-algorithms"
+  - "large-scale-systems"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "model-predictive-control"
+    relationship: "extension"
+    description: "Distributed MPC extends standard MPC to large-scale systems"
+  - slug: "linear-mpc"
+    relationship: "extension"
+    description: "Distributed MPC can be applied to linear systems"
+  - slug: "nonlinear-mpc"
+    relationship: "extension"
+    description: "Distributed MPC can be applied to nonlinear systems"

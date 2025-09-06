@@ -1,0 +1,877 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: dmps-human-robot-interaction
+name: DMPs for Human-Robot Interaction
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs specialized for human-robot interaction including imitation learning, collaborative tasks, and social robot behaviors."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  DMPs for Human-Robot Interaction extend the basic DMP framework to handle human-robot interaction scenarios including imitation learning, collaborative tasks, and social robot behaviors. This approach enables robots to learn from human demonstrations, collaborate with humans, and exhibit socially appropriate behaviors.
+
+  The key innovation of HRI DMPs is the integration of:
+  - Imitation learning from human demonstrations with natural movement adaptation
+  - Collaborative task coordination with human partners
+  - Social robot behaviors with appropriate interaction patterns
+  - Human intention recognition and prediction
+  - Adaptive behavior based on human feedback and preferences
+
+  These DMPs are particularly valuable in applications requiring human-robot collaboration, such as assistive robotics, collaborative manufacturing, social robotics, and any scenario where robots must interact naturally with humans.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Human demonstration: D_human = {y_human(t), ẏ_human(t), ÿ_human(t)}
+    - Human intention: I_human(t) = {position, velocity, gesture, gaze}
+    - Collaborative task: T_collab = {task_goal, constraints, roles}
+    - Social context: S = {interaction_type, social_norms, personal_space}
+    - Robot state: R(t) = {position, velocity, intention, capability}
+
+    The HRI DMP becomes:
+    τẏ = α_y(β_y(g - y) - ẏ) + f(x) + f_imitation(y_human) + f_collaboration(I_human, T_collab) + f_social(S, R)
+    
+    Where:
+    - f_imitation(y_human) adapts to human demonstrations
+    - f_collaboration(I_human, T_collab) coordinates with human partners
+    - f_social(S, R) ensures socially appropriate behavior
+    - g is the goal position (may be human-influenced)
+
+  key_properties:
+    - name: "Imitation Learning"
+      formula: "f_imitation(y_human) = k_imitation * (y_human - y)"
+      description: "Adapts robot movement to human demonstrations"
+    - name: "Collaborative Coordination"
+      formula: "f_collaboration(I_human, T_collab) = k_collab * (I_human - R)"
+      description: "Coordinates robot behavior with human intentions"
+    - name: "Social Behavior"
+      formula: "f_social(S, R) = k_social * social_norm(S, R)"
+      description: "Ensures socially appropriate robot behavior"
+
+# Key properties and characteristics
+properties:
+  - name: "Imitation Learning"
+    description: "Learns from human demonstrations with natural movement adaptation"
+    importance: "fundamental"
+  - name: "Collaborative Coordination"
+    description: "Coordinates with human partners in collaborative tasks"
+    importance: "fundamental"
+  - name: "Social Behavior"
+    description: "Exhibits socially appropriate interaction patterns"
+    importance: "fundamental"
+  - name: "Human Intention Recognition"
+    description: "Recognizes and predicts human intentions and actions"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "imitation_learning_dmp"
+    name: "Imitation Learning DMPs"
+    description: "DMPs that learn from human demonstrations with natural movement adaptation"
+    complexity:
+      time: "O(T × K × H)"
+      space: "O(K × H)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Dict, List, Tuple, Optional, Callable
+      import matplotlib.pyplot as plt
+
+      class ImitationLearningDMP:
+          """
+          DMP for imitation learning from human demonstrations.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0):
+              """
+              Initialize imitation learning DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  imitation_gain: Gain for imitation learning
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.imitation_gain = imitation_gain
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP weights
+              self.w = np.zeros((n_dims, n_basis))
+              
+              # Human demonstration data
+              self.human_demo = None
+              self.human_demo_time = None
+              
+              # Imitation parameters
+              self.imitation_active = True
+              self.adaptation_rate = 0.1
+
+          def set_human_demonstration(self, human_demo: np.ndarray, demo_time: np.ndarray) -> None:
+              """
+              Set human demonstration data.
+
+              Args:
+                  human_demo: Human demonstration trajectory [T, n_dims]
+                  demo_time: Time points for demonstration
+              """
+              self.human_demo = human_demo.copy()
+              self.human_demo_time = demo_time.copy()
+
+          def compute_imitation_force(self, current_position: np.ndarray, current_time: float) -> np.ndarray:
+              """
+              Compute imitation force from human demonstration.
+
+              Args:
+                  current_position: Current robot position
+                  current_time: Current time
+
+              Returns:
+                  Imitation force
+              """
+              if not self.imitation_active or self.human_demo is None:
+                  return np.zeros(self.n_dims)
+              
+              # Find closest time point in human demonstration
+              time_diff = np.abs(self.human_demo_time - current_time)
+              closest_idx = np.argmin(time_diff)
+              
+              # Get human position at closest time
+              human_position = self.human_demo[closest_idx]
+              
+              # Compute imitation force
+              position_error = human_position - current_position
+              imitation_force = self.imitation_gain * position_error
+              
+              return imitation_force
+
+          def learn_from_human_demo(self, human_demo: np.ndarray, demo_time: np.ndarray, 
+                                  dt: float) -> None:
+              """
+              Learn DMP weights from human demonstration.
+
+              Args:
+                  human_demo: Human demonstration trajectory [T, n_dims]
+                  demo_time: Time points for demonstration
+                  dt: Time step
+              """
+              # Set human demonstration
+              self.set_human_demonstration(human_demo, demo_time)
+              
+              T = len(human_demo)
+              y_0 = human_demo[0]
+              g = human_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights
+              for d in range(self.n_dims):
+                  f_target = np.gradient(human_demo[:, d], dt)
+                  f_target = np.gradient(f_target, dt)
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_imitation_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                          tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate trajectory with imitation learning.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def imitation_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Imitation force
+                  imitation_force = self.compute_imitation_force(y, t)
+                  
+                  # Transformation system with imitation
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f + imitation_force
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(imitation_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+          def visualize_imitation(self, robot_traj: np.ndarray, human_traj: np.ndarray,
+                                title: str = "Imitation Learning") -> None:
+              """
+              Visualize imitation learning results.
+
+              Args:
+                  robot_traj: Robot trajectory
+                  human_traj: Human trajectory
+                  title: Plot title
+              """
+              fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+              
+              # 3D trajectory comparison
+              ax1 = fig.add_subplot(221, projection='3d')
+              ax1.plot(robot_traj[:, 0], robot_traj[:, 1], robot_traj[:, 2], 'b-', linewidth=2, label='Robot')
+              ax1.plot(human_traj[:, 0], human_traj[:, 1], human_traj[:, 2], 'r--', linewidth=2, label='Human')
+              ax1.set_xlabel('X Position')
+              ax1.set_ylabel('Y Position')
+              ax1.set_zlabel('Z Position')
+              ax1.set_title('3D Trajectory Comparison')
+              ax1.legend()
+              
+              # Position components
+              ax2 = fig.add_subplot(222)
+              t = np.arange(len(robot_traj))
+              for d in range(min(3, self.n_dims)):
+                  ax2.plot(t, robot_traj[:, d], 'b-', label=f'Robot {d+1}')
+                  ax2.plot(t, human_traj[:, d], 'r--', label=f'Human {d+1}')
+              ax2.set_xlabel('Time')
+              ax2.set_ylabel('Position')
+              ax2.set_title('Position Components')
+              ax2.legend()
+              ax2.grid(True)
+              
+              # Imitation error
+              ax3 = fig.add_subplot(223)
+              imitation_error = np.linalg.norm(robot_traj - human_traj, axis=1)
+              ax3.plot(t, imitation_error, 'g-', linewidth=2)
+              ax3.set_xlabel('Time')
+              ax3.set_ylabel('Imitation Error')
+              ax3.set_title('Imitation Error Over Time')
+              ax3.grid(True)
+              
+              # Imitation gain
+              ax4 = fig.add_subplot(224)
+              ax4.plot(t, np.full_like(t, self.imitation_gain), 'm-', linewidth=2)
+              ax4.set_xlabel('Time')
+              ax4.set_ylabel('Imitation Gain')
+              ax4.set_title('Imitation Gain')
+              ax4.grid(True)
+              
+              plt.suptitle(title)
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Natural imitation learning"
+      - "Human demonstration adaptation"
+      - "Real-time imitation"
+      - "Flexible adaptation"
+    disadvantages:
+      - "Requires human demonstrations"
+      - "May not handle all movement types"
+      - "Sensitive to demonstration quality"
+
+  - type: "collaborative_dmp"
+    name: "Collaborative DMPs"
+    description: "DMPs for collaborative tasks with human partners"
+    complexity:
+      time: "O(T × K × C)"
+      space: "O(K × C)"
+    code: |
+      class CollaborativeDMP(ImitationLearningDMP):
+          """
+          DMP for collaborative tasks with human partners.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0,
+                       collaboration_gain: float = 1.0):
+              """
+              Initialize collaborative DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  imitation_gain: Gain for imitation learning
+                  collaboration_gain: Gain for collaboration
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, imitation_gain)
+              self.collaboration_gain = collaboration_gain
+              
+              # Collaboration parameters
+              self.human_intention = None
+              self.collaborative_task = None
+              self.robot_role = "assistant"
+              self.collaboration_active = True
+              
+              # Task coordination
+              self.task_phases = []
+              self.current_phase = 0
+              self.phase_transition_threshold = 0.1
+
+          def set_collaborative_task(self, task: Dict) -> None:
+              """
+              Set collaborative task information.
+
+              Args:
+                  task: Task information including goal, constraints, and roles
+              """
+              self.collaborative_task = task
+              self.robot_role = task.get("robot_role", "assistant")
+              self.task_phases = task.get("phases", [])
+
+          def set_human_intention(self, intention: Dict) -> None:
+              """
+              Set human intention information.
+
+              Args:
+                  intention: Human intention including position, velocity, and gesture
+              """
+              self.human_intention = intention
+
+          def compute_collaboration_force(self, current_position: np.ndarray, 
+                                        current_velocity: np.ndarray) -> np.ndarray:
+              """
+              Compute collaboration force based on human intention.
+
+              Args:
+                  current_position: Current robot position
+                  current_velocity: Current robot velocity
+
+              Returns:
+                  Collaboration force
+              """
+              if not self.collaboration_active or self.human_intention is None:
+                  return np.zeros(self.n_dims)
+              
+              # Get human intention
+              human_position = self.human_intention.get("position", np.zeros(self.n_dims))
+              human_velocity = self.human_intention.get("velocity", np.zeros(self.n_dims))
+              
+              # Compute collaboration force based on robot role
+              if self.robot_role == "assistant":
+                  # Assist human by moving towards human goal
+                  collaboration_force = self.collaboration_gain * (human_position - current_position)
+              elif self.robot_role == "leader":
+                  # Lead human by moving towards task goal
+                  task_goal = self.collaborative_task.get("goal", np.zeros(self.n_dims))
+                  collaboration_force = self.collaboration_gain * (task_goal - current_position)
+              elif self.robot_role == "coordinator":
+                  # Coordinate with human by matching velocity
+                  collaboration_force = self.collaboration_gain * (human_velocity - current_velocity)
+              else:
+                  collaboration_force = np.zeros(self.n_dims)
+              
+              return collaboration_force
+
+          def update_task_phase(self, current_position: np.ndarray) -> None:
+              """
+              Update current task phase based on progress.
+
+              Args:
+                  current_position: Current robot position
+              """
+              if not self.task_phases:
+                  return
+              
+              # Check if current phase is complete
+              if self.current_phase < len(self.task_phases):
+                  phase_goal = self.task_phases[self.current_phase].get("goal", np.zeros(self.n_dims))
+                  distance_to_goal = np.linalg.norm(current_position - phase_goal)
+                  
+                  if distance_to_goal < self.phase_transition_threshold:
+                      self.current_phase += 1
+
+          def generate_collaborative_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                              tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate collaborative trajectory.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def collaborative_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Imitation force
+                  imitation_force = self.compute_imitation_force(y, t)
+                  
+                  # Collaboration force
+                  collaboration_force = self.compute_collaboration_force(y, dy)
+                  
+                  # Update task phase
+                  self.update_task_phase(y)
+                  
+                  # Transformation system with imitation and collaboration
+                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f + 
+                        imitation_force + collaboration_force)
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(collaborative_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Collaborative task coordination"
+      - "Human intention recognition"
+      - "Role-based behavior"
+      - "Task phase management"
+    disadvantages:
+      - "Requires human intention recognition"
+      - "Complex task coordination"
+      - "May not handle all collaboration types"
+
+  - type: "social_dmp"
+    name: "Social DMPs"
+    description: "DMPs for social robot behaviors with appropriate interaction patterns"
+    complexity:
+      time: "O(T × K × S)"
+      space: "O(K × S)"
+    code: |
+      class SocialDMP(CollaborativeDMP):
+          """
+          DMP for social robot behaviors with appropriate interaction patterns.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0,
+                       collaboration_gain: float = 1.0, social_gain: float = 1.0):
+              """
+              Initialize social DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  imitation_gain: Gain for imitation learning
+                  collaboration_gain: Gain for collaboration
+                  social_gain: Gain for social behavior
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, imitation_gain, collaboration_gain)
+              self.social_gain = social_gain
+              
+              # Social parameters
+              self.social_context = None
+              self.personal_space = 0.5
+              self.social_norms = {}
+              self.interaction_type = "neutral"
+              
+              # Social behaviors
+              self.social_behaviors = {
+                  "greeting": self.greeting_behavior,
+                  "farewell": self.farewell_behavior,
+                  "attention": self.attention_behavior,
+                  "respect": self.respect_behavior
+              }
+
+          def set_social_context(self, context: Dict) -> None:
+              """
+              Set social context information.
+
+              Args:
+                  context: Social context including interaction type and norms
+              """
+              self.social_context = context
+              self.interaction_type = context.get("interaction_type", "neutral")
+              self.personal_space = context.get("personal_space", 0.5)
+              self.social_norms = context.get("norms", {})
+
+          def greeting_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
+              """
+              Generate greeting behavior.
+
+              Args:
+                  current_position: Current robot position
+                  human_position: Human position
+
+              Returns:
+                  Greeting behavior force
+              """
+              # Move towards human for greeting
+              direction = human_position - current_position
+              distance = np.linalg.norm(direction)
+              
+              if distance > self.personal_space:
+                  # Move closer for greeting
+                  greeting_force = self.social_gain * direction / (distance + 1e-10)
+              else:
+                  # Maintain appropriate distance
+                  greeting_force = np.zeros(self.n_dims)
+              
+              return greeting_force
+
+          def farewell_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
+              """
+              Generate farewell behavior.
+
+              Args:
+                  current_position: Current robot position
+                  human_position: Human position
+
+              Returns:
+                  Farewell behavior force
+              """
+              # Move away from human for farewell
+              direction = current_position - human_position
+              distance = np.linalg.norm(direction)
+              
+              if distance < self.personal_space * 2:
+                  # Move away for farewell
+                  farewell_force = self.social_gain * direction / (distance + 1e-10)
+              else:
+                  # Maintain distance
+                  farewell_force = np.zeros(self.n_dims)
+              
+              return farewell_force
+
+          def attention_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
+              """
+              Generate attention behavior.
+
+              Args:
+                  current_position: Current robot position
+                  human_position: Human position
+
+              Returns:
+                  Attention behavior force
+              """
+              # Orient towards human for attention
+              direction = human_position - current_position
+              distance = np.linalg.norm(direction)
+              
+              if distance > 0:
+                  # Orient towards human
+                  attention_force = self.social_gain * direction / (distance + 1e-10)
+              else:
+                  attention_force = np.zeros(self.n_dims)
+              
+              return attention_force
+
+          def respect_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
+              """
+              Generate respect behavior.
+
+              Args:
+                  current_position: Current robot position
+                  human_position: Human position
+
+              Returns:
+                  Respect behavior force
+              """
+              # Maintain respectful distance
+              direction = current_position - human_position
+              distance = np.linalg.norm(direction)
+              
+              if distance < self.personal_space:
+                  # Move away to maintain respectful distance
+                  respect_force = self.social_gain * direction / (distance + 1e-10)
+              else:
+                  respect_force = np.zeros(self.n_dims)
+              
+              return respect_force
+
+          def compute_social_force(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
+              """
+              Compute social force based on interaction type.
+
+              Args:
+                  current_position: Current robot position
+                  human_position: Human position
+
+              Returns:
+                  Social force
+              """
+              if self.interaction_type in self.social_behaviors:
+                  return self.social_behaviors[self.interaction_type](current_position, human_position)
+              else:
+                  return np.zeros(self.n_dims)
+
+          def generate_social_trajectory(self, y_0: np.ndarray, g: np.ndarray,
+                                       human_position: np.ndarray, tau: float = 1.0, 
+                                       dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate social trajectory.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  human_position: Human position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def social_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Imitation force
+                  imitation_force = self.compute_imitation_force(y, t)
+                  
+                  # Collaboration force
+                  collaboration_force = self.compute_collaboration_force(y, dy)
+                  
+                  # Social force
+                  social_force = self.compute_social_force(y, human_position)
+                  
+                  # Transformation system with all forces
+                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f + 
+                        imitation_force + collaboration_force + social_force)
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(social_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Socially appropriate behavior"
+      - "Interaction type adaptation"
+      - "Personal space respect"
+      - "Social norm compliance"
+    disadvantages:
+      - "Requires social context"
+      - "Complex social modeling"
+      - "May not handle all social situations"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Imitation Learning DMP"
+      time: "O(T × K × H)"
+      space: "O(K × H)"
+      notes: "Time complexity scales with trajectory length, basis functions, and human data"
+    
+    - approach: "Collaborative DMP"
+      time: "O(T × K × C)"
+      space: "O(K × C)"
+      notes: "Additional complexity for collaboration coordination"
+    
+    - approach: "Social DMP"
+      time: "O(T × K × S)"
+      space: "O(K × S)"
+      notes: "Additional complexity for social behavior modeling"
+
+# Applications and use cases
+applications:
+  - category: "Assistive Robotics"
+    examples:
+      - "Elderly Care: Assisting elderly people with daily tasks"
+      - "Disability Support: Supporting people with disabilities"
+      - "Rehabilitation: Assisting with rehabilitation exercises"
+      - "Healthcare: Assisting with healthcare tasks"
+
+  - category: "Collaborative Manufacturing"
+    examples:
+      - "Assembly: Collaborating with humans in assembly tasks"
+      - "Quality Control: Collaborating in quality control tasks"
+      - "Packaging: Collaborating in packaging tasks"
+      - "Inspection: Collaborating in inspection tasks"
+
+  - category: "Social Robotics"
+    examples:
+      - "Companion Robots: Providing companionship and social interaction"
+      - "Educational Robots: Teaching and learning with humans"
+      - "Entertainment Robots: Providing entertainment and fun"
+      - "Service Robots: Providing services with social interaction"
+
+  - category: "Human-Robot Collaboration"
+    examples:
+      - "Collaborative Tasks: Working together on tasks"
+      - "Shared Workspace: Sharing workspace with humans"
+      - "Task Handover: Handing over tasks between human and robot"
+      - "Mutual Learning: Learning from each other"
+
+  - category: "Research Applications"
+    examples:
+      - "HRI Research: Studying human-robot interaction"
+      - "Social Robotics Research: Studying social robot behaviors"
+      - "Collaboration Research: Studying human-robot collaboration"
+      - "Imitation Learning Research: Studying imitation learning"
+
+# Educational value and learning objectives
+educational_value:
+  - "Human-Robot Interaction: Understanding HRI principles and methods"
+  - "Imitation Learning: Understanding imitation learning techniques"
+  - "Collaboration: Understanding human-robot collaboration"
+  - "Social Behavior: Understanding social robot behaviors"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/human_robot_interaction_dmps.py"
+      description: "Main implementation with imitation learning, collaborative, and social DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_human_robot_interaction_dmps.py"
+      description: "Comprehensive test suite including HRI tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Ijspeert, A. J., Nakanishi, J., Hoffmann, H., Pastor, P., & Schaal, S."
+        year: "2013"
+        title: "Dynamical movement primitives: Learning attractor landscapes for motor skills"
+        publisher: "Biological Cybernetics"
+        note: "Comprehensive review of DMPs including HRI applications"
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "DMPs for human-robot interaction and collaboration"
+
+  - category: "Human-Robot Interaction"
+    items:
+      - author: "Goodrich, M. A., & Schultz, A. C."
+        year: "2007"
+        title: "Human-robot interaction: A survey"
+        publisher: "Foundations and Trends in Human-Computer Interaction"
+        note: "Comprehensive survey of human-robot interaction"
+      - author: "Breazeal, C."
+        year: "2003"
+        title: "Toward sociable robots"
+        publisher: "Robotics and Autonomous Systems"
+        note: "Social robotics and human-robot interaction"
+
+  - category: "Online Resources"
+    items:
+      - title: "Human-Robot Interaction"
+        url: "https://en.wikipedia.org/wiki/Human%E2%80%93robot_interaction"
+        note: "Wikipedia article on human-robot interaction"
+      - title: "Social Robotics"
+        url: "https://en.wikipedia.org/wiki/Social_robotics"
+        note: "Wikipedia article on social robotics"
+      - title: "Imitation Learning"
+        url: "https://en.wikipedia.org/wiki/Imitation_learning"
+        note: "Wikipedia article on imitation learning"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "ROS Human-Robot Interaction"
+        url: "https://ros.org/reps/rep-0118.html"
+        note: "ROS packages for human-robot interaction"
+      - title: "ROS Social Robotics"
+        url: "https://ros.org/reps/rep-0118.html"
+        note: "ROS packages for social robotics"
+      - title: "ROS Imitation Learning"
+        url: "https://ros.org/reps/rep-0118.html"
+        note: "ROS packages for imitation learning"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "human-robot-interaction"
+  - "imitation-learning"
+  - "collaborative-tasks"
+  - "social-robotics"
+  - "hri"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that HRI DMPs extend for human interaction"
+  - slug: "spatially-coupled-bimanual-dmps"
+    relationship: "same_family"
+    description: "Bimanual DMPs that can be combined with HRI for collaborative tasks"

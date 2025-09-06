@@ -1,0 +1,322 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: hierarchical-q-learning
+name: Hierarchical Q-Learning
+family_id: hierarchical-rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "Extends traditional Q-Learning to handle temporal abstraction and hierarchical task decomposition with multi-level Q-functions."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Hierarchical Q-Learning extends the traditional Q-Learning framework to handle temporal abstraction
+  and hierarchical task decomposition. The algorithm learns Q-functions at multiple levels: a high-level
+  Q-function that estimates the value of subgoals, and low-level Q-functions that estimate the value
+  of actions given specific subgoals.
+
+  This hierarchical approach enables the agent to solve complex, long-horizon tasks by breaking them
+  down into manageable subproblems. The high-level Q-function learns to sequence subgoals effectively,
+  while the low-level Q-functions learn to achieve specific subgoals efficiently. Hierarchical Q-Learning
+  is particularly powerful in domains where tasks have natural hierarchical structure, such as robotics
+  manipulation, navigation, and game playing.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Subgoal space: G
+    - Action space: A
+    - Meta Q-function: Q_meta(s, g)
+    - Low-level Q-function: Q_low(s, g, a)
+    - Reward function: R(s,a,s')
+
+    Find hierarchical Q-functions that maximize expected cumulative reward:
+
+    Q_h(s_t, g_t, a_t) = Q_meta(s_t, g_t) + Q_low(s_t, g_t, a_t)
+
+  key_properties:
+    - name: "Hierarchical Q-Function Decomposition"
+      formula: "Q_h(s_t, g_t, a_t) = Q_meta(s_t, g_t) + Q_low(s_t, g_t, a_t)"
+      description: "Q-function decomposes into meta and low-level components"
+    - name: "Hierarchical Q-Learning Update"
+      formula: "Q_h(s_t, g_t, a_t) ← Q_h(s_t, g_t, a_t) + α[r_t + γ max_{g'} Q_meta(s_{t+1}, g') - Q_h(s_t, g_t, a_t)]"
+      description: "Update rule for hierarchical Q-functions"
+    - name: "Subgoal Selection"
+      formula: "g_t = argmax_g Q_meta(s_t, g)"
+      description: "Subgoal selection based on meta Q-function"
+
+# Key properties and characteristics
+properties:
+  - name: "Temporal Abstraction"
+    description: "High-level Q-functions operate over longer time horizons"
+    importance: "fundamental"
+  - name: "Subgoal Decomposition"
+    description: "Complex tasks broken into manageable subproblems"
+    importance: "fundamental"
+  - name: "Hierarchical Learning"
+    description: "Q-functions at different levels learn simultaneously"
+    importance: "fundamental"
+  - name: "Transfer Learning"
+    description: "Low-level Q-functions can be reused across different tasks"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_hierarchical_q_learning"
+    name: "Basic Hierarchical Q-Learning (Recommended)"
+    description: "Standard hierarchical Q-Learning with meta and low-level Q-tables"
+    complexity:
+      time: "O(|S| × |G| × |A| × episodes)"
+      space: "O(|S| × |G| × |A|)"
+    code: |
+      import numpy as np
+      from typing import Dict, Tuple, Any
+
+      class HierarchicalQLearningAgent:
+          """
+          Hierarchical Q-Learning agent implementation.
+
+          Args:
+              state_size: Number of possible states
+              subgoal_size: Number of possible subgoals
+              action_size: Number of possible actions
+              learning_rate: Learning rate alpha (default: 0.1)
+              discount_factor: Discount factor gamma (default: 0.95)
+              epsilon: Exploration rate for epsilon-greedy (default: 0.1)
+              subgoal_horizon: Maximum steps to achieve subgoal (default: 50)
+          """
+
+          def __init__(self, state_size: int, subgoal_size: int, action_size: int,
+                       learning_rate: float = 0.1, discount_factor: float = 0.95,
+                       epsilon: float = 0.1, subgoal_horizon: int = 50):
+
+              self.state_size = state_size
+              self.subgoal_size = subgoal_size
+              self.action_size = action_size
+              self.alpha = learning_rate
+              self.gamma = discount_factor
+              self.epsilon = epsilon
+              self.subgoal_horizon = subgoal_horizon
+
+              # Q-tables
+              self.meta_q_table = np.zeros((state_size, subgoal_size))
+              self.low_q_table = np.zeros((state_size, subgoal_size, action_size))
+
+              # Current subgoal tracking
+              self.current_subgoal = None
+              self.subgoal_steps = 0
+
+          def get_subgoal(self, state: int) -> int:
+              """Select subgoal using epsilon-greedy policy on meta Q-function."""
+              if np.random.random() < self.epsilon:
+                  # Exploration: random subgoal
+                  return np.random.randint(self.subgoal_size)
+              else:
+                  # Exploitation: best subgoal according to meta Q-table
+                  return np.argmax(self.meta_q_table[state])
+
+          def get_action(self, state: int, subgoal: int) -> int:
+              """Choose action using epsilon-greedy policy on low-level Q-function."""
+              if np.random.random() < self.epsilon:
+                  # Exploration: random action
+                  return np.random.randint(self.action_size)
+              else:
+                  # Exploitation: best action according to low-level Q-table
+                  return np.argmax(self.low_q_table[state, subgoal])
+
+          def step(self, state: int, action: int, reward: float,
+                  next_state: int, done: bool) -> None:
+              """Process one step and update Q-functions."""
+              # Update low-level Q-function
+              if self.current_subgoal is not None:
+                  current_q = self.low_q_table[state, self.current_subgoal, action]
+                  
+                  if done:
+                      max_next_q = 0
+                  else:
+                      max_next_q = np.max(self.low_q_table[next_state, self.current_subgoal])
+                  
+                  target = reward + self.gamma * max_next_q
+                  self.low_q_table[state, self.current_subgoal, action] = (
+                      current_q + self.alpha * (target - current_q)
+                  )
+
+              # Check if subgoal should be updated
+              self.subgoal_steps += 1
+              if (self.subgoal_steps >= self.subgoal_horizon or
+                  self.is_subgoal_achieved(state, next_state) or done):
+
+                  # Update meta Q-function
+                  if self.current_subgoal is not None:
+                      current_meta_q = self.meta_q_table[state, self.current_subgoal]
+                      
+                      if done:
+                          max_next_meta_q = 0
+                      else:
+                          max_next_meta_q = np.max(self.meta_q_table[next_state])
+                      
+                      # Meta reward is the cumulative reward from low-level actions
+                      meta_reward = self.get_meta_reward(state, self.current_subgoal)
+                      target = meta_reward + self.gamma * max_next_meta_q
+                      self.meta_q_table[state, self.current_subgoal] = (
+                          current_meta_q + self.alpha * (target - current_meta_q)
+                      )
+
+                  # Select new subgoal
+                  if not done:
+                      self.current_subgoal = self.get_subgoal(next_state)
+                      self.subgoal_steps = 0
+
+          def is_subgoal_achieved(self, state: int, next_state: int) -> bool:
+              """Check if current subgoal has been achieved."""
+              # Simple state-based subgoal achievement
+              # In practice, this would be domain-specific
+              return abs(next_state - state) > 0.5
+
+          def get_meta_reward(self, state: int, subgoal: int) -> float:
+              """Get meta-level reward for achieving subgoal."""
+              # Simple reward based on subgoal achievement
+              # In practice, this would be domain-specific
+              return 1.0 if self.is_subgoal_achieved(state, state) else 0.0
+
+          def get_policy(self) -> Dict[str, np.ndarray]:
+              """Get the current hierarchical policy."""
+              meta_policy = np.argmax(self.meta_q_table, axis=1)
+              low_policy = np.argmax(self.low_q_table, axis=2)
+              
+              return {
+                  "meta_policy": meta_policy,
+                  "low_policy": low_policy
+              }
+    advantages:
+      - "Extends familiar Q-Learning framework to hierarchical settings"
+      - "Temporal abstraction enables learning at different time scales"
+      - "Subgoal decomposition makes complex tasks manageable"
+      - "Transfer learning allows reuse of low-level Q-functions"
+    disadvantages:
+      - "Requires discrete state-action spaces"
+      - "Memory requirements grow with state and subgoal space sizes"
+      - "Subgoal achievement detection can be challenging"
+      - "Coordination between meta and low-level Q-functions is complex"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Hierarchical Q-Learning"
+      time: "O(|S| × |G| × |A| × episodes)"
+      space: "O(|S| × |G| × |A|)"
+      notes: "Time complexity depends on episodes and state-subgoal-action space sizes. Space grows cubically with state, subgoal, and action spaces"
+    
+    - approach: "Convergence Analysis"
+      time: "O(1/√t)"
+      space: "O(|S| × |G| × |A|)"
+      notes: "Convergence guaranteed under proper exploration and learning rate schedules. All state-subgoal-action triplets must be visited infinitely often"
+
+# Applications and use cases
+applications:
+  - category: "Robotics and Control"
+    examples:
+      - "Robot Manipulation: Complex manipulation tasks with hierarchical subgoals"
+      - "Autonomous Navigation: Multi-level navigation with waypoint subgoals"
+      - "Industrial Automation: Process control with hierarchical objectives"
+      - "Swarm Robotics: Coordinated behavior with hierarchical task decomposition"
+
+  - category: "Game AI and Strategy"
+    examples:
+      - "Strategy Games: Multi-level decision making with tactical and strategic goals"
+      - "Puzzle Games: Complex puzzles broken into simpler subproblems"
+      - "Adventure Games: Quest completion with hierarchical objectives"
+      - "Simulation Games: Resource management with hierarchical planning"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Autonomous Vehicles: Multi-level driving with navigation and control subgoals"
+      - "Healthcare: Treatment planning with hierarchical medical objectives"
+      - "Finance: Portfolio management with hierarchical investment strategies"
+      - "Network Control: Traffic management with hierarchical routing policies"
+
+  - category: "Educational Value"
+    examples:
+      - "Hierarchical Learning: Understanding multi-level decision making"
+      - "Subgoal Decomposition: Learning to break complex tasks into simpler parts"
+      - "Temporal Abstraction: Understanding different time scales in learning"
+      - "Transfer Learning: Learning reusable skills across different tasks"
+
+# Educational value and learning objectives
+educational_value:
+  - "Hierarchical Learning: Perfect introduction to multi-level decision making"
+  - "Subgoal Decomposition: Shows how to break complex tasks into manageable parts"
+  - "Temporal Abstraction: Demonstrates learning at different time scales"
+  - "Transfer Learning: Illustrates how skills can be reused across tasks"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/hierarchical_rl/hierarchical_q_learning.py"
+      description: "Main implementation with meta and low-level Q-functions"
+    - path: "tests/unit/hierarchical_rl/test_hierarchical_q_learning.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - bib_key: "kaelbling1998"
+        note: "Foundational work on hierarchical reinforcement learning with MAXQ decomposition"
+      - bib_key: "dietterich2000"
+        note: "Hierarchical reinforcement learning with value function decomposition"
+
+  - category: "Hierarchical RL Textbooks"
+    items:
+      - bib_key: "sutton2018"
+        note: "Comprehensive introduction to reinforcement learning including hierarchical methods"
+      - bib_key: "szepesvari2010"
+        note: "Algorithms for reinforcement learning with hierarchical approaches"
+
+  - category: "Online Resources"
+    items:
+      - title: "Hierarchical Reinforcement Learning"
+        url: "https://en.wikipedia.org/wiki/Hierarchical_reinforcement_learning"
+        note: "Wikipedia article on hierarchical reinforcement learning"
+      - title: "MAXQ Value Function Decomposition"
+        url: "https://www.cs.cmu.edu/~mmv/papers/kaelbling-aaai99.pdf"
+        note: "Original MAXQ paper and implementation details"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "OpenAI Gym"
+        url: "https://www.gymlibrary.dev/"
+        note: "RL environments for testing hierarchical algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+      - title: "Ray RLlib"
+        url: "https://docs.ray.io/en/latest/rllib/"
+        note: "Scalable RL library for production use"
+
+# Tags for categorization and search
+tags:
+  - "hierarchical-rl"
+  - "hierarchical-q-learning"
+  - "temporal-abstraction"
+  - "subgoal-decomposition"
+  - "value-based"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "q-learning"
+    relationship: "parent"
+    description: "Traditional Q-Learning that hierarchical Q-Learning extends"
+  - slug: "feudal-networks"
+    relationship: "same_family"
+    description: "Another hierarchical RL approach with manager-worker architecture"

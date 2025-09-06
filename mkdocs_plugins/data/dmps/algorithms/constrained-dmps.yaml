@@ -1,0 +1,607 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: constrained-dmps
+name: Constrained Dynamic Movement Primitives (CDMPs)
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs with safety constraints and operational requirements that ensure movements comply with safety limits and operational constraints."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Constrained Dynamic Movement Primitives (CDMPs) extend the basic DMP framework to incorporate safety constraints and operational requirements. These constraints ensure that generated movements comply with safety limits, operational boundaries, and other critical requirements that are essential for safe robot operation.
+
+  The key innovation of CDMPs is the integration of constraint handling mechanisms that can:
+  - Enforce joint limits and workspace boundaries
+  - Ensure collision-free movements
+  - Maintain operational safety requirements
+  - Prevent dangerous movements that could harm humans or equipment
+  - Adapt movements to comply with changing constraints
+
+  CDMPs are particularly valuable in safety-critical applications where movements must be both effective and safe, such as human-robot collaboration, medical robotics, and industrial automation.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Basic DMP: τẏ = α_y(β_y(g - y) - ẏ) + f(x)
+    - Safety constraints: g_safety(y, ẏ, ÿ) ≤ 0
+    - Operational constraints: g_ops(y, ẏ, ÿ) ≤ 0
+    - Joint limits: y_min ≤ y ≤ y_max
+    - Velocity limits: ẏ_min ≤ ẏ ≤ ẏ_max
+    - Acceleration limits: ÿ_min ≤ ÿ ≤ ÿ_max
+
+    Find constrained DMP that satisfies:
+    min ||f(x) - f_original(x)||²
+    subject to:
+    - g_safety(y, ẏ, ÿ) ≤ 0
+    - g_ops(y, ẏ, ÿ) ≤ 0
+    - y_min ≤ y ≤ y_max
+    - ẏ_min ≤ ẏ ≤ ẏ_max
+    - ÿ_min ≤ ÿ ≤ ÿ_max
+
+  key_properties:
+    - name: "Constraint Satisfaction"
+      formula: "g_safety(y, ẏ, ÿ) ≤ 0, g_ops(y, ẏ, ÿ) ≤ 0"
+      description: "All safety and operational constraints must be satisfied"
+    - name: "Minimal Deviation"
+      formula: "min ||f(x) - f_original(x)||²"
+      description: "Minimize deviation from original DMP while satisfying constraints"
+    - name: "Real-time Adaptation"
+      formula: "f_constrained(x) = f_original(x) + Δf(x)"
+      description: "Constraints can be adapted in real-time based on changing conditions"
+
+# Key properties and characteristics
+properties:
+  - name: "Safety Guarantees"
+    description: "Ensures movements comply with safety requirements"
+    importance: "fundamental"
+  - name: "Constraint Handling"
+    description: "Handles multiple types of constraints simultaneously"
+    importance: "fundamental"
+  - name: "Real-time Adaptation"
+    description: "Can adapt constraints based on changing conditions"
+    importance: "fundamental"
+  - name: "Minimal Deviation"
+    description: "Minimizes deviation from original movement while satisfying constraints"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "penalty_method_cdmp"
+    name: "Penalty Method CDMPs"
+    description: "CDMPs using penalty methods for constraint handling"
+    complexity:
+      time: "O(T × K × C)"
+      space: "O(K + C)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import List, Callable, Optional
+      import warnings
+
+      class ConstrainedDMP:
+          """
+          Constrained Dynamic Movement Primitive with safety constraints.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0):
+              """
+              Initialize constrained DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # Original DMP weights
+              self.w_original = np.zeros((n_dims, n_basis))
+              
+              # Constrained DMP weights
+              self.w_constrained = np.zeros((n_dims, n_basis))
+              
+              # Constraints
+              self.constraints = []
+              self.penalty_weight = 1.0
+
+          def add_constraint(self, constraint_func: Callable, constraint_type: str = "safety") -> None:
+              """
+              Add a constraint to the DMP.
+
+              Args:
+                  constraint_func: Function that returns constraint violation
+                  constraint_type: Type of constraint ("safety", "operational", "joint")
+              """
+              self.constraints.append({
+                  'func': constraint_func,
+                  'type': constraint_type
+              })
+
+          def add_joint_limits(self, y_min: np.ndarray, y_max: np.ndarray) -> None:
+              """
+              Add joint limit constraints.
+
+              Args:
+                  y_min: Minimum joint positions
+                  y_max: Maximum joint positions
+              """
+              def joint_limit_constraint(y, dy, ddy):
+                  violations = []
+                  violations.extend(np.maximum(0, y - y_max))
+                  violations.extend(np.maximum(0, y_min - y))
+                  return np.array(violations)
+              
+              self.add_constraint(joint_limit_constraint, "joint")
+
+          def add_velocity_limits(self, dy_min: np.ndarray, dy_max: np.ndarray) -> None:
+              """
+              Add velocity limit constraints.
+
+              Args:
+                  dy_min: Minimum velocities
+                  dy_max: Maximum velocities
+              """
+              def velocity_limit_constraint(y, dy, ddy):
+                  violations = []
+                  violations.extend(np.maximum(0, dy - dy_max))
+                  violations.extend(np.maximum(0, dy_min - dy))
+                  return np.array(violations)
+              
+              self.add_constraint(velocity_limit_constraint, "operational")
+
+          def add_acceleration_limits(self, ddy_min: np.ndarray, ddy_max: np.ndarray) -> None:
+              """
+              Add acceleration limit constraints.
+
+              Args:
+                  ddy_min: Minimum accelerations
+                  ddy_max: Maximum accelerations
+              """
+              def acceleration_limit_constraint(y, dy, ddy):
+                  violations = []
+                  violations.extend(np.maximum(0, ddy - ddy_max))
+                  violations.extend(np.maximum(0, ddy_min - ddy))
+                  return np.array(violations)
+              
+              self.add_constraint(acceleration_limit_constraint, "operational")
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn original DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn original weights
+              for d in range(self.n_dims):
+                  f_target = (ddy_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w_original[d, i] = numerator / denominator
+
+          def constraint_violation(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray, 
+                                 t: np.ndarray) -> float:
+              """
+              Compute total constraint violation for given weights.
+
+              Args:
+                  w: Weight vector [n_dims * n_basis]
+                  y_0: Start position
+                  g: Goal position
+                  t: Time points
+
+              Returns:
+                  Total constraint violation
+              """
+              # Reshape weights
+              w_reshaped = w.reshape(self.n_dims, self.n_basis)
+              
+              # Generate trajectory
+              y, dy, ddy = self._generate_trajectory_from_weights(w_reshaped, y_0, g, t)
+              
+              # Compute constraint violations
+              total_violation = 0.0
+              for constraint in self.constraints:
+                  violations = constraint['func'](y, dy, ddy)
+                  total_violation += np.sum(np.maximum(0, violations)**2)
+              
+              return total_violation
+
+          def _generate_trajectory_from_weights(self, w: np.ndarray, y_0: np.ndarray, 
+                                              g: np.ndarray, t: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate trajectory from given weights.
+
+              Args:
+                  w: Weight matrix [n_dims, n_basis]
+                  y_0: Start position
+                  g: Goal position
+                  t: Time points
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              T = len(t)
+              x = np.exp(-self.alpha_x * t)
+              
+              y = np.zeros((T, self.n_dims))
+              dy = np.zeros((T, self.n_dims))
+              ddy = np.zeros((T, self.n_dims))
+              
+              for d in range(self.n_dims):
+                  # Forcing function
+                  f = np.zeros(T)
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      f += w[d, i] * psi * x
+                  
+                  # Integration
+                  y[0, d] = y_0[d]
+                  dy[0, d] = 0.0
+                  
+                  for i in range(1, T):
+                      dt = t[i] - t[i-1]
+                      ddy[i-1, d] = self.alpha_y * (self.beta_y * (g[d] - y[i-1, d]) - dy[i-1, d]) + f[i-1]
+                      dy[i, d] = dy[i-1, d] + ddy[i-1, d] * dt
+                      y[i, d] = y[i-1, d] + dy[i, d] * dt
+                  
+                  ddy[-1, d] = self.alpha_y * (self.beta_y * (g[d] - y[-1, d]) - dy[-1, d]) + f[-1]
+              
+              return y, dy, ddy
+
+          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray, 
+                                 t: np.ndarray, max_iter: int = 100) -> None:
+              """
+              Optimize DMP weights to satisfy constraints.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  t: Time points
+                  max_iter: Maximum optimization iterations
+              """
+              # Initial weights
+              w0 = self.w_original.flatten()
+              
+              # Objective function
+              def objective(w):
+                  # Deviation from original
+                  deviation = np.sum((w - w0)**2)
+                  
+                  # Constraint violation
+                  violation = self.constraint_violation(w, y_0, g, t)
+                  
+                  return deviation + self.penalty_weight * violation
+              
+              # Optimize
+              result = minimize(objective, w0, method='L-BFGS-B', 
+                              options={'maxiter': max_iter})
+              
+              if result.success:
+                  self.w_constrained = result.x.reshape(self.n_dims, self.n_basis)
+              else:
+                  warnings.warn("Constraint optimization failed, using original weights")
+                  self.w_constrained = self.w_original.copy()
+
+          def generate_constrained_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                            tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate constrained trajectory.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Time points
+              t = np.arange(0, 1.0, dt / tau)
+              
+              # Optimize constraints
+              self.optimize_constraints(y_0, g, t)
+              
+              # Generate trajectory
+              return self._generate_trajectory_from_weights(self.w_constrained, y_0, g, t)
+
+    advantages:
+      - "Guarantees constraint satisfaction"
+      - "Flexible constraint handling"
+      - "Real-time constraint adaptation"
+      - "Minimal deviation from original movement"
+    disadvantages:
+      - "Computational overhead for constraint optimization"
+      - "May not find feasible solutions"
+      - "Requires careful constraint formulation"
+
+  - type: "barrier_method_cdmp"
+    name: "Barrier Method CDMPs"
+    description: "CDMPs using barrier methods for constraint handling"
+    complexity:
+      time: "O(T × K × C × log(1/ε))"
+      space: "O(K + C)"
+    code: |
+      class BarrierMethodCDMP(ConstrainedDMP):
+          """
+          Constrained DMP using barrier methods for constraint handling.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, barrier_weight: float = 1.0):
+              """
+              Initialize barrier method CDMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  barrier_weight: Initial barrier weight
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x)
+              self.barrier_weight = barrier_weight
+              self.barrier_decay = 0.1
+
+          def barrier_function(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray, 
+                             t: np.ndarray) -> float:
+              """
+              Compute barrier function value.
+
+              Args:
+                  w: Weight vector [n_dims * n_basis]
+                  y_0: Start position
+                  g: Goal position
+                  t: Time points
+
+              Returns:
+                  Barrier function value
+              """
+              # Reshape weights
+              w_reshaped = w.reshape(self.n_dims, self.n_basis)
+              
+              # Generate trajectory
+              y, dy, ddy = self._generate_trajectory_from_weights(w_reshaped, y_0, g, t)
+              
+              # Compute barrier function
+              barrier_value = 0.0
+              for constraint in self.constraints:
+                  violations = constraint['func'](y, dy, ddy)
+                  # Barrier function: -log(-violation) for violations < 0
+                  for violation in violations:
+                      if violation < 0:
+                          barrier_value -= np.log(-violation)
+                      else:
+                          # Large penalty for constraint violations
+                          barrier_value += 1e6
+              
+              return barrier_value
+
+          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray, 
+                                 t: np.ndarray, max_iter: int = 100) -> None:
+              """
+              Optimize DMP weights using barrier method.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  t: Time points
+                  max_iter: Maximum optimization iterations
+              """
+              # Initial weights
+              w0 = self.w_original.flatten()
+              barrier_weight = self.barrier_weight
+              
+              # Barrier method iterations
+              for iteration in range(max_iter):
+                  # Objective function with barrier
+                  def objective(w):
+                      # Deviation from original
+                      deviation = np.sum((w - w0)**2)
+                      
+                      # Barrier function
+                      barrier = self.barrier_function(w, y_0, g, t)
+                      
+                      return deviation + barrier_weight * barrier
+                  
+                  # Optimize
+                  result = minimize(objective, w0, method='L-BFGS-B')
+                  
+                  if result.success:
+                      w0 = result.x
+                      # Decay barrier weight
+                      barrier_weight *= self.barrier_decay
+                  else:
+                      break
+              
+              self.w_constrained = w0.reshape(self.n_dims, self.n_basis)
+
+    advantages:
+      - "Strong constraint satisfaction guarantees"
+      - "Smooth convergence to feasible region"
+      - "Theoretically well-founded"
+      - "Handles inequality constraints naturally"
+    disadvantages:
+      - "Higher computational cost"
+      - "Sensitive to barrier weight tuning"
+      - "May converge slowly"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Penalty Method CDMP"
+      time: "O(T × K × C)"
+      space: "O(K + C)"
+      notes: "Time complexity scales with trajectory length, basis functions, and constraints"
+    
+    - approach: "Barrier Method CDMP"
+      time: "O(T × K × C × log(1/ε))"
+      space: "O(K + C)"
+      notes: "Higher complexity due to barrier method iterations"
+    
+    - approach: "Constraint Evaluation"
+      time: "O(T × C)"
+      space: "O(C)"
+      notes: "Constraint evaluation scales with trajectory length and number of constraints"
+
+# Applications and use cases
+applications:
+  - category: "Human-Robot Collaboration"
+    examples:
+      - "Safe Handover: Ensuring safe object handover between human and robot"
+      - "Collaborative Assembly: Safe assembly tasks with human partners"
+      - "Assistive Robotics: Safe assistance for elderly or disabled users"
+      - "Social Robotics: Safe interaction in social environments"
+
+  - category: "Medical Robotics"
+    examples:
+      - "Surgical Robotics: Ensuring safe surgical movements within patient anatomy"
+      - "Rehabilitation: Safe therapeutic movements for patient recovery"
+      - "Prosthetics: Safe prosthetic control with user safety limits"
+      - "Diagnostic: Safe diagnostic movements in medical imaging"
+
+  - category: "Industrial Automation"
+    examples:
+      - "Manufacturing: Safe manufacturing operations with equipment protection"
+      - "Quality Control: Safe inspection movements in production lines"
+      - "Packaging: Safe packaging operations with product protection"
+      - "Maintenance: Safe maintenance operations in industrial environments"
+
+  - category: "Autonomous Vehicles"
+    examples:
+      - "Path Planning: Safe path planning with obstacle avoidance"
+      - "Traffic: Safe traffic navigation with vehicle constraints"
+      - "Parking: Safe parking maneuvers with space constraints"
+      - "Emergency: Safe emergency maneuvers with vehicle limits"
+
+  - category: "Space and Aerospace"
+    examples:
+      - "Satellite Operations: Safe satellite maneuvers with orbital constraints"
+      - "Spacecraft: Safe spacecraft operations with fuel and power limits"
+      - "Aircraft: Safe aircraft operations with flight envelope constraints"
+      - "Rockets: Safe rocket operations with structural and fuel limits"
+
+# Educational value and learning objectives
+educational_value:
+  - "Constraint Optimization: Understanding how to handle constraints in optimization"
+  - "Safety in Robotics: Learning to ensure safety in robotic systems"
+  - "Penalty Methods: Understanding penalty-based constraint handling"
+  - "Barrier Methods: Understanding barrier-based constraint handling"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/constrained_dmps.py"
+      description: "Main implementation with penalty and barrier methods"
+    - path: "tests/unit/dynamic_movement_primitives/test_constrained_dmps.py"
+      description: "Comprehensive test suite including constraint satisfaction tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "Early work on constrained DMPs"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with safety constraints"
+
+  - category: "Constraint Handling"
+    items:
+      - author: "Nocedal, J., & Wright, S. J."
+        year: "2006"
+        title: "Numerical Optimization"
+        publisher: "Springer"
+        note: "Comprehensive treatment of constraint optimization methods"
+      - author: "Boyd, S., & Vandenberghe, L."
+        year: "2004"
+        title: "Convex Optimization"
+        publisher: "Cambridge University Press"
+        note: "Convex optimization with constraints"
+
+  - category: "Online Resources"
+    items:
+      - title: "Constrained Optimization"
+        url: "https://en.wikipedia.org/wiki/Constrained_optimization"
+        note: "Wikipedia article on constrained optimization"
+      - title: "Penalty Methods"
+        url: "https://en.wikipedia.org/wiki/Penalty_method"
+        note: "Wikipedia article on penalty methods"
+      - title: "Barrier Methods"
+        url: "https://en.wikipedia.org/wiki/Barrier_method"
+        note: "Wikipedia article on barrier methods"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "SciPy Optimization"
+        url: "https://docs.scipy.org/doc/scipy/reference/optimize.html"
+        note: "SciPy optimization functions"
+      - title: "CVXPY"
+        url: "https://www.cvxpy.org/"
+        note: "Python library for convex optimization"
+      - title: "CasADi"
+        url: "https://web.casadi.org/"
+        note: "Symbolic framework for optimization"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "constrained-dmps"
+  - "safety-constraints"
+  - "constraint-optimization"
+  - "safety-critical"
+  - "robotics-safety"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that CDMPs extend with constraint handling"
+  - slug: "geometry-aware-dmps"
+    relationship: "same_family"
+    description: "Geometry-aware DMPs that can be combined with constraints"

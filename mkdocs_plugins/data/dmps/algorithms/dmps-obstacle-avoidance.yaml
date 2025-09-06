@@ -1,0 +1,579 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: dmps-obstacle-avoidance
+name: DMPs with Obstacle Avoidance
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs enhanced with real-time obstacle avoidance capabilities using repulsive forces and safe navigation in cluttered environments."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  DMPs with Obstacle Avoidance extend the basic DMP framework to handle real-time obstacle avoidance in cluttered environments. This approach integrates repulsive forces and obstacle detection mechanisms to ensure safe navigation while maintaining the desired movement characteristics.
+
+  The key innovation of obstacle-avoiding DMPs is the integration of:
+  - Real-time obstacle detection and modeling
+  - Repulsive force generation based on obstacle proximity
+  - Dynamic trajectory modification to avoid collisions
+  - Smooth integration with the original DMP dynamics
+  - Adaptive behavior based on obstacle characteristics
+
+  These DMPs are particularly valuable in applications requiring safe navigation in dynamic environments, such as mobile robotics, manipulation in cluttered spaces, and human-robot interaction where obstacles may appear unexpectedly.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Basic DMP: τẏ = α_y(β_y(g - y) - ẏ) + f(x)
+    - Obstacle positions: O = {o_1, o_2, ..., o_M}
+    - Obstacle radii: R = {r_1, r_2, ..., r_M}
+    - Safety distance: d_safe
+    - Repulsive force strength: k_rep
+
+    The obstacle-avoiding DMP becomes:
+    τẏ = α_y(β_y(g - y) - ẏ) + f(x) + f_rep(y, ẏ)
+    
+    Where the repulsive force is:
+    f_rep(y, ẏ) = Σ_{i=1}^M k_rep * (1/d_i - 1/d_safe) * (1/d_i²) * (y - o_i)/||y - o_i||
+    
+    And d_i = ||y - o_i|| - r_i is the distance to obstacle i.
+
+  key_properties:
+    - name: "Repulsive Force"
+      formula: "f_rep(y, ẏ) = Σ_{i=1}^M k_rep * (1/d_i - 1/d_safe) * (1/d_i²) * (y - o_i)/||y - o_i||"
+      description: "Repulsive force that grows as robot approaches obstacles"
+    - name: "Safety Distance"
+      formula: "d_i = ||y - o_i|| - r_i"
+      description: "Distance to obstacle surface, accounting for obstacle radius"
+    - name: "Dynamic Avoidance"
+      formula: "f_rep → 0 as d_i → ∞"
+      description: "Repulsive force vanishes when far from obstacles"
+
+# Key properties and characteristics
+properties:
+  - name: "Real-time Avoidance"
+    description: "Avoids obstacles in real-time during movement execution"
+    importance: "fundamental"
+  - name: "Repulsive Forces"
+    description: "Uses repulsive forces to push robot away from obstacles"
+    importance: "fundamental"
+  - name: "Dynamic Adaptation"
+    description: "Adapts to changing obstacle configurations"
+    importance: "fundamental"
+  - name: "Safe Navigation"
+    description: "Ensures safe navigation in cluttered environments"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "repulsive_force_dmp"
+    name: "Repulsive Force DMPs"
+    description: "DMPs with repulsive forces for obstacle avoidance"
+    complexity:
+      time: "O(T × M)"
+      space: "O(M)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import List, Tuple, Optional
+      import matplotlib.pyplot as plt
+
+      class ObstacleAvoidingDMP:
+          """
+          DMP with obstacle avoidance using repulsive forces.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0, 
+                       d_safe: float = 0.5):
+              """
+              Initialize obstacle-avoiding DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  k_rep: Repulsive force strength
+                  d_safe: Safety distance
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.k_rep = k_rep
+              self.d_safe = d_safe
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP weights
+              self.w = np.zeros((n_dims, n_basis))
+              
+              # Obstacles
+              self.obstacles = []
+              self.obstacle_radii = []
+
+          def add_obstacle(self, position: np.ndarray, radius: float) -> None:
+              """
+              Add an obstacle to the environment.
+
+              Args:
+                  position: Obstacle position [n_dims]
+                  radius: Obstacle radius
+              """
+              self.obstacles.append(position.copy())
+              self.obstacle_radii.append(radius)
+
+          def remove_obstacle(self, index: int) -> None:
+              """
+              Remove an obstacle from the environment.
+
+              Args:
+                  index: Index of obstacle to remove
+              """
+              if 0 <= index < len(self.obstacles):
+                  self.obstacles.pop(index)
+                  self.obstacle_radii.pop(index)
+
+          def clear_obstacles(self) -> None:
+              """Clear all obstacles from the environment."""
+              self.obstacles.clear()
+              self.obstacle_radii.clear()
+
+          def compute_repulsive_force(self, y: np.ndarray, y_dot: np.ndarray) -> np.ndarray:
+              """
+              Compute repulsive force from all obstacles.
+
+              Args:
+                  y: Current position
+                  y_dot: Current velocity
+
+              Returns:
+                  Repulsive force vector
+              """
+              f_rep = np.zeros(self.n_dims)
+              
+              for i, (obstacle_pos, radius) in enumerate(zip(self.obstacles, self.obstacle_radii)):
+                  # Distance to obstacle surface
+                  d = np.linalg.norm(y - obstacle_pos) - radius
+                  
+                  if d < self.d_safe:
+                      # Direction from obstacle to robot
+                      direction = (y - obstacle_pos) / (np.linalg.norm(y - obstacle_pos) + 1e-10)
+                      
+                      # Repulsive force magnitude
+                      if d > 0:
+                          force_magnitude = self.k_rep * (1/d - 1/self.d_safe) * (1/d**2)
+                      else:
+                          # Very large force when inside obstacle
+                          force_magnitude = self.k_rep * 1000
+                      
+                      f_rep += force_magnitude * direction
+              
+              return f_rep
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights
+              for d in range(self.n_dims):
+                  f_target = (ddy_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                  
+                  for i in range(self.n_basis):
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate obstacle-avoiding trajectory.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def obstacle_avoiding_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Repulsive force
+                  f_rep = self.compute_repulsive_force(y, dy)
+                  
+                  # Transformation system with obstacle avoidance
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f + f_rep
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(obstacle_avoiding_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+          def visualize_trajectory(self, y_traj: np.ndarray, obstacles: List[np.ndarray], 
+                                 radii: List[float], title: str = "Obstacle-Avoiding Trajectory") -> None:
+              """
+              Visualize the generated trajectory with obstacles.
+
+              Args:
+                  y_traj: Generated trajectory
+                  obstacles: List of obstacle positions
+                  radii: List of obstacle radii
+                  title: Plot title
+              """
+              if self.n_dims == 2:
+                  plt.figure(figsize=(10, 8))
+                  
+                  # Plot trajectory
+                  plt.plot(y_traj[:, 0], y_traj[:, 1], 'b-', linewidth=2, label='Trajectory')
+                  plt.plot(y_traj[0, 0], y_traj[0, 1], 'go', markersize=10, label='Start')
+                  plt.plot(y_traj[-1, 0], y_traj[-1, 1], 'ro', markersize=10, label='Goal')
+                  
+                  # Plot obstacles
+                  for i, (obs, radius) in enumerate(zip(obstacles, radii)):
+                      circle = plt.Circle(obs, radius, color='red', alpha=0.3, label=f'Obstacle {i+1}' if i == 0 else "")
+                      plt.gca().add_patch(circle)
+                  
+                  plt.xlabel('X Position')
+                  plt.ylabel('Y Position')
+                  plt.title(title)
+                  plt.legend()
+                  plt.grid(True)
+                  plt.axis('equal')
+                  plt.show()
+              else:
+                  print("Visualization only supported for 2D trajectories")
+
+    advantages:
+      - "Real-time obstacle avoidance"
+      - "Simple and intuitive repulsive forces"
+      - "Dynamic obstacle handling"
+      - "Smooth trajectory generation"
+    disadvantages:
+      - "May get stuck in local minima"
+      - "Requires tuning of repulsive force parameters"
+      - "Computational cost scales with number of obstacles"
+
+  - type: "potential_field_dmp"
+    name: "Potential Field DMPs"
+    description: "DMPs using potential fields for obstacle avoidance"
+    complexity:
+      time: "O(T × M)"
+      space: "O(M)"
+    code: |
+      class PotentialFieldDMP(ObstacleAvoidingDMP):
+          """
+          DMP using potential fields for obstacle avoidance.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0, 
+                       d_safe: float = 0.5, k_att: float = 1.0):
+              """
+              Initialize potential field DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  k_rep: Repulsive force strength
+                  d_safe: Safety distance
+                  k_att: Attractive force strength
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, k_rep, d_safe)
+              self.k_att = k_att
+
+          def compute_potential_field(self, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+              """
+              Compute potential field and its gradient.
+
+              Args:
+                  y: Current position
+
+              Returns:
+                  Tuple of (potential, gradient)
+              """
+              # Attractive potential to goal
+              U_att = 0.5 * self.k_att * np.linalg.norm(y - self.goal)**2
+              grad_att = self.k_att * (y - self.goal)
+              
+              # Repulsive potential from obstacles
+              U_rep = 0.0
+              grad_rep = np.zeros(self.n_dims)
+              
+              for i, (obstacle_pos, radius) in enumerate(zip(self.obstacles, self.obstacle_radii)):
+                  d = np.linalg.norm(y - obstacle_pos) - radius
+                  
+                  if d < self.d_safe:
+                      if d > 0:
+                          U_rep += 0.5 * self.k_rep * (1/d - 1/self.d_safe)**2
+                          grad_rep += self.k_rep * (1/d - 1/self.d_safe) * (1/d**2) * (y - obstacle_pos) / (np.linalg.norm(y - obstacle_pos) + 1e-10)
+                      else:
+                          U_rep += 0.5 * self.k_rep * 1000
+                          grad_rep += self.k_rep * 1000 * (y - obstacle_pos) / (np.linalg.norm(y - obstacle_pos) + 1e-10)
+              
+              total_potential = U_att + U_rep
+              total_gradient = grad_att + grad_rep
+              
+              return total_potential, total_gradient
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate trajectory using potential field DMP.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              self.goal = g
+              
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def potential_field_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Potential field force
+                  _, grad_potential = self.compute_potential_field(y)
+                  
+                  # Transformation system with potential field
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f - grad_potential
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(potential_field_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Smooth potential field"
+      - "Natural obstacle avoidance"
+      - "Combines attractive and repulsive forces"
+      - "Theoretically well-founded"
+    disadvantages:
+      - "May get stuck in local minima"
+      - "Requires careful parameter tuning"
+      - "Computational cost scales with obstacles"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Repulsive Force DMP"
+      time: "O(T × M)"
+      space: "O(M)"
+      notes: "Time complexity scales with trajectory length and number of obstacles"
+    
+    - approach: "Potential Field DMP"
+      time: "O(T × M)"
+      space: "O(M)"
+      notes: "Similar complexity but with potential field computation"
+    
+    - approach: "Obstacle Detection"
+      time: "O(M)"
+      space: "O(M)"
+      notes: "Obstacle detection scales linearly with number of obstacles"
+
+# Applications and use cases
+applications:
+  - category: "Mobile Robotics"
+    examples:
+      - "Navigation: Safe navigation in cluttered environments"
+      - "Exploration: Exploring unknown environments while avoiding obstacles"
+      - "Patrol: Patrolling areas with dynamic obstacles"
+      - "Delivery: Delivering items while avoiding obstacles"
+
+  - category: "Manipulation"
+    examples:
+      - "Pick and Place: Picking objects while avoiding obstacles"
+      - "Assembly: Assembling parts while avoiding collisions"
+      - "Tool Use: Using tools while avoiding obstacles"
+      - "Packaging: Packaging items while avoiding obstacles"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Collaborative Tasks: Working with humans while avoiding collisions"
+      - "Assistive Robotics: Assisting humans while maintaining safety"
+      - "Social Robotics: Interacting socially while avoiding obstacles"
+      - "Service Robotics: Providing services while avoiding obstacles"
+
+  - category: "Autonomous Vehicles"
+    examples:
+      - "Path Planning: Planning paths while avoiding obstacles"
+      - "Traffic: Navigating traffic while avoiding collisions"
+      - "Parking: Parking while avoiding obstacles"
+      - "Emergency: Emergency maneuvers while avoiding obstacles"
+
+  - category: "Aerial Robotics"
+    examples:
+      - "Drone Navigation: Navigating drones while avoiding obstacles"
+      - "Search and Rescue: Searching while avoiding obstacles"
+      - "Surveillance: Surveillance while avoiding obstacles"
+      - "Delivery: Delivering packages while avoiding obstacles"
+
+# Educational value and learning objectives
+educational_value:
+  - "Obstacle Avoidance: Understanding how to avoid obstacles in robotics"
+  - "Potential Fields: Understanding potential field methods for navigation"
+  - "Repulsive Forces: Understanding repulsive force methods"
+  - "Real-time Control: Understanding real-time control in dynamic environments"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/obstacle_avoidance_dmps.py"
+      description: "Main implementation with repulsive force and potential field DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_obstacle_avoidance_dmps.py"
+      description: "Comprehensive test suite including obstacle avoidance tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Khatib, O."
+        year: "1986"
+        title: "Real-time obstacle avoidance for manipulators and mobile robots"
+        publisher: "International Journal of Robotics Research"
+        note: "Original potential field method for obstacle avoidance"
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "DMPs with obstacle avoidance"
+
+  - category: "Obstacle Avoidance"
+    items:
+      - author: "Borenstein, J., & Koren, Y."
+        year: "1991"
+        title: "The vector field histogram-fast obstacle avoidance for mobile robots"
+        publisher: "IEEE Transactions on Robotics and Automation"
+        note: "Vector field histogram for obstacle avoidance"
+      - author: "Fox, D., Burgard, W., & Thrun, S."
+        year: "1997"
+        title: "The dynamic window approach to collision avoidance"
+        publisher: "IEEE Robotics & Automation Magazine"
+        note: "Dynamic window approach for obstacle avoidance"
+
+  - category: "Online Resources"
+    items:
+      - title: "Obstacle Avoidance"
+        url: "https://en.wikipedia.org/wiki/Obstacle_avoidance"
+        note: "Wikipedia article on obstacle avoidance"
+      - title: "Potential Field Method"
+        url: "https://en.wikipedia.org/wiki/Potential_field_method"
+        note: "Wikipedia article on potential field methods"
+      - title: "Robot Navigation"
+        url: "https://en.wikipedia.org/wiki/Robot_navigation"
+        note: "Wikipedia article on robot navigation"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "ROS Navigation Stack"
+        url: "https://navigation.ros.org/"
+        note: "ROS navigation stack for mobile robots"
+      - title: "MoveIt"
+        url: "https://moveit.ros.org/"
+        note: "ROS motion planning framework"
+      - title: "OMPL"
+        url: "https://ompl.kavrakilab.org/"
+        note: "Open Motion Planning Library"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "obstacle-avoidance"
+  - "repulsive-forces"
+  - "potential-fields"
+  - "navigation"
+  - "safety"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that obstacle-avoiding DMPs extend with avoidance capabilities"
+  - slug: "constrained-dmps"
+    relationship: "same_family"
+    description: "Constrained DMPs that can be combined with obstacle avoidance"

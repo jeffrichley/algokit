@@ -162,9 +162,3 @@ template_options:
   show_references: true
   custom_sections: true
 
-# Metadata for the documentation system
-meta:
-  created: "2025-01-04"
-  # last_updated is automatically managed by git/file system
-  version: "1.0"
-  author: "Jeff Richley"

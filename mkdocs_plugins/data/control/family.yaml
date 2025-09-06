@@ -1,0 +1,185 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: control
+name: Control Algorithms
+slug: control
+# Brief one-sentence summary for cards and navigation
+summary: "Control algorithms provide methods to regulate system behavior, maintain desired outputs, and ensure stability under various operating conditions."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Control Algorithms form the foundation of automatic control systems, providing methods to regulate
+  system behavior, maintain desired outputs, and ensure stability under various operating conditions.
+  These algorithms range from simple proportional control to sophisticated robust control methods
+  that handle uncertainties and disturbances.
+
+  Control theory is essential for modern engineering systems, enabling automation, stability, and
+  optimal performance across diverse applications from industrial processes to aerospace systems.
+  The field combines mathematical theory with practical implementation to solve real-world control
+  problems.
+
+# Family characteristics
+key_characteristics:
+  - name: "Feedback Control"
+    description: "Continuous monitoring and adjustment of system outputs based on measured signals"
+    importance: "fundamental"
+  - name: "Stability Analysis"
+    description: "Ensuring system stability under various operating conditions and disturbances"
+    importance: "fundamental"
+  - name: "Performance Optimization"
+    description: "Achieving desired response characteristics like speed, accuracy, and robustness"
+    importance: "fundamental"
+  - name: "Real-time Operation"
+    description: "Continuous control action computation and execution"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Industrial Automation"
+    examples: ["process control", "manufacturing", "chemical plants", "power systems"]
+  - category: "Robotics and Mechatronics"
+    examples: ["robot control", "manipulation", "navigation", "autonomous vehicles"]
+  - category: "Aerospace and Automotive"
+    examples: ["flight control", "engine control", "stability systems", "guidance"]
+  - category: "Power Electronics"
+    examples: ["motor drives", "power converters", "grid control", "renewable energy"]
+  - category: "Biomedical Systems"
+    examples: ["pacemakers", "prosthetics", "drug delivery", "medical devices"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Feedback Control"
+    description: "Using system output measurements to adjust control inputs"
+    type: "concept"
+  - name: "Stability"
+    description: "System behavior that remains bounded under disturbances"
+    type: "mathematical"
+  - name: "Performance"
+    description: "Speed, accuracy, and robustness of control response"
+    type: "concept"
+  - name: "Robustness"
+    description: "Ability to maintain performance under uncertainties and disturbances"
+    type: "concept"
+  - name: "Adaptation"
+    description: "Automatic adjustment of controller parameters based on system changes"
+    type: "technique"
+  - name: "Optimal Control"
+    description: "Minimizing performance criteria while satisfying constraints"
+    type: "mathematical"
+  - name: "State Space"
+    description: "Mathematical representation of system dynamics using state variables"
+    type: "mathematical"
+  - name: "Transfer Function"
+    description: "Frequency domain representation of system input-output relationship"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "reinforcement-learning"
+    relationship: "application"
+    description: "RL can be used for learning-based control strategies"
+  - id: "optimization"
+    relationship: "foundation"
+    description: "Control design often involves optimization of performance criteria"
+  - id: "signal-processing"
+    relationship: "integration"
+    description: "Signal processing techniques are essential for control system implementation"
+  - id: "system-identification"
+    relationship: "prerequisite"
+    description: "System identification provides models needed for control design"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(1) to O(n³)"
+  typical_space: "O(1) to O(n²)"
+  notes: "Complexity varies from simple PID (O(1)) to complex robust control (O(n³)) depending on algorithm and system size"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Control Design Approaches"
+    content: |
+      !!! info "Classical vs Modern Control"
+
+          **Classical Control**:
+
+          - Frequency domain methods (Bode, Nyquist)
+          - Root locus techniques
+          - PID control design
+          - Transfer function based
+          - Intuitive and well-established
+
+          **Modern Control**:
+
+          - State space methods
+          - Optimal control theory
+          - Robust control design
+          - Time domain analysis
+          - More powerful for complex systems
+
+  - name: "Control System Types"
+    content: |
+      !!! info "Control System Classifications"
+
+          1. **Linear vs Nonlinear**: Linear systems use superposition, nonlinear handle complex dynamics
+          2. **Time-Invariant vs Time-Varying**: Parameters constant or changing over time
+          3. **Continuous vs Discrete**: Continuous-time or sampled-data systems
+          4. **SISO vs MIMO**: Single or multiple input-output systems
+          5. **Deterministic vs Stochastic**: Known or uncertain system parameters
+
+  - name: "Performance Metrics"
+    content: |
+      !!! info "Control Performance Evaluation"
+
+          **Stability Metrics**:
+          - Stability margins (gain, phase)
+          - Settling time and overshoot
+          - Steady-state error
+
+          **Robustness Metrics**:
+          - Uncertainty margins
+          - Disturbance rejection
+          - Sensitivity to parameter changes
+
+          **Performance Metrics**:
+          - Rise time and bandwidth
+          - Tracking accuracy
+          - Control effort minimization
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "cormen2009"  # General algorithms reference
+  - bib_key: "python_docs"  # Implementation reference
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "control"  # Primary family tag
+  - "real-time-control"
+  - "optimization"
+  - "mathematical"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

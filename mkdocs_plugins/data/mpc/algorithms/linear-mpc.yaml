@@ -1,0 +1,363 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: linear-mpc
+name: Linear MPC
+family_id: mpc
+
+# Brief one-sentence summary for cards and navigation
+summary: "Model Predictive Control for linear time-invariant systems formulated as a Quadratic Programming problem with efficient real-time solution."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Linear MPC is a specialized form of Model Predictive Control that applies to linear time-invariant (LTI) systems. By leveraging the linearity of the system, Linear MPC can be formulated as a Quadratic Programming (QP) problem, which can be solved efficiently using specialized optimization algorithms.
+
+  This approach provides excellent performance for linear systems while maintaining the predictive and constraint-handling capabilities of MPC. Linear MPC is widely used in industrial process control, automotive applications, and aerospace systems where the system dynamics can be well-approximated by linear models. The QP formulation enables real-time implementation and provides theoretical guarantees for stability and performance.
+
+# Problem formulation and mathematical details
+formulation:
+  control_law: |
+    For linear system: x(k+1) = Ax(k) + Bu(k), y(k) = Cx(k)
+    
+    The QP formulation is:
+    
+    min_{U_k} (1/2) U_k^T H U_k + f^T U_k
+    
+    Subject to:
+    - G U_k ≤ w
+    - A_eq U_k = b_eq
+    
+    Where:
+    - H = Γ^T Q̄ Γ + R̄ is the Hessian matrix
+    - f = Γ^T Q̄ (Φ x(k) - R_k) is the gradient
+    - Q̄ = diag(Q, Q, ..., Q, Q_f) and R̄ = diag(R, R, ..., R)
+    - R_k is the reference trajectory
+    - Φ, Γ are prediction matrices
+
+  discrete_time_form: |
+    State prediction over horizon N_p:
+    
+    X_k = Φ x(k) + Γ U_k
+    
+    Where:
+    - X_k = [x(k+1|k), x(k+2|k), ..., x(k+N_p|k)]^T
+    - U_k = [u(k), u(k+1), ..., u(k+N_c-1)]^T
+    - Φ, Γ are prediction matrices built from A, B
+
+  key_properties:
+    - name: "QP Formulation"
+      formula: "min (1/2) U^T H U + f^T U"
+      description: "Convex optimization problem with efficient solvers"
+    - name: "Linear Predictions"
+      formula: "X_k = Φ x(k) + Γ U_k"
+      description: "Exact state predictions using matrix operations"
+    - name: "Constraint Handling"
+      formula: "G U_k ≤ w, A_eq U_k = b_eq"
+      description: "Linear constraints on inputs, outputs, and states"
+
+# Key properties and characteristics
+properties:
+  - name: "QP Formulation"
+    description: "Convex optimization problem with efficient solvers"
+    importance: "fundamental"
+  - name: "Linear Predictions"
+    description: "Exact state predictions using matrix operations"
+    importance: "fundamental"
+  - name: "Real-time Capability"
+    description: "Fast solution using specialized QP algorithms"
+    importance: "implementation"
+  - name: "Stability Guarantees"
+    description: "Theoretical stability under certain conditions"
+    importance: "theoretical"
+  - name: "Constraint Handling"
+    description: "Natural incorporation of linear constraints"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_linear_mpc"
+    name: "Basic Linear MPC Controller"
+    description: "Standard Linear MPC implementation with QP formulation"
+    complexity:
+      time: "O(N³)"
+      space: "O(N²)"
+    code: |
+      import numpy as np
+      from scipy.optimize import minimize
+      from typing import Optional, Tuple
+
+      class LinearMPCController:
+          """
+          Linear MPC Controller implementation.
+
+          Args:
+              A: State matrix
+              B: Input matrix
+              C: Output matrix
+              D: Direct feedthrough matrix
+              prediction_horizon: Number of prediction steps
+              control_horizon: Number of control steps
+              Q: Output tracking weight matrix
+              R: Input penalty weight matrix
+              Qf: Terminal state weight matrix
+          """
+
+          def __init__(self, A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray,
+                       prediction_horizon: int, control_horizon: int,
+                       Q: np.ndarray = None, R: np.ndarray = None,
+                       Qf: np.ndarray = None):
+
+              self.A = A
+              self.B = B
+              self.C = C
+              self.D = D
+              self.Np = prediction_horizon
+              self.Nc = min(control_horizon, prediction_horizon)
+              
+              # State and input dimensions
+              self.nx = A.shape[0]
+              self.nu = B.shape[1]
+              self.ny = C.shape[0]
+
+              # Weighting matrices
+              self.Q = Q if Q is not None else np.eye(self.ny)
+              self.R = R if R is not None else np.eye(self.nu)
+              self.Qf = Qf if Qf is not None else self.Q
+
+              # Build prediction matrices
+              self._build_prediction_matrices()
+
+          def _build_prediction_matrices(self) -> None:
+              """Build prediction matrices for efficient computation."""
+              # State prediction matrix
+              self.Phi = np.zeros((self.Np * self.nx, self.nx))
+              for i in range(self.Np):
+                  self.Phi[i*self.nx:(i+1)*self.nx, :] = np.linalg.matrix_power(self.A, i+1)
+
+              # Input prediction matrix
+              self.Gamma = np.zeros((self.Np * self.nx, self.Nc * self.nu))
+              for i in range(self.Np):
+                  for j in range(min(i+1, self.Nc)):
+                      self.Gamma[i*self.nx:(i+1)*self.nx, j*self.nu:(j+1)*self.nu] = \
+                          np.linalg.matrix_power(self.A, i-j) @ self.B
+
+              # Output prediction matrix
+              self.Psi = np.kron(np.eye(self.Np), self.C)
+
+          def solve_qp(self, x0: np.ndarray, r: np.ndarray,
+                      u_min: Optional[np.ndarray] = None,
+                      u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Solve Linear MPC as QP problem.
+
+              Args:
+                  x0: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Optimal control sequence
+              """
+              # Build QP matrices
+              H = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ self.Gamma + \
+                  np.kron(np.eye(self.Nc), self.R)
+              
+              f = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ \
+                  (self.Phi @ x0 - r.flatten())
+
+              # Set up bounds
+              bounds = []
+              if u_min is not None and u_max is not None:
+                  for i in range(self.Nc):
+                      bounds.extend([(u_min[j], u_max[j]) for j in range(self.nu)])
+
+              # Solve QP problem
+              result = minimize(
+                  fun=lambda u: 0.5 * u.T @ H @ u + f.T @ u,
+                  x0=np.zeros(self.Nc * self.nu),
+                  method='L-BFGS-B',
+                  bounds=bounds
+              )
+
+              return result.x.reshape(self.Nc, self.nu)
+
+          def control_step(self, x: np.ndarray, r: np.ndarray,
+                          u_min: Optional[np.ndarray] = None,
+                          u_max: Optional[np.ndarray] = None) -> np.ndarray:
+              """
+              Perform one Linear MPC control step.
+
+              Args:
+                  x: Current state
+                  r: Reference trajectory
+                  u_min: Input lower bounds
+                  u_max: Input upper bounds
+
+              Returns:
+                  Control action to apply
+              """
+              # Solve QP problem
+              U_opt = self.solve_qp(x, r, u_min, u_max)
+              
+              # Return first control action
+              return U_opt[0]
+    advantages:
+      - "Efficient QP formulation with fast solvers"
+      - "Exact linear predictions"
+      - "Real-time implementation capability"
+      - "Theoretical stability guarantees"
+      - "Natural constraint handling"
+    disadvantages:
+      - "Limited to linear systems"
+      - "Requires accurate linear model"
+      - "Computational complexity scales with horizon"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Linear MPC"
+      time: "O(N³)"
+      space: "O(N²)"
+      notes: "Complexity depends on prediction horizon N and system dimensions"
+    - approach: "Fast QP Solvers"
+      time: "O(N²)"
+      space: "O(N²)"
+      notes: "Specialized solvers can reduce complexity"
+
+  performance_notes:
+    - "QP formulation enables efficient real-time solution"
+    - "Computational complexity scales with prediction horizon"
+    - "Memory requirements scale with system dimensions"
+
+# Applications and use cases
+applications:
+  - category: "Industrial Process Control"
+    examples:
+      - "Chemical Plants: Temperature and pressure control in reactors"
+      - "Oil Refineries: Distillation column control"
+      - "Power Plants: Boiler and turbine control"
+      - "Manufacturing: Quality control in production lines"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Engine Control: Fuel injection and ignition timing"
+      - "Vehicle Dynamics: Trajectory tracking and stability"
+      - "Hybrid Vehicles: Energy management systems"
+      - "Cruise Control: Speed regulation and fuel efficiency"
+
+  - category: "Aerospace Applications"
+    examples:
+      - "Flight Control: Aircraft attitude and altitude control"
+      - "Spacecraft Guidance: Orbital maneuvers and docking"
+      - "UAV Control: Autonomous flight and mission execution"
+      - "Satellite Control: Attitude and orbit maintenance"
+
+  - category: "Robotics"
+    examples:
+      - "Manipulator Control: Joint trajectory tracking"
+      - "Mobile Robot Navigation: Path following and obstacle avoidance"
+      - "Industrial Robots: Pick and place operations"
+      - "Service Robots: Navigation and task execution"
+
+  - category: "Energy Systems"
+    examples:
+      - "Smart Grids: Power flow optimization"
+      - "Renewable Energy: Wind and solar power management"
+      - "Battery Management: Charging and discharging control"
+      - "Microgrids: Distributed energy resource coordination"
+
+# Educational value and learning objectives
+educational_value:
+  - "Control Theory: Linear system control and optimization"
+  - "Optimization: Quadratic programming for control applications"
+  - "System Modeling: Linear time-invariant system representation"
+  - "Real-time Systems: Implementation of predictive control"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/mpc/linear_mpc.py"
+      description: "Main implementation with QP formulation"
+    - path: "tests/unit/mpc/test_linear_mpc.py"
+      description: "Comprehensive test suite including QP solver tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Rawlings, J. B., Mayne, D. Q., & Diehl, M."
+        year: "2017"
+        title: "Model Predictive Control: Theory, Computation, and Design"
+        publisher: "Nob Hill Publishing"
+        note: "ISBN 978-0-9759377-0-9"
+      - author: "Maciejowski, J. M."
+        year: "2002"
+        title: "Predictive Control with Constraints"
+        publisher: "Prentice Hall"
+        note: "ISBN 978-0-201-39823-8"
+
+  - category: "Linear MPC Theory"
+    items:
+      - author: "Garcia, C. E., Prett, D. M., & Morari, M."
+        year: "1989"
+        title: "Model predictive control: Theory and practice—A survey"
+        publisher: "Automatica"
+        note: "Volume 25, pages 335-348"
+      - author: "Mayne, D. Q., Rawlings, J. B., Rao, C. V., & Scokaert, P. O. M."
+        year: "2000"
+        title: "Constrained model predictive control: Stability and optimality"
+        publisher: "Automatica"
+        note: "Volume 36, pages 789-814"
+
+  - category: "Online Resources"
+    items:
+      - title: "Linear MPC"
+        url: "https://en.wikipedia.org/wiki/Model_predictive_control"
+        note: "Wikipedia article on MPC"
+      - title: "MATLAB MPC Toolbox"
+        url: "https://www.mathworks.com/help/mpc/"
+        note: "MATLAB Model Predictive Control Toolbox"
+      - title: "QP Solvers for MPC"
+        url: "https://osqp.org/"
+        note: "OSQP: Operator Splitting Quadratic Program solver"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "CasADi"
+        url: "https://web.casadi.org/"
+        note: "Symbolic framework for nonlinear optimization and MPC"
+      - title: "CVXPY"
+        url: "https://www.cvxpy.org/"
+        note: "Python-embedded modeling language for convex optimization"
+
+# Tags for categorization and search
+tags:
+  - "mpc"
+  - "linear-mpc"
+  - "quadratic-programming"
+  - "linear-systems"
+  - "real-time-control"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "model-predictive-control"
+    relationship: "specialization"
+    description: "Linear MPC is a specialized form of general MPC for linear systems"
+  - slug: "nonlinear-mpc"
+    relationship: "alternative"
+    description: "Nonlinear MPC for systems with nonlinear dynamics"
+  - slug: "robust-mpc"
+    relationship: "extension"
+    description: "Robust MPC extends Linear MPC to handle model uncertainty"

@@ -1,0 +1,189 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: planning
+name: Planning Algorithms
+slug: planning
+# Brief one-sentence summary for cards and navigation
+summary: "Planning algorithms solve sequential decision problems by finding optimal sequences of actions to achieve goals from initial states."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Planning Algorithms form a fundamental branch of artificial intelligence that focuses on solving
+  sequential decision problems. These algorithms find optimal or near-optimal sequences of actions
+  that transform an initial state into a desired goal state, often in the presence of constraints
+  and uncertainties.
+
+  Planning is essential for autonomous systems, robotics, game playing, and many other domains
+  where agents must reason about future consequences of their actions. The field encompasses
+  both classical planning (with complete information) and more complex variants that handle
+  uncertainty, partial observability, and multi-agent scenarios.
+
+# Family characteristics
+key_characteristics:
+  - name: "Sequential Decision Making"
+    description: "Planning involves making a sequence of decisions over time to achieve goals"
+    importance: "fundamental"
+  - name: "State Space Search"
+    description: "Exploring possible states and transitions to find solution paths"
+    importance: "fundamental"
+  - name: "Goal-Oriented Reasoning"
+    description: "Working backwards or forwards from goals to find action sequences"
+    importance: "fundamental"
+  - name: "Heuristic Guidance"
+    description: "Using domain knowledge to guide search and improve efficiency"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Robotics and Autonomous Systems"
+    examples: ["path planning", "manipulation planning", "navigation", "task planning"]
+  - category: "Game Playing and AI"
+    examples: ["chess", "go", "puzzle solving", "strategy games"]
+  - category: "Logistics and Operations"
+    examples: ["scheduling", "resource allocation", "supply chain optimization"]
+  - category: "Software Engineering"
+    examples: ["automated testing", "code generation", "workflow automation"]
+  - category: "Scientific Computing"
+    examples: ["experiment planning", "data analysis workflows", "simulation design"]
+
+# Key concepts and terminology
+concepts:
+  - name: "State"
+    description: "A complete description of the world at a particular point in time"
+    type: "concept"
+  - name: "Action"
+    description: "An operation that transforms one state into another"
+    type: "concept"
+  - name: "Goal"
+    description: "A desired state or set of conditions to be achieved"
+    type: "concept"
+  - name: "Plan"
+    description: "A sequence of actions that transforms initial state to goal state"
+    type: "concept"
+  - name: "Heuristic Function"
+    description: "A function that estimates the cost from a state to the goal"
+    type: "mathematical"
+  - name: "Search Space"
+    description: "The set of all possible states reachable from the initial state"
+    type: "mathematical"
+  - name: "Admissibility"
+    description: "Property of heuristics that never overestimate the true cost"
+    type: "mathematical"
+  - name: "Completeness"
+    description: "Property that guarantees finding a solution if one exists"
+    type: "mathematical"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "search"
+    relationship: "foundation"
+    description: "Planning algorithms are built on search techniques and graph traversal"
+  - id: "optimization"
+    relationship: "application"
+    description: "Planning can be viewed as an optimization problem for finding optimal action sequences"
+  - id: "reinforcement-learning"
+    relationship: "alternative"
+    description: "RL provides learning-based approaches to planning problems"
+  - id: "graph-algorithms"
+    relationship: "foundation"
+    description: "Many planning problems can be represented as graph search problems"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(b^d) to O(b^(d/2))"
+  typical_space: "O(b^d) to O(b^(d/2))"
+  notes: "Complexity depends on branching factor b, solution depth d, and heuristic quality. Good heuristics can dramatically reduce search space"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Planning Approaches"
+    content: |
+      !!! info "Forward vs Backward Planning"
+
+          **Forward Planning (Progression)**:
+
+          - Start from initial state, apply actions forward
+          - Natural and intuitive approach
+          - Can handle complex state transitions
+          - May explore irrelevant states
+
+          **Backward Planning (Regression)**:
+
+          - Start from goal, work backwards
+          - More focused search
+          - Efficient for simple domains
+          - Can be complex for rich state descriptions
+
+  - name: "Search Strategies"
+    content: |
+      !!! info "Planning Search Methods"
+
+          1. **Uninformed Search**: BFS, DFS, uniform-cost search
+          2. **Informed Search**: A*, best-first search with heuristics
+          3. **Local Search**: Hill climbing, simulated annealing
+          4. **Constraint-Based**: GraphPlan, SAT-based planning
+          5. **Hierarchical**: Decompose problems into subproblems
+
+  - name: "Planning Domains"
+    content: |
+      !!! info "Types of Planning Problems"
+
+          **Classical Planning**:
+          - Complete information about states and actions
+          - Deterministic actions
+          - Single agent
+          - Examples: Blocks world, logistics
+
+          **Temporal Planning**:
+          - Actions have duration
+          - Concurrent actions possible
+          - Time constraints and deadlines
+
+          **Probabilistic Planning**:
+          - Actions have uncertain outcomes
+          - Partial observability
+          - Risk-aware decision making
+
+          **Multi-Agent Planning**:
+          - Multiple agents with different goals
+          - Coordination and cooperation
+          - Game-theoretic considerations
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "cormen2009"  # General algorithms reference
+  - bib_key: "python_docs"  # Implementation reference
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "planning"  # Primary family tag
+  - "search"
+  - "ai"
+  - "optimization"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

@@ -1,0 +1,426 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: hierarchical-policy-gradient
+name: Hierarchical Policy Gradient
+family_id: hierarchical-rl
+
+# Brief one-sentence summary for cards and navigation
+summary: "Extends traditional policy gradient methods to handle temporal abstraction and hierarchical task decomposition with multi-level policies."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Hierarchical Policy Gradient extends the traditional policy gradient framework to handle temporal
+  abstraction and hierarchical task decomposition. The algorithm learns policies at multiple levels:
+  a high-level meta-policy that selects subgoals or options, and low-level policies that execute
+  primitive actions to achieve these subgoals.
+
+  This hierarchical approach enables the agent to solve complex, long-horizon tasks by breaking them
+  down into manageable subproblems. The meta-policy learns to sequence subgoals effectively, while
+  the low-level policies learn to achieve specific subgoals efficiently. Hierarchical Policy Gradient
+  is particularly powerful in domains where tasks have natural hierarchical structure, such as robotics
+  manipulation, navigation, and game playing.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Subgoal space: G
+    - Action space: A
+    - Meta-policy: π_meta(g_t|s_t)
+    - Low-level policy: π_low(a_t|s_t, g_t)
+    - Reward function: R(s,a,s')
+
+    Find hierarchical policies that maximize expected cumulative reward:
+
+    π_h(a_t|s_t) = ∑_{g_t} π_meta(g_t|s_t) · π_low(a_t|s_t, g_t)
+
+  key_properties:
+    - name: "Hierarchical Policy Gradient Theorem"
+      formula: "∇_θ J(θ) = E_{τ ~ π_h}[∑_{t=0}^T ∇_θ log π_meta(g_t|s_t) R(τ) + ∇_θ log π_low(a_t|s_t, g_t) R(τ)]"
+      description: "Policy gradient decomposes into meta and low-level components"
+    - name: "Hierarchical Advantage Function"
+      formula: "A_h(s_t, g_t, a_t) = Q_h(s_t, g_t, a_t) - V_h(s_t)"
+      description: "Advantage function for hierarchical policy updates"
+    - name: "Meta-Policy Update"
+      formula: "∇_θ J_meta = E[∑_t ∇_θ log π_meta(g_t|s_t) A_meta(s_t, g_t)]"
+      description: "Gradient update for meta-policy"
+
+# Key properties and characteristics
+properties:
+  - name: "Temporal Abstraction"
+    description: "High-level policies operate over longer time horizons"
+    importance: "fundamental"
+  - name: "Subgoal Decomposition"
+    description: "Complex tasks broken into manageable subproblems"
+    importance: "fundamental"
+  - name: "Hierarchical Learning"
+    description: "Policies at different levels learn simultaneously"
+    importance: "fundamental"
+  - name: "Transfer Learning"
+    description: "Low-level policies can be reused across different tasks"
+    importance: "implementation"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_hierarchical_policy_gradient"
+    name: "Basic Hierarchical Policy Gradient (Recommended)"
+    description: "Standard hierarchical policy gradient with meta and low-level policy networks"
+    complexity:
+      time: "O(batch_size × (meta_params + low_params))"
+      space: "O(batch_size × (state_size + subgoal_size))"
+    code: |
+      import torch
+      import torch.nn as nn
+      import torch.optim as optim
+      import torch.nn.functional as F
+      import numpy as np
+
+      class MetaPolicyNetwork(nn.Module):
+          """Meta-policy network that selects subgoals."""
+
+          def __init__(self, state_size: int, subgoal_size: int, hidden_size: int = 128):
+              super(MetaPolicyNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, subgoal_size)
+
+          def forward(self, state: torch.Tensor) -> torch.Tensor:
+              x = F.relu(self.fc1(state))
+              x = F.relu(self.fc2(x))
+              subgoal_probs = F.softmax(self.fc3(x), dim=-1)
+              return subgoal_probs
+
+      class LowLevelPolicyNetwork(nn.Module):
+          """Low-level policy network that executes actions given subgoals."""
+
+          def __init__(self, state_size: int, subgoal_size: int, action_size: int, hidden_size: int = 128):
+              super(LowLevelPolicyNetwork, self).__init__()
+              self.fc1 = nn.Linear(state_size + subgoal_size, hidden_size)
+              self.fc2 = nn.Linear(hidden_size, hidden_size)
+              self.fc3 = nn.Linear(hidden_size, action_size)
+
+          def forward(self, state: torch.Tensor, subgoal: torch.Tensor) -> torch.Tensor:
+              # Concatenate state and subgoal
+              combined = torch.cat([state, subgoal], dim=-1)
+              x = F.relu(self.fc1(combined))
+              x = F.relu(self.fc2(x))
+              action_probs = F.softmax(self.fc3(x), dim=-1)
+              return action_probs
+
+      class HierarchicalPolicyGradientAgent:
+          """
+          Hierarchical Policy Gradient agent implementation.
+
+          Args:
+              state_size: Dimension of state space
+              subgoal_size: Dimension of subgoal space
+              action_size: Number of possible actions
+              meta_lr: Learning rate for meta-policy (default: 0.001)
+              low_lr: Learning rate for low-level policy (default: 0.001)
+              discount_factor: Discount factor gamma (default: 0.99)
+              subgoal_horizon: Maximum steps to achieve subgoal (default: 50)
+          """
+
+          def __init__(self, state_size: int, subgoal_size: int, action_size: int,
+                       meta_lr: float = 0.001, low_lr: float = 0.001,
+                       discount_factor: float = 0.99, subgoal_horizon: int = 50):
+
+              self.state_size = state_size
+              self.subgoal_size = subgoal_size
+              self.action_size = action_size
+              self.gamma = discount_factor
+              self.subgoal_horizon = subgoal_horizon
+
+              # Networks
+              self.meta_policy = MetaPolicyNetwork(state_size, subgoal_size)
+              self.low_policy = LowLevelPolicyNetwork(state_size, subgoal_size, action_size)
+
+              # Optimizers
+              self.meta_optimizer = optim.Adam(self.meta_policy.parameters(), lr=meta_lr)
+              self.low_optimizer = optim.Adam(self.low_policy.parameters(), lr=low_lr)
+
+              # Experience buffers
+              self.meta_buffer = []
+              self.low_buffer = []
+
+              # Current subgoal tracking
+              self.current_subgoal = None
+              self.subgoal_steps = 0
+
+          def get_subgoal(self, state: np.ndarray) -> tuple[int, float]:
+              """Select subgoal using meta-policy network."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              subgoal_probs = self.meta_policy(state_tensor)
+
+              # Sample subgoal
+              dist = torch.distributions.Categorical(subgoal_probs)
+              subgoal = dist.sample()
+              log_prob = dist.log_prob(subgoal)
+
+              return subgoal.item(), log_prob.item()
+
+          def get_action(self, state: np.ndarray, subgoal: int) -> tuple[int, float]:
+              """Get action using low-level policy network given subgoal."""
+              state_tensor = torch.FloatTensor(state).unsqueeze(0)
+              subgoal_tensor = torch.FloatTensor([subgoal]).unsqueeze(0)
+
+              action_probs = self.low_policy(state_tensor, subgoal_tensor)
+
+              # Sample action
+              dist = torch.distributions.Categorical(action_probs)
+              action = dist.sample()
+              log_prob = dist.log_prob(action)
+
+              return action.item(), log_prob.item()
+
+          def step(self, state: np.ndarray, action: int, reward: float,
+                  next_state: np.ndarray, done: bool) -> None:
+              """Process one step and potentially update subgoal."""
+              # Store low-level transition
+              if self.current_subgoal is not None:
+                  self.low_buffer.append((state, self.current_subgoal, action, reward, next_state, done))
+
+              # Check if subgoal should be updated
+              self.subgoal_steps += 1
+              if (self.subgoal_steps >= self.subgoal_horizon or
+                  self.is_subgoal_achieved(state, next_state) or done):
+
+                  # Store meta transition
+                  if len(self.low_buffer) > 0:
+                      total_reward = sum(r for _, _, _, r, _, _ in self.low_buffer)
+                      self.meta_buffer.append((state, self.current_subgoal, total_reward, next_state, done))
+
+                  # Select new subgoal
+                  if not done:
+                      new_subgoal, _ = self.get_subgoal(next_state)
+                      self.current_subgoal = new_subgoal
+                      self.subgoal_steps = 0
+
+                  # Clear low-level buffer
+                  self.low_buffer.clear()
+
+          def is_subgoal_achieved(self, state: np.ndarray, next_state: np.ndarray) -> bool:
+              """Check if current subgoal has been achieved."""
+              # Simple distance-based subgoal achievement
+              # In practice, this would be domain-specific
+              return np.linalg.norm(next_state - state) < 0.1
+
+          def update_policies(self) -> None:
+              """Update both meta and low-level policies."""
+              self.update_low_policy()
+              self.update_meta_policy()
+
+          def update_low_policy(self) -> None:
+              """Update low-level policy using stored experience."""
+              if len(self.low_buffer) < 10:
+                  return
+
+              # Sample batch from low-level buffer
+              batch = np.random.choice(len(self.low_buffer), min(32, len(self.low_buffer)), replace=False)
+
+              states, subgoals, actions, rewards, next_states, dones = zip(*[self.low_buffer[i] for i in batch])
+
+              # Convert to tensors
+              states = torch.FloatTensor(states)
+              subgoals = torch.LongTensor(subgoals)
+              actions = torch.LongTensor(actions)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Compute advantages
+              current_values = self.get_low_value(states, subgoals)
+              next_values = self.get_low_value(next_states, subgoals)
+
+              advantages = rewards + self.gamma * next_values * ~dones - current_values
+
+              # Get current action probabilities
+              action_probs = self.low_policy(states, F.one_hot(subgoals, self.subgoal_size).float())
+              dist = torch.distributions.Categorical(action_probs)
+              log_probs = dist.log_prob(actions)
+
+              # Policy gradient loss
+              policy_loss = -(log_probs * advantages.detach()).mean()
+
+              # Update low-level policy
+              self.low_optimizer.zero_grad()
+              policy_loss.backward()
+              self.low_optimizer.step()
+
+          def update_meta_policy(self) -> None:
+              """Update meta-policy using stored experience."""
+              if len(self.meta_buffer) < 10:
+                  return
+
+              # Sample batch from meta buffer
+              batch = np.random.choice(len(self.meta_buffer), min(32, len(self.meta_buffer)), replace=False)
+
+              states, subgoals, rewards, next_states, dones = zip(*[self.meta_buffer[i] for i in batch])
+
+              # Convert to tensors
+              states = torch.FloatTensor(states)
+              subgoals = torch.LongTensor(subgoals)
+              rewards = torch.FloatTensor(rewards)
+              next_states = torch.FloatTensor(next_states)
+              dones = torch.BoolTensor(dones)
+
+              # Compute advantages for meta-policy
+              current_values = self.get_meta_value(states)
+              next_values = self.get_meta_value(next_states)
+
+              advantages = rewards + self.gamma * next_values * ~dones - current_values
+
+              # Get current subgoal probabilities
+              subgoal_probs = self.meta_policy(states)
+              dist = torch.distributions.Categorical(subgoal_probs)
+              log_probs = dist.log_prob(subgoals)
+
+              # Policy gradient loss
+              policy_loss = -(log_probs * advantages.detach()).mean()
+
+              # Update meta-policy
+              self.meta_optimizer.zero_grad()
+              policy_loss.backward()
+              self.meta_optimizer.step()
+
+          def get_low_value(self, states: torch.Tensor, subgoals: torch.Tensor) -> torch.Tensor:
+              """Get low-level value estimates."""
+              # Simplified value estimation
+              return torch.zeros(len(states))
+
+          def get_meta_value(self, states: torch.Tensor) -> torch.Tensor:
+              """Get meta-level value estimates."""
+              # Simplified value estimation
+              return torch.zeros(len(states))
+    advantages:
+      - "Extends familiar policy gradient framework to hierarchical settings"
+      - "Temporal abstraction enables learning at different time scales"
+      - "Subgoal decomposition makes complex tasks manageable"
+      - "Transfer learning allows reuse of low-level policies"
+    disadvantages:
+      - "Requires careful coordination between meta and low-level policies"
+      - "Subgoal achievement detection can be challenging"
+      - "Two networks increase complexity and training time"
+      - "Policy gradient methods can have high variance"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Hierarchical Policy Gradient"
+      time: "O(batch_size × (meta_params + low_params))"
+      space: "O(batch_size × (state_size + subgoal_size))"
+      notes: "Two-network architecture requires coordination and careful training"
+    
+    - approach: "Hierarchical Policy Gradient with Value Functions"
+      time: "O(batch_size × (meta_params + low_params + value_params))"
+      space: "O(batch_size × (state_size + subgoal_size))"
+      notes: "Value functions reduce variance but increase computational complexity"
+
+# Applications and use cases
+applications:
+  - category: "Robotics and Control"
+    examples:
+      - "Robot Manipulation: Complex manipulation tasks with hierarchical subgoals"
+      - "Autonomous Navigation: Multi-level navigation with waypoint subgoals"
+      - "Industrial Automation: Process control with hierarchical objectives"
+      - "Swarm Robotics: Coordinated behavior with hierarchical task decomposition"
+
+  - category: "Game AI and Strategy"
+    examples:
+      - "Strategy Games: Multi-level decision making with tactical and strategic goals"
+      - "Puzzle Games: Complex puzzles broken into simpler subproblems"
+      - "Adventure Games: Quest completion with hierarchical objectives"
+      - "Simulation Games: Resource management with hierarchical planning"
+
+  - category: "Real-World Applications"
+    examples:
+      - "Autonomous Vehicles: Multi-level driving with navigation and control subgoals"
+      - "Healthcare: Treatment planning with hierarchical medical objectives"
+      - "Finance: Portfolio management with hierarchical investment strategies"
+      - "Network Control: Traffic management with hierarchical routing policies"
+
+  - category: "Educational Value"
+    examples:
+      - "Hierarchical Learning: Understanding multi-level decision making"
+      - "Subgoal Decomposition: Learning to break complex tasks into simpler parts"
+      - "Temporal Abstraction: Understanding different time scales in learning"
+      - "Transfer Learning: Learning reusable skills across different tasks"
+
+# Educational value and learning objectives
+educational_value:
+  - "Hierarchical Learning: Perfect introduction to multi-level decision making"
+  - "Subgoal Decomposition: Shows how to break complex tasks into manageable parts"
+  - "Temporal Abstraction: Demonstrates learning at different time scales"
+  - "Transfer Learning: Illustrates how skills can be reused across tasks"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/hierarchical_rl/hierarchical_policy_gradient.py"
+      description: "Main implementation with meta and low-level policy networks"
+    - path: "tests/unit/hierarchical_rl/test_hierarchical_policy_gradient.py"
+      description: "Comprehensive test suite including convergence tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - bib_key: "kaelbling1998"
+        note: "Foundational work on hierarchical reinforcement learning"
+      - bib_key: "dietterich2000"
+        note: "Hierarchical reinforcement learning with value function decomposition"
+
+  - category: "Hierarchical RL Textbooks"
+    items:
+      - bib_key: "sutton2018"
+        note: "Comprehensive introduction to reinforcement learning including hierarchical methods"
+      - bib_key: "szepesvari2010"
+        note: "Algorithms for reinforcement learning with hierarchical approaches"
+
+  - category: "Online Resources"
+    items:
+      - title: "Hierarchical Reinforcement Learning"
+        url: "https://en.wikipedia.org/wiki/Hierarchical_reinforcement_learning"
+        note: "Wikipedia article on hierarchical reinforcement learning"
+      - title: "Policy Gradient Methods"
+        url: "https://spinningup.openai.com/en/latest/algorithms/vpg.html"
+        note: "OpenAI Spinning Up tutorial on policy gradient methods"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyTorch Documentation"
+        url: "https://pytorch.org/docs/"
+        note: "PyTorch deep learning framework documentation"
+      - title: "OpenAI Gym"
+        url: "https://www.gymlibrary.dev/"
+        note: "RL environments for testing hierarchical algorithms"
+      - title: "Stable Baselines3"
+        url: "https://stable-baselines3.readthedocs.io/"
+        note: "High-quality RL algorithm implementations"
+
+# Tags for categorization and search
+tags:
+  - "hierarchical-rl"
+  - "hierarchical-policy-gradient"
+  - "temporal-abstraction"
+  - "subgoal-decomposition"
+  - "policy-optimization"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "policy-gradient"
+    relationship: "parent"
+    description: "Traditional policy gradient that hierarchical policy gradient extends"
+  - slug: "hierarchical-actor-critic"
+    relationship: "same_family"
+    description: "Actor-critic version of hierarchical policy gradient"

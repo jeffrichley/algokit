@@ -1,0 +1,622 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: basic-dmps
+name: Basic Dynamic Movement Primitives (DMPs)
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "Fundamental DMP framework for learning and reproducing point-to-point and rhythmic movements with temporal and spatial scaling."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Basic Dynamic Movement Primitives (DMPs) are a fundamental framework for learning and reproducing complex movements in robotics. DMPs provide a way to encode movements as dynamical systems that can be learned from demonstrations and then generalized to new situations through temporal and spatial scaling.
+
+  The core idea of DMPs is to decompose complex movements into a set of simple dynamical systems that can be combined to create sophisticated behaviors. Each DMP consists of a canonical system that provides temporal structure and a transformation system that generates the actual movement trajectory.
+
+  DMPs are particularly powerful because they can handle both discrete (point-to-point) and rhythmic (periodic) movements, making them suitable for a wide range of robotic applications from manipulation to locomotion.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Demonstrated trajectory: y_demo(t) ∈ ℝ^d
+    - Desired start position: y_0 ∈ ℝ^d
+    - Desired goal position: g ∈ ℝ^d
+    - Temporal scaling: τ > 0
+    - Spatial scaling: s ∈ ℝ^d
+
+    Learn a dynamical system that reproduces the movement:
+    
+    For discrete DMPs:
+    τẏ = α_y(β_y(g - y) - ẏ) + f(x)
+    τẋ = -α_x x
+    
+    For rhythmic DMPs:
+    τẏ = α_y(β_y(g - y) - ẏ) + f(φ)
+    τφ̇ = 1
+    
+    Where f(x) or f(φ) is the forcing function learned from demonstrations.
+
+  key_properties:
+    - name: "Temporal Scaling"
+      formula: "τẏ = α_y(β_y(g - y) - ẏ) + f(x)"
+      description: "Allows movement speed adjustment through τ parameter"
+    - name: "Spatial Scaling"
+      formula: "s = (g_new - y_0_new) / (g_demo - y_0_demo)"
+      description: "Enables movement amplitude scaling to new start/goal positions"
+    - name: "Stability"
+      formula: "ẏ → 0, y → g as t → ∞"
+      description: "Guaranteed convergence to goal position"
+
+# Key properties and characteristics
+properties:
+  - name: "Movement Learning"
+    description: "Learns complex movements from demonstrations"
+    importance: "fundamental"
+  - name: "Temporal Scaling"
+    description: "Can adjust movement speed while preserving shape"
+    importance: "fundamental"
+  - name: "Spatial Scaling"
+    description: "Can adapt movements to new start/goal positions"
+    importance: "fundamental"
+  - name: "Stability"
+    description: "Guaranteed convergence to goal position"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "discrete_dmp"
+    name: "Discrete DMPs"
+    description: "Point-to-point movements with temporal and spatial scaling"
+    complexity:
+      time: "O(T × N_basis)"
+      space: "O(N_basis × d)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import Tuple, Optional
+
+      class DiscreteDMP:
+          """
+          Discrete Dynamic Movement Primitive for point-to-point movements.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0):
+              """
+              Initialize discrete DMP.
+
+              Args:
+                  n_dims: Number of dimensions (e.g., 3 for 3D position)
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              
+              # Basis function centers and widths
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # Weights for each dimension
+              self.w = np.zeros((n_dims, n_basis))
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Compute forcing function target
+              f_target = np.zeros((T, self.n_dims))
+              for t in range(T):
+                  f_target[t] = (ddy_demo[t] - 
+                               self.alpha_y * (self.beta_y * (g - y_demo[t]) - dy_demo[t]))
+              
+              # Learn weights using locally weighted regression
+              for d in range(self.n_dims):
+                  for i in range(self.n_basis):
+                      # Compute basis function values
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      
+                      # Locally weighted regression
+                      numerator = np.sum(psi * x * f_target[:, d])
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate trajectory from learned DMP.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Simple and intuitive framework"
+      - "Guaranteed stability and convergence"
+      - "Temporal and spatial scaling capabilities"
+      - "Smooth trajectory generation"
+    disadvantages:
+      - "Limited to single demonstrations"
+      - "No obstacle avoidance"
+      - "Fixed basis function placement"
+
+  - type: "rhythmic_dmp"
+    name: "Rhythmic DMPs"
+    description: "Periodic movements with phase-based canonical system"
+    complexity:
+      time: "O(T × N_basis)"
+      space: "O(N_basis × d)"
+    code: |
+      class RhythmicDMP:
+          """
+          Rhythmic Dynamic Movement Primitive for periodic movements.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25):
+              """
+              Initialize rhythmic DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              
+              # Basis function centers (uniformly distributed in [0, 2π])
+              self.c = np.linspace(0, 2*np.pi, n_basis, endpoint=False)
+              self.h = np.ones(n_basis) * n_basis / (2*np.pi)
+              
+              # Weights for each dimension
+              self.w = np.zeros((n_dims, n_basis))
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn rhythmic DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              
+              # Generate phase trajectory (assuming one period)
+              phi = np.linspace(0, 2*np.pi, T, endpoint=False)
+              
+              # Compute forcing function target
+              f_target = np.zeros((T, self.n_dims))
+              for t in range(T):
+                  f_target[t] = (ddy_demo[t] - 
+                               self.alpha_y * (self.beta_y * (0 - y_demo[t]) - dy_demo[t]))
+              
+              # Learn weights using locally weighted regression
+              for d in range(self.n_dims):
+                  for i in range(self.n_basis):
+                      # Compute basis function values
+                      psi = np.exp(-self.h[i] * (phi - self.c[i])**2)
+                      
+                      # Locally weighted regression
+                      numerator = np.sum(psi * np.sin(phi) * f_target[:, d])
+                      denominator = np.sum(psi * np.sin(phi)**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                tau: float = 1.0, dt: float = 0.01, 
+                                n_periods: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate rhythmic trajectory from learned DMP.
+
+              Args:
+                  y_0: Start position
+                  g: Goal position (center of oscillation)
+                  tau: Temporal scaling factor
+                  dt: Time step
+                  n_periods: Number of periods to generate
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time for multiple periods
+              t_span = np.arange(0, n_periods * 2*np.pi, dt / tau)
+              
+              # Initial state [y, dy, phi]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [0.0]])
+              
+              def rhythmic_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  phi = state[2*self.n_dims]
+                  
+                  # Canonical system (constant phase velocity)
+                  dphi = 1.0
+                  
+                  # Forcing function
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (phi - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * np.sin(phi)) / (np.sum(psi) + 1e-10)
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dphi]])
+              
+              # Integrate
+              sol = odeint(rhythmic_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Handles periodic movements naturally"
+      - "Phase-based canonical system"
+      - "Can generate multiple periods"
+      - "Smooth periodic trajectories"
+    disadvantages:
+      - "Limited to periodic movements"
+      - "No temporal scaling of period"
+      - "Fixed basis function placement"
+
+  - type: "multi_dimensional_dmp"
+    name: "Multi-dimensional DMPs"
+    description: "DMPs for high-dimensional spaces like joint or Cartesian coordinates"
+    complexity:
+      time: "O(T × N_basis × d)"
+      space: "O(N_basis × d)"
+    code: |
+      class MultiDimensionalDMP:
+          """
+          Multi-dimensional DMP for high-dimensional movement spaces.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0):
+              """
+              Initialize multi-dimensional DMP.
+
+              Args:
+                  n_dims: Number of dimensions (e.g., 7 for 7-DOF arm)
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              
+              # Basis function centers and widths
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # Weights for each dimension
+              self.w = np.zeros((n_dims, n_basis))
+              
+              # Dimension-specific scaling
+              self.scale_factors = np.ones(n_dims)
+
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+                            ddy_demo: np.ndarray, dt: float) -> None:
+              """
+              Learn multi-dimensional DMP weights from demonstration.
+
+              Args:
+                  y_demo: Demonstrated trajectory [T, n_dims]
+                  dy_demo: Demonstrated velocity [T, n_dims]
+                  ddy_demo: Demonstrated acceleration [T, n_dims]
+                  dt: Time step
+              """
+              T = len(y_demo)
+              y_0 = y_demo[0]
+              g = y_demo[-1]
+              
+              # Compute scale factors for each dimension
+              for d in range(self.n_dims):
+                  self.scale_factors[d] = np.max(np.abs(y_demo[:, d]))
+              
+              # Generate canonical system trajectory
+              x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+              
+              # Learn weights for each dimension independently
+              for d in range(self.n_dims):
+                  # Compute forcing function target for this dimension
+                  f_target = (ddy_demo[:, d] - 
+                             self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                  
+                  # Normalize by scale factor
+                  f_target = f_target / (self.scale_factors[d] + 1e-10)
+                  
+                  # Learn weights using locally weighted regression
+                  for i in range(self.n_basis):
+                      # Compute basis function values
+                      psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                      
+                      # Locally weighted regression
+                      numerator = np.sum(psi * x * f_target)
+                      denominator = np.sum(psi * x**2)
+                      
+                      if denominator > 1e-10:
+                          self.w[d, i] = numerator / denominator
+
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+                                tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+              """
+              Generate multi-dimensional trajectory from learned DMP.
+
+              Args:
+                  y_0: Start position [n_dims]
+                  g: Goal position [n_dims]
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Tuple of (position, velocity, acceleration) trajectories
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              
+              # Initial state [y, dy, x]
+              y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
+              
+              def multi_dmp_dynamics(state, t):
+                  y = state[:self.n_dims]
+                  dy = state[self.n_dims:2*self.n_dims]
+                  x = state[2*self.n_dims]
+                  
+                  # Canonical system
+                  dx = -self.alpha_x * x
+                  
+                  # Forcing function for each dimension
+                  f = np.zeros(self.n_dims)
+                  for d in range(self.n_dims):
+                      psi = np.exp(-self.h * (x - self.c)**2)
+                      f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
+                      f[d] *= self.scale_factors[d]
+                  
+                  # Transformation system
+                  ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
+                  
+                  return np.concatenate([dy, ddy, [dx]])
+              
+              # Integrate
+              sol = odeint(multi_dmp_dynamics, y0, t_span)
+              
+              y_traj = sol[:, :self.n_dims]
+              dy_traj = sol[:, self.n_dims:2*self.n_dims]
+              ddy_traj = np.gradient(dy_traj, dt, axis=0)
+              
+              return y_traj, dy_traj, ddy_traj
+
+    advantages:
+      - "Handles high-dimensional spaces"
+      - "Dimension-specific scaling"
+      - "Independent learning per dimension"
+      - "Suitable for joint and Cartesian spaces"
+    disadvantages:
+      - "No cross-dimensional coupling"
+      - "Computational cost scales with dimensions"
+      - "May not capture coordinated movements"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Discrete DMP Learning"
+      time: "O(T × N_basis × d)"
+      space: "O(N_basis × d)"
+      notes: "Time complexity for learning scales with trajectory length, basis functions, and dimensions"
+    
+    - approach: "Rhythmic DMP Learning"
+      time: "O(T × N_basis × d)"
+      space: "O(N_basis × d)"
+      notes: "Similar complexity to discrete DMPs but with phase-based canonical system"
+    
+    - approach: "Trajectory Generation"
+      time: "O(T × N_basis × d)"
+      space: "O(T × d)"
+      notes: "Generation time scales with desired trajectory length and dimensions"
+
+# Applications and use cases
+applications:
+  - category: "Robotic Manipulation"
+    examples:
+      - "Pick and Place: Learning manipulation trajectories"
+      - "Assembly Tasks: Learning complex assembly movements"
+      - "Tool Use: Learning to use tools with proper trajectories"
+      - "Grasping: Learning grasping movements with approach trajectories"
+
+  - category: "Humanoid Robotics"
+    examples:
+      - "Walking: Learning walking patterns and gaits"
+      - "Reaching: Learning arm reaching movements"
+      - "Balancing: Learning balance recovery movements"
+      - "Gesture: Learning human-like gestures and expressions"
+
+  - category: "Industrial Robotics"
+    examples:
+      - "Welding: Learning welding trajectories"
+      - "Painting: Learning painting patterns"
+      - "Packaging: Learning packaging movements"
+      - "Quality Control: Learning inspection movements"
+
+  - category: "Service Robotics"
+    examples:
+      - "Cleaning: Learning cleaning patterns"
+      - "Cooking: Learning cooking movements"
+      - "Caregiving: Learning assistive movements"
+      - "Entertainment: Learning dance and performance movements"
+
+  - category: "Research Applications"
+    examples:
+      - "Movement Analysis: Studying human movement patterns"
+      - "Rehabilitation: Learning therapeutic movements"
+      - "Sports: Learning athletic movements"
+      - "Art: Learning artistic and creative movements"
+
+# Educational value and learning objectives
+educational_value:
+  - "Dynamical Systems: Understanding how movements can be encoded as dynamical systems"
+  - "Function Approximation: Learning to approximate complex functions with basis functions"
+  - "Temporal Scaling: Understanding how to scale movements in time"
+  - "Spatial Scaling: Understanding how to adapt movements to new spatial contexts"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/basic_dmps.py"
+      description: "Main implementation with discrete, rhythmic, and multi-dimensional DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_basic_dmps.py"
+      description: "Comprehensive test suite including learning and generation tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Ijspeert, A. J., Nakanishi, J., & Schaal, S."
+        year: "2002"
+        title: "Movement imitation with nonlinear dynamical systems in humanoid robots"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "Original DMP paper"
+      - author: "Ijspeert, A. J., Nakanishi, J., Hoffmann, H., Pastor, P., & Schaal, S."
+        year: "2013"
+        title: "Dynamical movement primitives: Learning attractor landscapes for motor skills"
+        publisher: "Biological Cybernetics"
+        note: "Comprehensive DMP review and extensions"
+
+  - category: "DMP Extensions"
+    items:
+      - author: "Gams, A., Ijspeert, A. J., Schaal, S., & Lenarčič, J."
+        year: "2009"
+        title: "On-line learning and modulation of periodic movements with nonlinear dynamical systems"
+        publisher: "Autonomous Robots"
+        note: "Rhythmic DMPs and online learning"
+      - author: "Pastor, P., Hoffmann, H., Asfour, T., & Schaal, S."
+        year: "2009"
+        title: "Learning and generalization of motor skills by learning from demonstration"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "Multi-dimensional DMPs and generalization"
+
+  - category: "Online Resources"
+    items:
+      - title: "Dynamic Movement Primitives"
+        url: "https://en.wikipedia.org/wiki/Dynamic_movement_primitives"
+        note: "Wikipedia article on DMPs"
+      - title: "DMP Tutorial"
+        url: "https://www.researchgate.net/publication/221345789_Dynamic_Movement_Primitives"
+        note: "ResearchGate tutorial on DMPs"
+      - title: "DMP Implementation"
+        url: "https://github.com/studywolf/pydmps"
+        note: "Python implementation of DMPs"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "PyDMPs"
+        url: "https://github.com/studywolf/pydmps"
+        note: "Python library for DMPs"
+      - title: "DMPy"
+        url: "https://github.com/studywolf/dmpy"
+        note: "Another Python DMP implementation"
+      - title: "ROS DMP Package"
+        url: "https://github.com/ros-planning/moveit_tutorials"
+        note: "ROS integration for DMPs"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "movement-primitives"
+  - "dynamical-systems"
+  - "robotics"
+  - "learning-from-demonstration"
+  - "trajectory-generation"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "probabilistic-movement-primitives"
+    relationship: "same_family"
+    description: "Probabilistic extension of DMPs that captures movement variability"
+  - slug: "constrained-dmps"
+    relationship: "same_family"
+    description: "DMPs with safety constraints and operational requirements"

@@ -1,0 +1,428 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: h-infinity-control
+name: H-Infinity Control
+family_id: control
+
+# Brief one-sentence summary for cards and navigation
+summary: "Robust control design methodology that minimizes the worst-case performance of a system under bounded disturbances and uncertainties."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  H-Infinity Control is a robust control design methodology that minimizes the worst-case performance of a system under bounded disturbances and uncertainties. The controller is designed to minimize the H-infinity norm of the closed-loop transfer function from disturbances to performance outputs, ensuring robust performance across a wide range of operating conditions.
+
+  This approach is particularly valuable in aerospace applications, automotive systems, power electronics, and other domains where system performance must be guaranteed despite parameter variations, external disturbances, and model uncertainties. H-infinity controllers provide excellent robustness properties and are widely used in safety-critical applications.
+
+# Problem formulation and mathematical details
+formulation:
+  generalized_plant: |
+    The generalized plant P(s) is described by:
+
+    [z]   [P₁₁(s) P₁₂(s)] [w]
+    [y] = [P₂₁(s) P₂₂(s)] [u]
+
+    Where:
+    - w is the exogenous input (disturbances, reference signals)
+    - u is the control input
+    - z is the performance output
+    - y is the measured output
+
+  h_infinity_norm: |
+    The H-infinity norm of a transfer function G(s) is:
+
+    ||G(s)||_∞ = sup_{ω ∈ ℝ} σ_max(G(jω))
+
+    Where σ_max denotes the maximum singular value.
+
+  control_problem: |
+    Find a stabilizing controller K(s) such that:
+
+    min_{K(s)} ||T_zw(s)||_∞ < γ
+
+    Where T_zw(s) is the closed-loop transfer function from w to z.
+
+  riccati_equations: |
+    The H-infinity controller is obtained by solving the coupled Riccati equations:
+
+    A^T X + X A + X (γ⁻² B₁ B₁^T - B₂ B₂^T) X + C₁^T C₁ = 0
+    A Y + Y A^T + Y (γ⁻² C₁^T C₁ - C₂^T C₂) Y + B₁ B₁^T = 0
+
+    Where X and Y are the stabilizing solutions.
+
+  key_properties:
+    - name: "Robust Performance"
+      formula: "||T_zw(s)||_∞ < γ"
+      description: "Guarantees performance under bounded disturbances"
+    - name: "Frequency Domain Design"
+      formula: "sup_{ω} σ_max(T_zw(jω))"
+      description: "Direct design in frequency domain"
+    - name: "Optimal Robustness"
+      formula: "min_K ||T_zw(s)||_∞"
+      description: "Minimizes worst-case performance"
+
+# Key properties and characteristics
+properties:
+  - name: "Robust Performance"
+    description: "Guarantees performance under bounded disturbances"
+    importance: "fundamental"
+  - name: "Frequency Domain Design"
+    description: "Direct design in frequency domain"
+    importance: "fundamental"
+  - name: "Optimal Robustness"
+    description: "Minimizes worst-case performance"
+    importance: "fundamental"
+  - name: "Multi-Objective Design"
+    description: "Handles multiple performance criteria"
+    importance: "application"
+  - name: "Stability Guarantees"
+    description: "Ensures closed-loop stability"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "state_space_hinf"
+    name: "State-Space H-Infinity Controller"
+    description: "H-infinity controller design using state-space methods"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    code: |
+      import numpy as np
+      from scipy.linalg import solve_continuous_are, solve_discrete_are
+      from typing import Tuple, Optional
+
+      class HInfinityController:
+          """
+          H-Infinity Controller implementation.
+
+          Args:
+              A: System state matrix
+              B1: Disturbance input matrix
+              B2: Control input matrix
+              C1: Performance output matrix
+              C2: Measured output matrix
+              D11: Direct feedthrough from disturbance to performance
+              D12: Direct feedthrough from control to performance
+              D21: Direct feedthrough from disturbance to measurement
+              D22: Direct feedthrough from control to measurement
+              gamma: H-infinity performance bound (default: 1.0)
+          """
+
+          def __init__(self, A: np.ndarray, B1: np.ndarray, B2: np.ndarray,
+                       C1: np.ndarray, C2: np.ndarray, D11: np.ndarray,
+                       D12: np.ndarray, D21: np.ndarray, D22: np.ndarray,
+                       gamma: float = 1.0):
+
+              self.A = A
+              self.B1 = B1
+              self.B2 = B2
+              self.C1 = C1
+              self.C2 = C2
+              self.D11 = D11
+              self.D12 = D12
+              self.D21 = D21
+              self.D22 = D22
+              self.gamma = gamma
+
+              # Controller matrices (computed during design)
+              self.Ac = None
+              self.Bc = None
+              self.Cc = None
+              self.Dc = None
+
+              # Riccati solutions
+              self.X = None
+              self.Y = None
+
+          def design_controller(self) -> bool:
+              """
+              Design H-infinity controller by solving Riccati equations.
+
+              Returns:
+                  True if design is successful, False otherwise
+              """
+              try:
+                  # Solve Riccati equations
+                  self.X = solve_continuous_are(
+                      self.A.T, 
+                      self.C1.T,
+                      self.B1 @ self.B1.T / (self.gamma**2) - self.B2 @ self.B2.T,
+                      self.C1.T @ self.C1
+                  )
+
+                  self.Y = solve_continuous_are(
+                      self.A,
+                      self.B1,
+                      self.C1.T @ self.C1 / (self.gamma**2) - self.C2.T @ self.C2,
+                      self.B1 @ self.B1.T
+                  )
+
+                  # Check if solutions are stabilizing
+                  if not self._is_stabilizing(self.X) or not self._is_stabilizing(self.Y):
+                      return False
+
+                  # Compute controller matrices
+                  self._compute_controller_matrices()
+                  return True
+
+              except Exception:
+                  return False
+
+          def _is_stabilizing(self, P: np.ndarray) -> bool:
+              """Check if Riccati solution is stabilizing."""
+              eigenvals = np.linalg.eigvals(P)
+              return np.all(eigenvals > 0)
+
+          def _compute_controller_matrices(self) -> None:
+              """Compute controller state-space matrices."""
+              # This is a simplified implementation
+              # Real implementation would be more complex
+              
+              # Controller state matrix
+              self.Ac = self.A - self.B2 @ self.Dc @ self.C2 - self.Bc @ self.C2
+
+              # Controller input matrix
+              self.Bc = self.Y @ self.C2.T
+
+              # Controller output matrix
+              self.Cc = -self.B2.T @ self.X
+
+              # Controller feedthrough matrix
+              self.Dc = np.zeros((self.B2.shape[1], self.C2.shape[0]))
+
+          def compute_control(self, state: np.ndarray, measurement: np.ndarray) -> np.ndarray:
+              """
+              Compute control input.
+
+              Args:
+                  state: Current system state
+                  measurement: Current measurement
+
+              Returns:
+                  Control input
+              """
+              if self.Ac is None:
+                  raise ValueError("Controller not designed. Call design_controller() first.")
+
+              # Controller state update (simplified)
+              control = self.Cc @ state + self.Dc @ measurement
+              return control
+
+          def get_performance_bound(self) -> float:
+              """Get the achieved H-infinity performance bound."""
+              return self.gamma
+    advantages:
+      - "Robust performance guarantees"
+      - "Handles multiple performance objectives"
+      - "Frequency domain design approach"
+      - "Theoretical stability guarantees"
+    disadvantages:
+      - "Computationally intensive design"
+      - "May be conservative"
+      - "Requires good system model"
+      - "Complex implementation"
+
+  - type: "mixed_sensitivity"
+    name: "Mixed Sensitivity H-Infinity Design"
+    description: "H-infinity design focusing on sensitivity and complementary sensitivity"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    code: |
+      class MixedSensitivityHInf:
+          """
+          Mixed Sensitivity H-Infinity Controller.
+          """
+
+          def __init__(self, plant: np.ndarray, W1: np.ndarray, W2: np.ndarray, W3: np.ndarray):
+              """
+              Initialize mixed sensitivity design.
+
+              Args:
+                  plant: Plant transfer function
+                  W1: Weight for sensitivity function
+                  W2: Weight for complementary sensitivity
+                  W3: Weight for control effort
+              """
+              self.plant = plant
+              self.W1 = W1
+              self.W2 = W2
+              self.W3 = W3
+
+          def design_controller(self) -> np.ndarray:
+              """
+              Design controller using mixed sensitivity approach.
+
+              Returns:
+                  Controller transfer function
+              """
+              # This is a simplified implementation
+              # Real implementation would involve more complex synthesis
+              
+              # Mixed sensitivity problem setup
+              # ||W1*S, W2*T, W3*KS||_∞ < 1
+              
+              # Simplified controller design
+              controller = self._solve_mixed_sensitivity()
+              return controller
+
+          def _solve_mixed_sensitivity(self) -> np.ndarray:
+              """Solve mixed sensitivity problem."""
+              # Simplified implementation
+              # Real implementation would use proper H-infinity synthesis
+              return np.eye(1)  # Placeholder
+    advantages:
+      - "Direct control over sensitivity functions"
+      - "Good disturbance rejection"
+      - "Robust stability"
+    disadvantages:
+      - "Requires careful weight selection"
+      - "May be conservative"
+      - "Complex weight tuning"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "State-Space H-Infinity"
+      time: "O(n³)"
+      space: "O(n²)"
+      notes: "Time complexity dominated by Riccati equation solution"
+    - approach: "Mixed Sensitivity Design"
+      time: "O(n³)"
+      space: "O(n²)"
+      notes: "Similar complexity to state-space approach"
+
+  performance_notes:
+    - "Design phase is computationally intensive"
+    - "Runtime control computation is efficient"
+    - "Memory requirements grow with system size"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Robust control for aircraft with uncertain dynamics"
+      - "Satellite Control: Attitude control under varying conditions"
+      - "Missile Guidance: Robust tracking despite target maneuvers"
+      - "Spacecraft Docking: Precise control under uncertain contact"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Active Suspension: Robust control for varying road conditions"
+      - "Engine Control: Robust performance under engine wear"
+      - "Steering Control: Robust lane keeping despite wind disturbances"
+      - "Brake Control: Robust ABS under varying road conditions"
+
+  - category: "Power Electronics"
+    examples:
+      - "Motor Drives: Robust control under load variations"
+      - "Power Converters: Robust voltage regulation"
+      - "Grid Control: Robust power system stabilization"
+      - "Renewable Energy: Robust control under weather variations"
+
+  - category: "Robotics and Automation"
+    examples:
+      - "Robot Control: Robust manipulation under payload changes"
+      - "Manufacturing: Robust control despite tool wear"
+      - "Autonomous Vehicles: Robust navigation under environmental changes"
+      - "Precision Machining: Robust control for high accuracy"
+
+  - category: "Process Control"
+    examples:
+      - "Chemical Plants: Robust control under catalyst degradation"
+      - "Power Plants: Robust control under load variations"
+      - "Water Treatment: Robust control under varying water quality"
+      - "Food Processing: Robust control under ingredient variations"
+
+# Educational value and learning objectives
+educational_value:
+  - "Robust Control Theory: Understanding worst-case design approaches"
+  - "Frequency Domain Analysis: Learning H-infinity norm and singular values"
+  - "Riccati Equations: Understanding optimal control solutions"
+  - "Multi-Objective Optimization: Balancing competing performance criteria"
+
+# Implementation status and development info
+status:
+  current: "planned"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/control/h_infinity_control.py"
+      description: "Main implementation with state-space and mixed sensitivity variants"
+    - path: "tests/unit/control/test_h_infinity_control.py"
+      description: "Comprehensive test suite including robustness tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Zhou, K., Doyle, J. C., & Glover, K."
+        year: "1996"
+        title: "Robust and Optimal Control"
+        publisher: "Prentice Hall"
+        note: "ISBN 978-0-13-456567-5"
+      - author: "Skogestad, S., & Postlethwaite, I."
+        year: "2005"
+        title: "Multivariable Feedback Control: Analysis and Design"
+        publisher: "John Wiley & Sons"
+        note: "ISBN 978-0-470-01167-6"
+
+  - category: "H-Infinity Control"
+    items:
+      - author: "Doyle, J. C., Glover, K., Khargonekar, P. P., & Francis, B. A."
+        year: "1989"
+        title: "State-space solutions to standard H₂ and H∞ control problems"
+        publisher: "IEEE Transactions on Automatic Control"
+        note: "Volume 34, pages 831-847"
+      - author: "Francis, B. A."
+        year: "1987"
+        title: "A Course in H∞ Control Theory"
+        publisher: "Springer-Verlag"
+        note: "ISBN 978-3-540-17069-4"
+
+  - category: "Online Resources"
+    items:
+      - title: "H-infinity Control"
+        url: "https://en.wikipedia.org/wiki/H-infinity_methods_in_control_theory"
+        note: "Wikipedia article on H-infinity control"
+      - title: "Robust Control Toolbox"
+        url: "https://www.mathworks.com/products/robust.html"
+        note: "MATLAB toolbox for robust control design"
+      - title: "H-Infinity Control Tutorial"
+        url: "https://www.controleng.com/articles/h-infinity-control-tutorial/"
+        note: "Control Engineering H-infinity tutorial"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library for control systems analysis and design"
+      - title: "Robust Control Toolbox"
+        url: "https://www.mathworks.com/products/robust.html"
+        note: "MATLAB toolbox for robust control design"
+      - title: "H-Infinity Synthesis"
+        url: "https://www.mathworks.com/help/robust/ug/h-infinity-synthesis.html"
+        note: "MATLAB documentation on H-infinity synthesis"
+
+# Tags for categorization and search
+tags:
+  - "control"
+  - "h-infinity-control"
+  - "robust-control"
+  - "optimal-control"
+  - "frequency-domain"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "robust-control"
+    relationship: "same_family"
+    description: "Broader category of robust control methods including H-infinity"
+  - slug: "adaptive-control"
+    relationship: "same_family"
+    description: "Alternative approach to handling system uncertainties"

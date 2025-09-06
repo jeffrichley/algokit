@@ -1,0 +1,184 @@
+# Enhanced Family Schema for Algorithm Documentation
+# This schema supports all algorithm families with rich metadata and structured content
+
+# Basic metadata
+id: real-time-control
+name: Real-time Control
+slug: real-time-control
+# Brief one-sentence summary for cards and navigation
+summary: "Real-time control algorithms provide deterministic, time-critical control solutions for systems requiring guaranteed response times and predictable behavior."
+
+# Detailed description (markdown supported) - full overview for the family page
+description: |
+  Real-time Control algorithms are specialized control methods designed to operate within strict
+  timing constraints, providing deterministic and predictable behavior for time-critical systems.
+  These algorithms must guarantee response times and maintain system stability under real-time
+  operating conditions where missing deadlines can lead to system failure or degraded performance.
+
+  Unlike general control algorithms, real-time control systems prioritize timing guarantees over
+  optimal performance, ensuring that control actions are computed and executed within specified
+  time bounds. This makes them essential for safety-critical applications, embedded systems,
+  and any application where predictable timing is more important than optimal control performance.
+
+# Family characteristics
+key_characteristics:
+  - name: "Timing Guarantees"
+    description: "Algorithms must complete within specified time bounds to maintain system safety"
+    importance: "fundamental"
+  - name: "Deterministic Behavior"
+    description: "Predictable execution time and system response under all operating conditions"
+    importance: "fundamental"
+  - name: "Priority-based Scheduling"
+    description: "Task scheduling based on timing criticality and system requirements"
+    importance: "fundamental"
+  - name: "Resource Management"
+    description: "Efficient allocation and management of computational and memory resources"
+    importance: "implementation"
+
+# Common applications and use cases
+common_applications:
+  - category: "Safety-Critical Systems"
+    examples: ["aircraft flight control", "automotive braking", "medical devices", "nuclear reactors"]
+  - category: "Industrial Automation"
+    examples: ["robotic assembly", "process control", "manufacturing lines", "quality control"]
+  - category: "Embedded Systems"
+    examples: ["microcontrollers", "IoT devices", "sensors", "actuators"]
+  - category: "Real-time Communication"
+    examples: ["network protocols", "telecommunications", "streaming media", "gaming"]
+  - category: "Autonomous Systems"
+    examples: ["autonomous vehicles", "drones", "robots", "smart grids"]
+
+# Key concepts and terminology
+concepts:
+  - name: "Real-time System"
+    description: "System that must respond to events within specified time constraints"
+    type: "concept"
+  - name: "Hard Real-time"
+    description: "Missing deadlines results in system failure or catastrophic consequences"
+    type: "classification"
+  - name: "Soft Real-time"
+    description: "Missing deadlines degrades performance but doesn't cause system failure"
+    type: "classification"
+  - name: "Deadline"
+    description: "Maximum time allowed for task completion"
+    type: "timing"
+  - name: "Worst-Case Execution Time (WCET)"
+    description: "Maximum time required for algorithm execution under all conditions"
+    type: "timing"
+  - name: "Schedulability"
+    description: "Ability to meet all timing constraints under given scheduling policy"
+    type: "analysis"
+  - name: "Jitter"
+    description: "Variation in task execution time or response time"
+    type: "timing"
+  - name: "Rate Monotonic"
+    description: "Priority assignment based on task frequency (higher frequency = higher priority)"
+    type: "scheduling"
+
+# Algorithm management
+algorithms:
+  order_mode: by_algo_order   # by_algo_order | by_name | by_slug | by_complexity
+  include: []                 # if empty = include all
+  exclude: []                 # slugs to hide
+  # Algorithm comparison data (will be populated from individual algorithm files)
+  comparison:
+    enabled: true
+    metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
+
+# Related families and cross-references
+related_families:
+  - id: "control"
+    relationship: "foundation"
+    description: "Real-time control extends general control algorithms with timing constraints"
+  - id: "scheduling"
+    relationship: "integration"
+    description: "Real-time scheduling algorithms are essential for meeting timing constraints"
+  - id: "embedded-systems"
+    relationship: "application"
+    description: "Real-time control is fundamental to embedded system design"
+  - id: "optimization"
+    relationship: "constraint"
+    description: "Real-time control adds timing constraints to optimization problems"
+
+# Implementation and development status
+# Note: status is inferred from algorithm statuses in the algorithms/ directory
+# Status levels: "planned" -> "in-progress" -> "complete"
+# Family status = "complete" if all algorithms are complete, "in-progress" if any are in-progress, "planned" if all are planned
+
+# Performance and complexity information
+complexity:
+  typical_time: "O(1) to O(n log n)"
+  typical_space: "O(1) to O(n)"
+  notes: "Complexity is bounded by timing constraints, with most algorithms optimized for deterministic O(1) or O(log n) performance"
+
+# Domain-specific sections (can be customized per family)
+domain_sections:
+  - name: "Real-time System Types"
+    content: |
+      !!! info "Hard vs Soft Real-time"
+
+          **Hard Real-time Systems**:
+
+          - Missing deadlines causes system failure
+          - Requires worst-case analysis
+          - Examples: flight control, medical devices
+          - Zero tolerance for deadline misses
+
+          **Soft Real-time Systems**:
+
+          - Missing deadlines degrades performance
+          - Statistical guarantees acceptable
+          - Examples: multimedia, gaming
+          - Graceful degradation possible
+
+  - name: "Scheduling Algorithms"
+    content: |
+      !!! info "Real-time Scheduling Approaches"
+
+          1. **Rate Monotonic (RM)**: Priority based on task period
+          2. **Earliest Deadline First (EDF)**: Dynamic priority based on deadline
+          3. **Fixed Priority**: Static priority assignment
+          4. **Time-triggered**: Execution at predetermined times
+          5. **Event-triggered**: Execution in response to events
+
+  - name: "Timing Analysis"
+    content: |
+      !!! info "Real-time System Analysis"
+
+          **Worst-Case Analysis**:
+          - WCET calculation and measurement
+          - Response time analysis
+          - Schedulability testing
+
+          **Timing Verification**:
+          - Static timing analysis
+          - Dynamic timing analysis
+          - Formal verification methods
+
+          **Performance Metrics**:
+          - Deadline miss ratio
+          - Response time distribution
+          - Jitter and latency bounds
+
+# References and resources - point to refs.bib entries
+references:
+  - bib_key: "cormen2009"  # General algorithms reference
+  - bib_key: "python_docs"  # Implementation reference
+
+# Tags for categorization and search - point to tags.yaml entries
+tags:
+  - "real-time-control"  # Primary family tag
+  - "real-time"
+  - "control"
+  - "timing"
+  - "scheduling"
+  - "algorithms"
+
+# Template and rendering options
+template_options:
+  show_comparison_table: true
+  show_complexity_analysis: true
+  show_implementation_status: true
+  show_related_families: true
+  show_references: true
+  custom_sections: true

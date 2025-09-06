@@ -1,0 +1,664 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: hierarchical-dmps
+name: Hierarchical Dynamic Movement Primitives
+family_id: dmps
+
+# Brief one-sentence summary for cards and navigation
+summary: "DMPs organized in hierarchical structures for multi-level movement decomposition, complex behavior composition, and task hierarchy learning."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Hierarchical Dynamic Movement Primitives extend the basic DMP framework to handle complex behaviors through multi-level decomposition and composition. This approach enables the learning and execution of sophisticated tasks by breaking them down into simpler sub-tasks and organizing them in a hierarchical structure.
+
+  The key innovation of hierarchical DMPs is the integration of:
+  - Multi-level movement decomposition from high-level tasks to low-level primitives
+  - Complex behavior composition through hierarchical organization
+  - Task hierarchy learning from demonstrations
+  - Adaptive behavior selection based on context and goals
+  - Robust execution through hierarchical error handling and recovery
+
+  These DMPs are particularly valuable in applications requiring complex, multi-step behaviors, such as assembly tasks, cooking, household chores, and any task that can be naturally decomposed into a hierarchy of simpler movements.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - Hierarchical task structure: T = {T_1, T_2, ..., T_N} with levels L = {L_1, L_2, ..., L_M}
+    - High-level DMP: τẏ_H = α_y(β_y(g_H - y_H) - ẏ_H) + f_H(x_H)
+    - Low-level DMPs: τẏ_L_i = α_y(β_y(g_L_i - y_L_i) - ẏ_L_i) + f_L_i(x_L_i)
+    - Hierarchy weights: W = {w_ij} for connections between levels
+    - Context variables: C = {c_1, c_2, ..., c_K}
+
+    The hierarchical DMP system is:
+    τẏ_H = α_y(β_y(g_H - y_H) - ẏ_H) + f_H(x_H) + Σ_j w_Hj * y_L_j
+    τẏ_L_i = α_y(β_y(g_L_i - y_L_i) - ẏ_L_i) + f_L_i(x_L_i) + Σ_k w_ik * y_L_k + w_iH * y_H
+    
+    Where:
+    - y_H is the high-level state
+    - y_L_i are the low-level states
+    - w_ij are the hierarchy weights
+    - C influences the hierarchy structure
+
+  key_properties:
+    - name: "Hierarchical Decomposition"
+      formula: "T = T_1 ∪ T_2 ∪ ... ∪ T_N with T_i ∩ T_j = ∅ for i ≠ j"
+      description: "Tasks are decomposed into non-overlapping sub-tasks"
+    - name: "Multi-level Composition"
+      formula: "y_H = f_compose(y_L_1, y_L_2, ..., y_L_N)"
+      description: "High-level behaviors are composed from low-level primitives"
+    - name: "Adaptive Hierarchy"
+      formula: "W(t) = W_0 + ΔW(C(t))"
+      description: "Hierarchy weights adapt based on context"
+
+# Key properties and characteristics
+properties:
+  - name: "Multi-level Decomposition"
+    description: "Decomposes complex tasks into simpler sub-tasks"
+    importance: "fundamental"
+  - name: "Hierarchical Composition"
+    description: "Composes complex behaviors from simpler primitives"
+    importance: "fundamental"
+  - name: "Task Hierarchy Learning"
+    description: "Learns hierarchical task structures from demonstrations"
+    importance: "fundamental"
+  - name: "Adaptive Behavior Selection"
+    description: "Selects appropriate behaviors based on context"
+    importance: "fundamental"
+
+# Implementation approaches with detailed code
+implementations:
+  - type: "basic_hierarchical_dmp"
+    name: "Basic Hierarchical DMPs"
+    description: "Basic hierarchical DMPs with two-level hierarchy"
+    complexity:
+      time: "O(T × K × L)"
+      space: "O(K × L)"
+    code: |
+      import numpy as np
+      from scipy.integrate import odeint
+      from typing import List, Dict, Tuple, Optional
+      import matplotlib.pyplot as plt
+
+      class HierarchicalDMP:
+          """
+          Hierarchical DMP for multi-level movement decomposition and composition.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, n_levels: int = 2):
+              """
+              Initialize hierarchical DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  n_levels: Number of hierarchy levels
+              """
+              self.n_dims = n_dims
+              self.n_basis = n_basis
+              self.alpha_y = alpha_y
+              self.beta_y = beta_y
+              self.alpha_x = alpha_x
+              self.n_levels = n_levels
+              
+              # Basis function parameters
+              self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
+              self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
+              
+              # DMP weights for each level
+              self.w = {}
+              for level in range(n_levels):
+                  self.w[level] = np.zeros((n_dims, n_basis))
+              
+              # Hierarchy weights
+              self.hierarchy_weights = {}
+              for level in range(n_levels):
+                  self.hierarchy_weights[level] = np.zeros((n_dims, n_dims))
+              
+              # Context variables
+              self.context = {}
+              self.context_weights = {}
+
+          def set_context(self, context_name: str, context_value: float) -> None:
+              """
+              Set a context variable.
+
+              Args:
+                  context_name: Name of the context variable
+                  context_value: Value of the context variable
+              """
+              self.context[context_name] = context_value
+
+          def set_hierarchy_weight(self, from_level: int, to_level: int, weight: np.ndarray) -> None:
+              """
+              Set hierarchy weight between levels.
+
+              Args:
+                  from_level: Source level
+                  to_level: Target level
+                  weight: Weight matrix
+              """
+              if from_level not in self.hierarchy_weights:
+                  self.hierarchy_weights[from_level] = {}
+              self.hierarchy_weights[from_level][to_level] = weight.copy()
+
+          def learn_from_demo(self, demo_data: Dict[int, np.ndarray], dt: float) -> None:
+              """
+              Learn hierarchical DMP weights from demonstration.
+
+              Args:
+                  demo_data: Dictionary of demonstration data for each level
+                  dt: Time step
+              """
+              for level, (y_demo, dy_demo, ddy_demo) in demo_data.items():
+                  if level >= self.n_levels:
+                      continue
+                  
+                  T = len(y_demo)
+                  y_0 = y_demo[0]
+                  g = y_demo[-1]
+                  
+                  # Generate canonical system trajectory
+                  x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
+                  
+                  # Learn weights for this level
+                  for d in range(self.n_dims):
+                      f_target = (ddy_demo[:, d] - 
+                                 self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
+                      
+                      for i in range(self.n_basis):
+                          psi = np.exp(-self.h[i] * (x - self.c[i])**2)
+                          numerator = np.sum(psi * x * f_target)
+                          denominator = np.sum(psi * x**2)
+                          
+                          if denominator > 1e-10:
+                              self.w[level][d, i] = numerator / denominator
+
+          def compute_hierarchy_coupling(self, level: int, y_levels: Dict[int, np.ndarray]) -> np.ndarray:
+              """
+              Compute hierarchy coupling for a given level.
+
+              Args:
+                  level: Current level
+                  y_levels: States of all levels
+
+              Returns:
+                  Hierarchy coupling force
+              """
+              coupling = np.zeros(self.n_dims)
+              
+              # Coupling from other levels
+              for other_level, y_other in y_levels.items():
+                  if other_level != level and other_level in self.hierarchy_weights.get(level, {}):
+                      weight_matrix = self.hierarchy_weights[level][other_level]
+                      coupling += weight_matrix @ y_other
+              
+              return coupling
+
+          def generate_trajectory(self, y_0: Dict[int, np.ndarray], g: Dict[int, np.ndarray],
+                                tau: float = 1.0, dt: float = 0.01) -> Dict[int, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+              """
+              Generate hierarchical trajectory.
+
+              Args:
+                  y_0: Start positions for each level
+                  g: Goal positions for each level
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Dictionary of trajectories for each level
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state for all levels
+              y0 = []
+              for level in range(self.n_levels):
+                  if level in y_0:
+                      y0.extend([y_0[level], np.zeros(self.n_dims), [1.0]])
+                  else:
+                      y0.extend([np.zeros(self.n_dims), np.zeros(self.n_dims), [1.0]])
+              
+              def hierarchical_dmp_dynamics(state, t):
+                  # Extract states for all levels
+                  y_levels = {}
+                  dy_levels = {}
+                  x_levels = {}
+                  
+                  for level in range(self.n_levels):
+                      start_idx = level * (2 * self.n_dims + 1)
+                      y_levels[level] = state[start_idx:start_idx + self.n_dims]
+                      dy_levels[level] = state[start_idx + self.n_dims:start_idx + 2 * self.n_dims]
+                      x_levels[level] = state[start_idx + 2 * self.n_dims]
+                  
+                  # Compute dynamics for each level
+                  dydt = []
+                  for level in range(self.n_levels):
+                      y = y_levels[level]
+                      dy = dy_levels[level]
+                      x = x_levels[level]
+                      
+                      # Canonical system
+                      dx = -self.alpha_x * x
+                      
+                      # Forcing function
+                      f = np.zeros(self.n_dims)
+                      for d in range(self.n_dims):
+                          psi = np.exp(-self.h * (x - self.c)**2)
+                          f[d] = (np.sum(psi * self.w[level][d]) * x) / (np.sum(psi) + 1e-10)
+                      
+                      # Hierarchy coupling
+                      coupling = self.compute_hierarchy_coupling(level, y_levels)
+                      
+                      # Transformation system with hierarchy coupling
+                      if level in g:
+                          ddy = self.alpha_y * (self.beta_y * (g[level] - y) - dy) + f + coupling
+                      else:
+                          ddy = self.alpha_y * (self.beta_y * (0 - y) - dy) + f + coupling
+                      
+                      dydt.extend([dy, ddy, [dx]])
+                  
+                  return np.concatenate(dydt)
+              
+              # Integrate
+              sol = odeint(hierarchical_dmp_dynamics, y0, t_span)
+              
+              # Extract trajectories for each level
+              trajectories = {}
+              for level in range(self.n_levels):
+                  start_idx = level * (2 * self.n_dims + 1)
+                  y_traj = sol[:, start_idx:start_idx + self.n_dims]
+                  dy_traj = sol[:, start_idx + self.n_dims:start_idx + 2 * self.n_dims]
+                  ddy_traj = np.gradient(dy_traj, dt, axis=0)
+                  trajectories[level] = (y_traj, dy_traj, ddy_traj)
+              
+              return trajectories
+
+          def visualize_hierarchy(self, trajectories: Dict[int, Tuple[np.ndarray, np.ndarray, np.ndarray]],
+                                title: str = "Hierarchical Trajectory") -> None:
+              """
+              Visualize the hierarchical trajectory.
+
+              Args:
+                  trajectories: Dictionary of trajectories for each level
+                  title: Plot title
+              """
+              fig, axes = plt.subplots(self.n_levels, 1, figsize=(12, 4 * self.n_levels))
+              if self.n_levels == 1:
+                  axes = [axes]
+              
+              for level, (y_traj, dy_traj, ddy_traj) in trajectories.items():
+                  if level >= self.n_levels:
+                      continue
+                  
+                  ax = axes[level]
+                  
+                  # Plot trajectory
+                  if self.n_dims == 2:
+                      ax.plot(y_traj[:, 0], y_traj[:, 1], 'b-', linewidth=2, label=f'Level {level}')
+                      ax.plot(y_traj[0, 0], y_traj[0, 1], 'go', markersize=8, label=f'Start {level}')
+                      ax.plot(y_traj[-1, 0], y_traj[-1, 1], 'ro', markersize=8, label=f'Goal {level}')
+                      ax.set_xlabel('X Position')
+                      ax.set_ylabel('Y Position')
+                      ax.set_title(f'Level {level} Trajectory')
+                      ax.legend()
+                      ax.grid(True)
+                      ax.axis('equal')
+                  else:
+                      for d in range(self.n_dims):
+                          ax.plot(y_traj[:, d], label=f'Dimension {d+1}')
+                      ax.set_xlabel('Time')
+                      ax.set_ylabel('Position')
+                      ax.set_title(f'Level {level} Trajectory')
+                      ax.legend()
+                      ax.grid(True)
+              
+              plt.suptitle(title)
+              plt.tight_layout()
+              plt.show()
+
+    advantages:
+      - "Multi-level task decomposition"
+      - "Complex behavior composition"
+      - "Hierarchical error handling"
+      - "Adaptive behavior selection"
+    disadvantages:
+      - "Higher computational cost"
+      - "Complex parameter tuning"
+      - "Requires careful hierarchy design"
+
+  - type: "adaptive_hierarchical_dmp"
+    name: "Adaptive Hierarchical DMPs"
+    description: "Hierarchical DMPs with adaptive hierarchy structure"
+    complexity:
+      time: "O(T × K × L + T × C)"
+      space: "O(K × L + C)"
+    code: |
+      class AdaptiveHierarchicalDMP(HierarchicalDMP):
+          """
+          Hierarchical DMP with adaptive hierarchy structure.
+          """
+
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+                       beta_y: float = 6.25, alpha_x: float = 1.0, n_levels: int = 2,
+                       adaptation_rate: float = 0.1):
+              """
+              Initialize adaptive hierarchical DMP.
+
+              Args:
+                  n_dims: Number of dimensions
+                  n_basis: Number of basis functions
+                  alpha_y: Spring constant for transformation system
+                  beta_y: Damping constant for transformation system
+                  alpha_x: Decay rate for canonical system
+                  n_levels: Number of hierarchy levels
+                  adaptation_rate: Rate of hierarchy adaptation
+              """
+              super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, n_levels)
+              self.adaptation_rate = adaptation_rate
+              
+              # Adaptive parameters
+              self.adaptive_weights = {}
+              for level in range(n_levels):
+                  self.adaptive_weights[level] = np.ones((n_dims, n_dims))
+              
+              # Performance metrics
+              self.performance_history = []
+              self.adaptation_history = []
+
+          def adapt_hierarchy(self, performance_metric: float, context: Dict[str, float]) -> None:
+              """
+              Adapt hierarchy structure based on performance.
+
+              Args:
+                  performance_metric: Current performance metric
+                  context: Current context variables
+              """
+              # Store performance
+              self.performance_history.append(performance_metric)
+              
+              # Adapt hierarchy weights based on performance
+              for level in range(self.n_levels):
+                  if level in self.adaptive_weights:
+                      # Simple adaptation rule: increase weights for good performance
+                      if performance_metric > 0.8:  # Good performance
+                          self.adaptive_weights[level] *= (1 + self.adaptation_rate)
+                      elif performance_metric < 0.5:  # Poor performance
+                          self.adaptive_weights[level] *= (1 - self.adaptation_rate)
+                      
+                      # Normalize weights
+                      self.adaptive_weights[level] = np.clip(self.adaptive_weights[level], 0.1, 2.0)
+              
+              # Store adaptation
+              self.adaptation_history.append({
+                  'performance': performance_metric,
+                  'context': context.copy(),
+                  'weights': {level: w.copy() for level, w in self.adaptive_weights.items()}
+              })
+
+          def compute_adaptive_coupling(self, level: int, y_levels: Dict[int, np.ndarray]) -> np.ndarray:
+              """
+              Compute adaptive hierarchy coupling.
+
+              Args:
+                  level: Current level
+                  y_levels: States of all levels
+
+              Returns:
+                  Adaptive hierarchy coupling force
+              """
+              coupling = np.zeros(self.n_dims)
+              
+              # Coupling from other levels with adaptive weights
+              for other_level, y_other in y_levels.items():
+                  if other_level != level and other_level in self.hierarchy_weights.get(level, {}):
+                      weight_matrix = self.hierarchy_weights[level][other_level]
+                      adaptive_weight = self.adaptive_weights.get(level, np.eye(self.n_dims))
+                      coupling += adaptive_weight @ weight_matrix @ y_other
+              
+              return coupling
+
+          def generate_trajectory(self, y_0: Dict[int, np.ndarray], g: Dict[int, np.ndarray],
+                                tau: float = 1.0, dt: float = 0.01) -> Dict[int, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+              """
+              Generate adaptive hierarchical trajectory.
+
+              Args:
+                  y_0: Start positions for each level
+                  g: Goal positions for each level
+                  tau: Temporal scaling factor
+                  dt: Time step
+
+              Returns:
+                  Dictionary of trajectories for each level
+              """
+              # Integration time
+              t_span = np.arange(0, 1.0, dt / tau)
+              T = len(t_span)
+              
+              # Initial state for all levels
+              y0 = []
+              for level in range(self.n_levels):
+                  if level in y_0:
+                      y0.extend([y_0[level], np.zeros(self.n_dims), [1.0]])
+                  else:
+                      y0.extend([np.zeros(self.n_dims), np.zeros(self.n_dims), [1.0]])
+              
+              def adaptive_hierarchical_dmp_dynamics(state, t):
+                  # Extract states for all levels
+                  y_levels = {}
+                  dy_levels = {}
+                  x_levels = {}
+                  
+                  for level in range(self.n_levels):
+                      start_idx = level * (2 * self.n_dims + 1)
+                      y_levels[level] = state[start_idx:start_idx + self.n_dims]
+                      dy_levels[level] = state[start_idx + self.n_dims:start_idx + 2 * self.n_dims]
+                      x_levels[level] = state[start_idx + 2 * self.n_dims]
+                  
+                  # Compute dynamics for each level
+                  dydt = []
+                  for level in range(self.n_levels):
+                      y = y_levels[level]
+                      dy = dy_levels[level]
+                      x = x_levels[level]
+                      
+                      # Canonical system
+                      dx = -self.alpha_x * x
+                      
+                      # Forcing function
+                      f = np.zeros(self.n_dims)
+                      for d in range(self.n_dims):
+                          psi = np.exp(-self.h * (x - self.c)**2)
+                          f[d] = (np.sum(psi * self.w[level][d]) * x) / (np.sum(psi) + 1e-10)
+                      
+                      # Adaptive hierarchy coupling
+                      coupling = self.compute_adaptive_coupling(level, y_levels)
+                      
+                      # Transformation system with adaptive coupling
+                      if level in g:
+                          ddy = self.alpha_y * (self.beta_y * (g[level] - y) - dy) + f + coupling
+                      else:
+                          ddy = self.alpha_y * (self.beta_y * (0 - y) - dy) + f + coupling
+                      
+                      dydt.extend([dy, ddy, [dx]])
+                  
+                  return np.concatenate(dydt)
+              
+              # Integrate
+              sol = odeint(adaptive_hierarchical_dmp_dynamics, y0, t_span)
+              
+              # Extract trajectories for each level
+              trajectories = {}
+              for level in range(self.n_levels):
+                  start_idx = level * (2 * self.n_dims + 1)
+                  y_traj = sol[:, start_idx:start_idx + self.n_dims]
+                  dy_traj = sol[:, start_idx + self.n_dims:start_idx + 2 * self.n_dims]
+                  ddy_traj = np.gradient(dy_traj, dt, axis=0)
+                  trajectories[level] = (y_traj, dy_traj, ddy_traj)
+              
+              return trajectories
+
+    advantages:
+      - "Adaptive hierarchy structure"
+      - "Performance-based adaptation"
+      - "Context-aware behavior selection"
+      - "Continuous learning and improvement"
+    disadvantages:
+      - "Higher computational cost"
+      - "Complex adaptation mechanisms"
+      - "Requires performance metrics"
+
+# Complexity analysis
+complexity:
+  analysis:
+    - approach: "Basic Hierarchical DMP"
+      time: "O(T × K × L)"
+      space: "O(K × L)"
+      notes: "Time complexity scales with trajectory length, basis functions, and hierarchy levels"
+    
+    - approach: "Adaptive Hierarchical DMP"
+      time: "O(T × K × L + T × C)"
+      space: "O(K × L + C)"
+      notes: "Additional complexity for adaptation and context processing"
+    
+    - approach: "Hierarchy Coupling"
+      time: "O(L²)"
+      space: "O(L²)"
+      notes: "Coupling computation scales with number of hierarchy levels"
+
+# Applications and use cases
+applications:
+  - category: "Complex Assembly Tasks"
+    examples:
+      - "Multi-step Assembly: Assembling complex products with multiple steps"
+      - "Precision Assembly: Precise assembly tasks with hierarchical precision"
+      - "Quality Control: Quality control tasks with hierarchical inspection"
+      - "Packaging: Packaging tasks with hierarchical organization"
+
+  - category: "Household Tasks"
+    examples:
+      - "Cooking: Cooking tasks with hierarchical recipe execution"
+      - "Cleaning: Cleaning tasks with hierarchical room organization"
+      - "Laundry: Laundry tasks with hierarchical sorting and washing"
+      - "Gardening: Gardening tasks with hierarchical plant care"
+
+  - category: "Industrial Automation"
+    examples:
+      - "Manufacturing: Manufacturing tasks with hierarchical production"
+      - "Quality Control: Quality control tasks with hierarchical inspection"
+      - "Maintenance: Maintenance tasks with hierarchical service"
+      - "Logistics: Logistics tasks with hierarchical organization"
+
+  - category: "Service Robotics"
+    examples:
+      - "Healthcare: Healthcare tasks with hierarchical patient care"
+      - "Education: Education tasks with hierarchical learning"
+      - "Entertainment: Entertainment tasks with hierarchical performance"
+      - "Security: Security tasks with hierarchical monitoring"
+
+  - category: "Human-Robot Interaction"
+    examples:
+      - "Collaborative Tasks: Collaborative tasks with hierarchical coordination"
+      - "Assistive Tasks: Assistive tasks with hierarchical assistance"
+      - "Social Interaction: Social interaction tasks with hierarchical behavior"
+      - "Learning Tasks: Learning tasks with hierarchical skill acquisition"
+
+# Educational value and learning objectives
+educational_value:
+  - "Hierarchical Systems: Understanding hierarchical system design"
+  - "Task Decomposition: Understanding task decomposition techniques"
+  - "Behavior Composition: Understanding behavior composition methods"
+  - "Adaptive Systems: Understanding adaptive system mechanisms"
+
+# Implementation status and development info
+status:
+  current: "not_started"
+  implementation_quality: "none"
+  test_coverage: "none"
+  documentation_quality: "planned"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/dynamic_movement_primitives/hierarchical_dmps.py"
+      description: "Main implementation with basic and adaptive hierarchical DMPs"
+    - path: "tests/unit/dynamic_movement_primitives/test_hierarchical_dmps.py"
+      description: "Comprehensive test suite including hierarchy tests"
+
+# References and resources - structured format for template rendering
+references:
+  - category: "Core Papers"
+    items:
+      - author: "Gams, A., Nemec, B., Ijspeert, A. J., & Ude, A."
+        year: "2014"
+        title: "Coupling movement primitives: Interaction with the environment and bimanual tasks"
+        publisher: "IEEE Transactions on Robotics"
+        note: "Original work on coupled DMPs and hierarchical organization"
+      - author: "Kober, J., Peters, J., & Neumann, G."
+        year: "2013"
+        title: "Learning from demonstration with movement primitives"
+        publisher: "IEEE International Conference on Robotics and Automation"
+        note: "DMPs with hierarchical task decomposition"
+
+  - category: "Hierarchical Systems"
+    items:
+      - author: "Botvinick, M. M., Niv, Y., & Barto, A. C."
+        year: "2009"
+        title: "Hierarchically organized behavior and its neural foundations: A reinforcement learning perspective"
+        publisher: "Cognition"
+        note: "Hierarchical behavior organization in biological systems"
+      - author: "Dietterich, T. G."
+        year: "2000"
+        title: "Hierarchical reinforcement learning with the MAXQ value function decomposition"
+        publisher: "Journal of Artificial Intelligence Research"
+        note: "Hierarchical reinforcement learning"
+
+  - category: "Online Resources"
+    items:
+      - title: "Hierarchical Systems"
+        url: "https://en.wikipedia.org/wiki/Hierarchical_system"
+        note: "Wikipedia article on hierarchical systems"
+      - title: "Task Decomposition"
+        url: "https://en.wikipedia.org/wiki/Task_decomposition"
+        note: "Wikipedia article on task decomposition"
+      - title: "Behavior Composition"
+        url: "https://en.wikipedia.org/wiki/Behavior_composition"
+        note: "Wikipedia article on behavior composition"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "ROS Behavior Trees"
+        url: "https://github.com/BehaviorTree/BehaviorTree.CPP"
+        note: "Behavior tree library for hierarchical behavior"
+      - title: "ROS State Machine"
+        url: "https://github.com/ros/executive_smach"
+        note: "ROS state machine for hierarchical control"
+      - title: "ROS Task Planning"
+        url: "https://github.com/ros-planning/moveit"
+        note: "ROS task planning framework"
+
+# Tags for categorization and search
+tags:
+  - "dmps"
+  - "hierarchical-dmps"
+  - "task-decomposition"
+  - "behavior-composition"
+  - "hierarchical-systems"
+  - "complex-behaviors"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "basic-dmps"
+    relationship: "same_family"
+    description: "Basic DMPs that hierarchical DMPs extend with hierarchical organization"
+  - slug: "spatially-coupled-bimanual-dmps"
+    relationship: "same_family"
+    description: "Bimanual DMPs that can be organized hierarchically"
