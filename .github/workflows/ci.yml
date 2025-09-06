@@ -43,6 +43,11 @@ jobs:
           fi
           uv run pytest tests --cov=src/algokit --cov-report=xml
 
+      - name: Install docs dependencies
+        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
+        run: |
+          uv sync --group docs
+
       - name: Run quality gates
         if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
         run: |

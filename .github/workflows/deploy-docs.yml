@@ -35,8 +35,8 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv pip install --system -e ".[docs]"
-          mkdocs build
+          uv sync --group docs
+          uv run mkdocs build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
