@@ -4,6 +4,7 @@ site_url: https://github.com/jeffrichley/algokit
 repo_url: https://github.com/jeffrichley/algokit
 repo_name: jeffrichley/algokit
 edit_uri: edit/main/docs/
+docs_dir: docs
 
 theme:
   name: material

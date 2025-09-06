@@ -173,7 +173,7 @@ family: "{{ family.slug }}"
 
 {% for ref_category in algo.references %}
 
-<h3><span class="twemoji">{% if "textbook" in ref_category.category.lower() or "book" in ref_category.category.lower() %}<img src="/icons/book.svg" alt="book icon" width="16" height="16">{% elif "historical" in ref_category.category.lower() or "cultural" in ref_category.category.lower() %}<img src="/icons/history.svg" alt="history icon" width="16" height="16">{% elif "online" in ref_category.category.lower() or "resource" in ref_category.category.lower() %}<img src="/icons/web.svg" alt="web icon" width="16" height="16">{% elif "implementation" in ref_category.category.lower() or "practice" in ref_category.category.lower() %}<img src="/icons/code-tags.svg" alt="code icon" width="16" height="16">{% else %}<img src="/icons/library.svg" alt="library icon" width="16" height="16">{% endif %}</span> {{ ref_category.category }}</h3>
+<h3><span class="twemoji">{% if "textbook" in ref_category.category.lower() or "book" in ref_category.category.lower() %}:material-book:{% elif "historical" in ref_category.category.lower() or "cultural" in ref_category.category.lower() %}:material-history:{% elif "online" in ref_category.category.lower() or "resource" in ref_category.category.lower() %}:material-web:{% elif "implementation" in ref_category.category.lower() or "practice" in ref_category.category.lower() %}:material-code-tags:{% else %}:material-library:{% endif %}</span> {{ ref_category.category }}</h3>
 
 <div class="reference-category" style="margin-bottom: 32px; padding: 20px; border-radius: 12px; background: linear-gradient(135deg, var(--md-default-bg-color--lightest) 0%, var(--md-default-bg-color--light) 100%); border-left: 4px solid var(--md-primary-fg-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
 
@@ -183,7 +183,7 @@ family: "{{ family.slug }}"
 <div class="reference-item" style="display: flex; align-items: flex-start; margin-bottom: 16px; padding: 12px; border-radius: 8px; background: var(--md-default-bg-color); border: 1px solid var(--md-default-fg-color--lightest); transition: all 0.2s ease;">
 
 <div class="reference-icon" style="margin-right: 12px; margin-top: 2px; flex-shrink: 0;">
-<span class="twemoji">{% if item.publisher %}<img src="/icons/book.svg" alt="book icon" width="16" height="16">{% elif item.url %}<img src="/icons/link.svg" alt="link icon" width="16" height="16">{% else %}<img src="/icons/file-document.svg" alt="document icon" width="16" height="16">{% endif %}</span>
+<span class="twemoji">{% if item.publisher %}:material-book:{% elif item.url %}:material-link:{% else %}:material-file-document:{% endif %}</span>
 </div>
 
 <div class="reference-content" style="flex: 1;">
@@ -207,7 +207,7 @@ family: "{{ family.slug }}"
 {% set clean_isbn = isbn.replace('-', '').replace(' ', '') %}
 <div class="reference-links" style="margin-top: 8px;">
 <a href="https://www.amazon.com/dp/{{ clean_isbn }}/?tag=mathybits-20" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; padding: 4px 8px; background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%); color: white; text-decoration: none; border-radius: 4px; font-size: 0.8em; font-weight: 500; transition: all 0.2s ease;">
-<span class="twemoji"><img src="/icons/amazon.svg" alt="amazon icon" width="16" height="16"></span>
+<span class="twemoji">:material-amazon:</span>
 <span style="margin-left: 4px;">Buy on Amazon</span>
 </a>
 </div>
@@ -229,7 +229,7 @@ family: "{{ family.slug }}"
 !!! success "Interactive Learning"
     Try implementing the different approaches yourself! This progression will give you deep insight into the algorithm's principles and applications.
 
-    <span class="twemoji"><img src="/icons/lightbulb.svg" alt="lightbulb icon" width="16" height="16"></span> **Pro Tip**: Start with the simplest implementation and gradually work your way up to more complex variants.
+    <span class="twemoji">:material-lightbulb:</span> **Pro Tip**: Start with the simplest implementation and gradually work your way up to more complex variants.
 
 !!! success "Need More Help? Ask ChatGPT!"
     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;">
