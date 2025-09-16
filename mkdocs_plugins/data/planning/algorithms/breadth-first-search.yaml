@@ -7,6 +7,7 @@ name: Breadth-First Search
 family_id: planning
 aliases: ["BFS", "Level-order Search", "Uniform-cost Search"]
 order: 2
+hidden: false  # Keep this algorithm visible
 
 # Brief one-sentence summary for cards and navigation
 summary: "Graph traversal algorithm that explores all nodes at the current depth level before moving to the next level, guaranteeing shortest path in unweighted graphs."
@@ -241,8 +242,10 @@ status:
 
 # References and resources
 references:
-  - bib_key: "cormen2009"
-  - bib_key: "russell2003"
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "cormen2009"
+      - bib_key: "russell2003"
 
 # Related algorithms
 related_algorithms:

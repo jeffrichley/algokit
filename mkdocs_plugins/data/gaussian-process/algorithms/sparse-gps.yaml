@@ -5,6 +5,7 @@
 slug: sparse-gps
 name: Sparse Gaussian Processes
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Sparse GP", "Inducing Point GP", "Pseudo-input GP"]
 order: 5
 

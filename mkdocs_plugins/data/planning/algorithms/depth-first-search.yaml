@@ -5,6 +5,7 @@
 slug: depth-first-search
 name: Depth-First Search
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["DFS", "Backtracking", "Depth-First Traversal"]
 order: 3
 

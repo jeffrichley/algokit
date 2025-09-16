@@ -1,0 +1,24 @@
+name: "Medium Storm-Damaged Harbor"
+description: "A 10x10 harbor grid with significant storm damage and flooding"
+narrative: |
+  A severe storm has caused extensive damage to the harbor infrastructure.
+  Multiple debris piles, flooded areas, and damaged equipment block many
+  navigation channels. The rescue operation must find the most efficient
+  route from the Command Pier to the survivor's location while avoiding
+  dangerous obstacles.
+
+width: 10
+height: 10
+start: [0, 0]  # Command Pier
+goal: [9, 9]   # Survivor location
+obstacles:
+  - [1, 1]     # Major debris pile
+  - [1, 2]     # Flooded area
+  - [2, 1]     # Fallen crane
+  - [3, 3]     # Damaged dock
+  - [3, 4]     # Flooded area
+  - [4, 2]     # Debris field
+  - [5, 5]     # Central obstacle
+  - [6, 3]     # Flooded area
+  - [7, 7]     # Damaged equipment
+  - [8, 8]     # Final debris pile

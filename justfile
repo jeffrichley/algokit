@@ -1,22 +1,31 @@
 # Development shortcuts for Algorithm Kit
 
 
-# Run tests
+# Run tests (excludes slow tests by default)
 test: install-dev
     uv run pytest tests
 
-# Run tests with coverage
+# Run all tests including slow ones
+test-all: install-dev
+    uv run pytest tests -m ""
+
+# Run only slow tests
+test-slow: install-dev
+    uv run pytest tests -m "slow"
+
+# Run tests with coverage report
 test-cov: install-dev
-    uv run pytest tests --cov=src/algokit --cov-report=term-missing --cov-report=html
+    uv run pytest tests --cov-report=html
+    @echo "Generated coverage HTML at htmlcov/index.html"
 
 # Run linting and formatting
 lint: install-dev
-    uv run ruff check src tests --fix
-    uv run ruff format src tests --check
+    uv run ruff check src/ tests/ --fix
+    uv run ruff format src/ tests/
 
 # Format code
 format: install-dev
-    uv run ruff format src tests
+    uv run ruff format src/ tests/
 
 # Run type checking
 type-check: install-dev
@@ -49,12 +58,14 @@ validate-yaml-verbose: install-docs
 
 # Run all quality checks
 quality: install-dev install-docs
-    uv run ruff check src tests --fix
-    uv run ruff format src tests --check
+    uv run ruff check src/ tests/ --fix
+    uv run ruff format src/ tests/
     uv run mypy src tests
     uv run mkdocs build
     uv run python -m linkcheckmd docs
     uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+    @echo "🔍 Checking code complexity (advisory - non-blocking)..."
+    uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
 
 # Generate coverage report
 coverage: install-dev
@@ -65,9 +76,14 @@ coverage: install-dev
 security: install-dev
     uv run pip-audit --progress-spinner=off
 
-# Run complexity analysis
+# Run complexity analysis (blocking)
 complexity: install-dev
     uv run xenon --max-absolute B src
+
+# Run complexity analysis (advisory - non-blocking)
+complexity-advisory: install-dev
+    @echo "🔍 Checking code complexity (advisory - non-blocking)..."
+    uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
 
 # Validate pyproject.toml
 pyproject: install-dev

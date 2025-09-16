@@ -7,6 +7,7 @@ name: Adaptive Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Control strategy that automatically adjusts controller parameters based on real-time system identification and performance evaluation."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

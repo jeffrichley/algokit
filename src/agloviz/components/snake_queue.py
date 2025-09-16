@@ -36,6 +36,7 @@ class SnakeQueue(m.VGroup):
             tokens_tall: Number of rows of tokens
             token_size: Size of each token
             title: Title text for the queue panel
+            **kwargs: Additional arguments passed to VGroup
         """
         super().__init__(**kwargs)
         

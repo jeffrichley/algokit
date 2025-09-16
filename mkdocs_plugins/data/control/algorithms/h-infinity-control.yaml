@@ -7,6 +7,7 @@ name: H-Infinity Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Robust control design methodology that minimizes the worst-case performance of a system under bounded disturbances and uncertainties."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

@@ -1,0 +1,17 @@
+{
+  "learning_rate": 0.1,
+  "discount_factor": 0.9,
+  "epsilon": 0.1,
+  "epsilon_decay": 0.995,
+  "epsilon_min": 0.01,
+  "lambda_param": 0.9,
+  "mode": "tabular",
+  "episodes": 1000,
+  "max_steps_per_episode": 500,
+  "early_stopping_patience": 100,
+  "env_name": "CartPole-v1",
+  "render_mode": null,
+  "save_frequency": 100,
+  "plot_frequency": 50,
+  "verbose": true
+}

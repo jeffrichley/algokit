@@ -1,8 +1,9 @@
 from manim import *
-from agloviz.components.hud_panel import HUDPanel
-from agloviz.config.scenario import Scenario
+
 from agloviz.components.grid_overlay import GridOverlay
-from agloviz.components.tokens import StartToken, GoalToken
+from agloviz.components.hud_panel import HUDPanel
+from agloviz.components.tokens import GoalToken, StartToken
+from agloviz.config.scenario import Scenario
 from agloviz.core.grid_visualizer import GridVisualizer
 
 

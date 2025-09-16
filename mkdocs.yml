@@ -173,7 +173,6 @@ nav:
       - Policy Gradient: reinforcement-learning/policy-gradient.md
       - Proximal Policy Optimization (PPO): reinforcement-learning/ppo.md
       - Q-Learning: reinforcement-learning/q-learning.md
-      - SARSA: reinforcement-learning/sarsa.md
   - API Reference: api.md
   - Contributing: contributing.md
   - Security: SECURITY.md

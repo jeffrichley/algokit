@@ -5,6 +5,7 @@
 slug: partial-order-planning
 name: Partial Order Planning
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["POP", "Least Commitment Planning", "Flexible Planning"]
 order: 5
 

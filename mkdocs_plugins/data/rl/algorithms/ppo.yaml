@@ -7,6 +7,7 @@ name: Proximal Policy Optimization (PPO)
 family_id: rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "A state-of-the-art policy gradient algorithm that uses clipped objective to ensure stable policy updates with improved sample efficiency."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

@@ -1,6 +1,6 @@
-from manim import Text
-from pathlib import Path
 import shutil
+
+from manim import Text
 
 # You can tweak this to include other fallback fonts as needed
 DEFAULT_FONT_STACK = ["Fira Mono", "Courier New", "Monospace"]
@@ -9,8 +9,8 @@ def get_font_from_stack(stack=DEFAULT_FONT_STACK) -> str:
     for font in stack:
         if shutil.which("fc-match"):  # Unix systems with fontconfig
             # `fc-match` returns font file path if installed
-            from subprocess import run, PIPE
-            result = run(["fc-match", "-f", "%{family}", font], stdout=PIPE, text=True)
+            from subprocess import PIPE, run
+            result = run(["fc-match", "-f", "%{family}", font], check=False, stdout=PIPE, text=True)
             if result.stdout.strip().lower().startswith(font.lower()):
                 return font
         else:

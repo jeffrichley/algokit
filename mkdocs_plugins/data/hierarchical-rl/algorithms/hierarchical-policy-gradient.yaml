@@ -7,6 +7,7 @@ name: Hierarchical Policy Gradient
 family_id: hierarchical-rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Extends traditional policy gradient methods to handle temporal abstraction and hierarchical task decomposition with multi-level policies."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

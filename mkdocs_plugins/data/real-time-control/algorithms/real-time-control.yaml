@@ -5,6 +5,7 @@
 slug: real-time-control
 name: Real-Time Control
 family_id: real-time-control
+hidden: true  # Hidden by default
 aliases: ["RTC", "Time-Critical Control", "Deterministic Control"]
 order: 1
 

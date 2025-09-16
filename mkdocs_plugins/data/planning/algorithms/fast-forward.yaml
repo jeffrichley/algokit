@@ -5,6 +5,7 @@
 slug: fast-forward
 name: Fast Forward
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["FF", "FF Planner", "Heuristic Planning"]
 order: 6
 

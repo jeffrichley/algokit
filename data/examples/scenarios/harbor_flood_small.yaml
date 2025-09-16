@@ -1,0 +1,16 @@
+name: "Small Flooded Harbor"
+description: "A small 5x5 harbor grid with minimal flooding obstacles"
+narrative: |
+  After a minor storm, the coastal research city has some localized flooding.
+  Autonomous dinghy drones need to navigate from the Command Pier to locate
+  a survivor's SOS signal. The flooding has created some debris obstacles
+  but the main channels remain passable.
+
+width: 5
+height: 5
+start: [0, 0]  # Command Pier
+goal: [4, 4]   # SOS location
+obstacles:
+  - [1, 1]     # Debris pile
+  - [2, 2]     # Flooded area
+  - [3, 1]     # Fallen equipment

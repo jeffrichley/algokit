@@ -7,6 +7,7 @@ name: Hierarchical Q-Learning
 family_id: hierarchical-rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Extends traditional Q-Learning to handle temporal abstraction and hierarchical task decomposition with multi-level Q-functions."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

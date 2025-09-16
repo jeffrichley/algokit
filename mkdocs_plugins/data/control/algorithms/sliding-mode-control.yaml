@@ -7,6 +7,7 @@ name: Sliding Mode Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Robust control strategy that forces the system state to reach and remain on a predefined sliding surface, regardless of parameter uncertainties and external disturbances."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

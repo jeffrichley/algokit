@@ -5,6 +5,7 @@
 slug: m-star
 name: M*
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["M*", "Multi-Agent Pathfinding", "MAPF"]
 order: 7
 

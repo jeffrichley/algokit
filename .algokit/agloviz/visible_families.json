@@ -1,0 +1,9 @@
+[
+  [
+    "planning",
+    {
+      "name": "Planning Algorithms",
+      "summary": "Planning algorithms solve sequential decision problems by finding optimal sequences of actions to achieve goals from initial states."
+    }
+  ]
+]

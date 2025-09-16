@@ -7,6 +7,7 @@ name: Learning MPC
 family_id: mpc
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Model Predictive Control that learns system dynamics and improves performance through data-driven approaches, combining machine learning with predictive control."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

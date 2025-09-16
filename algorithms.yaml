@@ -540,7 +540,6 @@ algorithms:
       - "Trading systems"
       - "Autonomous vehicles"
     related_algorithms:
-      - "sarsa"
       - "dqn"
       - "actor-critic"
 

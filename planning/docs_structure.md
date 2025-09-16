@@ -291,7 +291,7 @@ docs/
 
 - [ ] **Create and organize algorithm files by family**
   - [ ] Dynamic Programming: `coin-change.md`, `fibonacci.md`, `longest-common-subsequence.md`, `matrix-chain-multiplication.md`, `edit-distance.md`, `knapsack.md`
-  - [ ] Reinforcement Learning: `q-learning.md`, `sarsa.md`, `dqn.md`, `actor-critic.md`, `policy-gradient.md`, `ppo.md`
+  - [ ] Reinforcement Learning: `q-learning.md`, `dqn.md`, `actor-critic.md`, `policy-gradient.md`, `ppo.md`
   - [ ] Hierarchical RL: `hierarchical-actor-critic.md`, `hierarchical-policy-gradient.md`, `hierarchical-q-learning.md`, `hierarchical-task-networks.md`, `feudal-networks.md`, `option-critic.md`
   - [ ] Control: `pid-control.md`, `adaptive-control.md`, `sliding-mode-control.md`, `h-infinity-control.md`, `robust-control.md`
   - [ ] Model Predictive Control: `model-predictive-control.md`, `linear-mpc.md`, `nonlinear-mpc.md`, `robust-mpc.md`, `economic-mpc.md`, `distributed-mpc.md`, `learning-mpc.md`

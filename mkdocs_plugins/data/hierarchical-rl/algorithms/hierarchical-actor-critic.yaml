@@ -7,6 +7,7 @@ name: Hierarchical Actor-Critic (HAC)
 family_id: hierarchical-rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "An advanced hierarchical reinforcement learning algorithm that extends the actor-critic framework with temporal abstraction and hierarchical structure."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

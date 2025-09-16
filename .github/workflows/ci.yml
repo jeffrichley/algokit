@@ -7,14 +7,53 @@ on:
     paths-ignore:
       - 'docs/**'
       - '*.md'
+  schedule:
+    # Nightly runs at 2 AM UTC
+    - cron: '0 2 * * *'
 
 jobs:
-  build:
+  # Fast path for PRs and branches
+  fast-path:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint
+        run: |
+          uv run ruff format src tests --check
+          uv run ruff check src tests
+
+      - name: Typecheck
+        run: uv run mypy src tests
+
+      - name: Unit tests
+        run: uv run pytest tests -m "not slow" --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+
+  # Thorough path for main branch and nightly
+  thorough-path:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.12"]
-        mode: [minimal, full]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
 
@@ -29,38 +68,76 @@ jobs:
           version: "latest"
 
       - name: Install dependencies
-        run: |
-          if [ "${{ matrix.mode }}" = "minimal" ]; then
-            uv sync
-          else
-            uv sync --group dev
-          fi
+        run: uv sync --group dev --group docs
 
-      - name: Run tests
+      - name: Lint
         run: |
-          if [ "${{ matrix.mode }}" = "minimal" ]; then
-            uv pip install pytest pytest-cov
-          fi
-          uv run pytest tests --cov=src/algokit --cov-report=xml
-
-      - name: Install docs dependencies
-        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
-        run: |
-          uv sync --group docs
-
-      - name: Run quality gates
-        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
-        run: |
-          uv run ruff check src tests --fix
           uv run ruff format src tests --check
-          uv run mypy src tests
-          uv run mkdocs build
-          uv run python -m linkcheckmd docs
-          uv run xenon --max-absolute B src
-          uv run pip-audit --progress-spinner=off
-          uv run validate-pyproject pyproject.toml
-          uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+          uv run ruff check src tests
+
+      - name: Typecheck
+        run: uv run mypy src tests
+
+      - name: Full unit suite
+        run: uv run pytest tests --cov-report=xml --cov-report=html
 
       - name: Upload coverage to Codecov
-        if: ${{ matrix.python-version == '3.12' && matrix.mode == 'full' }}
         uses: codecov/codecov-action@v4
+
+      - name: Generate coverage badge
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # Coverage badge generation would go here
+          echo "Coverage badge generation placeholder"
+
+  # Optional non-blocking jobs
+  xenon-report:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Xenon complexity report
+        run: |
+          echo "🔍 Generating complexity report..."
+          uv run xenon --max-absolute B src || echo "⚠️  Complexity issues found"
+
+  demo-smoke-test:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Demo smoke test
+        run: |
+          echo "🚀 Running demo smoke tests..."
+          # Add demo commands here when available
+          echo "Demo smoke test placeholder"

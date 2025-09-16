@@ -35,7 +35,6 @@ Reinforcement Learning (RL) is a machine learning paradigm where an agent learns
 | Algorithm | Complexity | Strengths | Weaknesses | Applications |
 |-----------|------------|-----------|------------|--------------|
 | **Q-Learning** | O(|S|×|A|) time, O(|S|×|A|) space | Model-free, guaranteed convergence, simple | Slow convergence, tabular representation | Discrete environments, simple problems |
-| **SARSA** | O(|S|×|A|) time, O(|S|×|A|) space | On-policy, safer exploration, stable | Slower convergence than Q-learning | Online learning, safety-critical applications |
 | **DQN** | O(batch_size × network_params) | Handles high-dimensional states, deep representation | Requires experience replay, hyperparameter sensitive | Image-based games, complex environments |
 | **Actor-Critic** | O(|S|×|A|) time, O(|S|×|A|) space | Continuous action spaces, stable updates | Two networks to train, potential instability | Continuous control, robotics |
 | **Policy Gradient** | O(|S|×|A|) time, O(|S|×|A|) space | Direct policy optimization, natural policy updates | High variance, slow convergence | Policy search, continuous actions |
@@ -44,7 +43,6 @@ Reinforcement Learning (RL) is a machine learning paradigm where an agent learns
 ## Algorithms in This Family
 
 - [**Q-Learning**](../algorithms/reinforcement-learning/q-learning.md) - Model-free value-based learning with temporal difference updates
-- [**SARSA**](../algorithms/reinforcement-learning/sarsa.md) - On-policy temporal difference learning for safer exploration
 - [**Deep Q-Network (DQN)**](../algorithms/reinforcement-learning/dqn.md) - Deep learning extension with experience replay and target networks
 - [**Actor-Critic**](../algorithms/reinforcement-learning/actor-critic.md) - Hybrid approach combining policy gradient and value function methods
 - [**Policy Gradient**](../algorithms/reinforcement-learning/policy-gradient.md) - Direct policy optimization with variance reduction techniques

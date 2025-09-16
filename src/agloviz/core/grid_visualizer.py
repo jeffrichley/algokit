@@ -2,6 +2,7 @@ from manim import *
 
 from agloviz.components.grid_overlay import GridOverlay
 
+
 class GridVisualizer:
     def __init__(self, grid_overlay: GridOverlay):
         self.grid_overlay = grid_overlay

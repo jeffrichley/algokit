@@ -107,7 +107,7 @@ Get up and running with Algorithm Kit in minutes:
 - **Package Manager**: uv for fast dependency management
 - **Testing**: pytest with comprehensive coverage reporting
 - **Linting**: ruff for fast Python linting
-- **Formatting**: black for consistent code formatting
+- **Formatting**: ruff for consistent code formatting
 - **Type Checking**: mypy for static type analysis
 - **Documentation**: MkDocs with Material theme
 - **CI/CD**: GitHub Actions with quality gates

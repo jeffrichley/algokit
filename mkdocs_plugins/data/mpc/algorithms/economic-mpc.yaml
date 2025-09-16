@@ -7,6 +7,7 @@ name: Economic MPC
 family_id: mpc
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Model Predictive Control that optimizes economic objectives rather than tracking performance, focusing on profit maximization and cost minimization in process industries."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

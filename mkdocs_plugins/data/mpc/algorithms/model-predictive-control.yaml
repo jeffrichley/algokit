@@ -7,6 +7,7 @@ name: Model Predictive Control
 family_id: mpc
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Advanced control strategy that uses system models to predict future behavior and optimize control actions over a finite horizon while handling constraints."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

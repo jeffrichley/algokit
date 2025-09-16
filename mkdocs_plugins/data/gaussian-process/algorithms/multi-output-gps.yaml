@@ -5,6 +5,7 @@
 slug: multi-output-gps
 name: Multi-Output Gaussian Processes
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Multi-output GP", "Multi-task GP", "Convolved GP"]
 order: 6
 

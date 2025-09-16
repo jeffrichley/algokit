@@ -1,10 +1,22 @@
-from manim import VGroup, Square, WHITE, UP, Text, AnimationGroup, Indicate, Mobject, BLUE_E, BLUE_C, PI, Arc
 import numpy as np
+from manim import (
+    BLUE_C,
+    BLUE_E,
+    PI,
+    UP,
+    WHITE,
+    AnimationGroup,
+    Arc,
+    Indicate,
+    Mobject,
+    Square,
+    Text,
+    VGroup,
+)
 
 
 class GridOverlay(VGroup):
-    """
-    A utility class for overlaying a Manim grid on a scene.
+    """A utility class for overlaying a Manim grid on a scene.
     """
 
     def __init__(self, grid_width, grid_height, cell_size, grid_color, scenario, **kwargs):
@@ -154,8 +166,7 @@ class GridOverlay(VGroup):
         return y * self.grid_width + x
 
     def add_to_cell(self, mobj: Mobject, grid_pos: tuple[int, int]) -> None:
-        """
-        Add a Manim object to a specific grid cell, centered within it (like original).
+        """Add a Manim object to a specific grid cell, centered within it (like original).
         
         Args:
             mobj: The Mobject to place.
@@ -168,8 +179,7 @@ class GridOverlay(VGroup):
         self.add(mobj)
 
     def add_water_cell(self, x: int, y: int) -> tuple[Mobject, Mobject]:
-        """
-        Add water to a cell with wave effects (like original BFS scene).
+        """Add water to a cell with wave effects (like original BFS scene).
         
         Args:
             x: Grid x coordinate

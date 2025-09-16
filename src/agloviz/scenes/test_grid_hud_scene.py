@@ -1,4 +1,5 @@
 from manim import *
+
 from agloviz.components.grid_overlay import GridOverlay
 from agloviz.components.hud_panel import HUDPanel
 from agloviz.config.scenario import Scenario

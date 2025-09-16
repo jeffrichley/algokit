@@ -1,8 +1,8 @@
 """Unit tests for SnakeGrid component."""
 
-import pytest
 import manim as m  # type: ignore[import-untyped]
 import numpy as np
+import pytest
 
 from agloviz.components.snake_grid import SnakeGrid
 

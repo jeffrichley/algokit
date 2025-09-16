@@ -7,6 +7,7 @@ name: Linear MPC
 family_id: mpc
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Model Predictive Control for linear time-invariant systems formulated as a Quadratic Programming problem with efficient real-time solution."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

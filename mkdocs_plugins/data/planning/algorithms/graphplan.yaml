@@ -5,6 +5,7 @@
 slug: graphplan
 name: GraphPlan
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["Graph-based Planning", "Planning Graph", "STRIPS Planning"]
 order: 4
 

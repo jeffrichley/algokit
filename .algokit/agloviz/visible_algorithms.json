@@ -1,0 +1,14 @@
+[
+  [
+    "planning",
+    "breadth-first-search",
+    {
+      "name": "Planning Algorithms",
+      "summary": "Planning algorithms solve sequential decision problems by finding optimal sequences of actions to achieve goals from initial states."
+    },
+    {
+      "name": "Breadth-First Search",
+      "summary": "Graph traversal algorithm that explores all nodes at the current depth level before moving to the next level, guaranteeing shortest path in unweighted graphs."
+    }
+  ]
+]

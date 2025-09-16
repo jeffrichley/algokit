@@ -7,6 +7,7 @@ name: 0/1 Knapsack Problem
 family_id: dp
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Optimize value within weight constraints using dynamic programming for resource allocation."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

@@ -5,6 +5,7 @@
 slug: gp-classification
 name: GP Classification
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Gaussian Process Classification", "GPC"]
 order: 2
 

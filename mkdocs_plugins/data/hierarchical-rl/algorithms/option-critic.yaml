@@ -7,6 +7,7 @@ name: Option-Critic
 family_id: hierarchical-rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "A hierarchical reinforcement learning algorithm that learns options (temporally extended actions) end-to-end using policy gradient methods."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial project setup
 - Basic project structure with src layout
-- Development tooling (pytest, black, ruff, mypy, etc.)
+- Development tooling (pytest, ruff, mypy, etc.)
 - Documentation setup with MkDocs
 - CI/CD workflows
 - Pre-commit hooks including commitizen

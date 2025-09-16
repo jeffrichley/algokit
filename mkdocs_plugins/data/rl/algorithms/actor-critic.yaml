@@ -5,6 +5,7 @@
 slug: actor-critic
 name: Actor-Critic
 family_id: rl
+hidden: true  # Set to true to completely hide this algorithm from documentation
 
 # Brief one-sentence summary for cards and navigation
 summary: "A hybrid reinforcement learning algorithm that combines policy gradient methods with value function approximation for improved learning efficiency."

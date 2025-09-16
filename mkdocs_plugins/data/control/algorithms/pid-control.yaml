@@ -7,6 +7,7 @@ name: PID Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Fundamental feedback control algorithm combining proportional, integral, and derivative actions to achieve desired system behavior."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

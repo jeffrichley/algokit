@@ -5,6 +5,7 @@
 slug: a-star-search
 name: A* Search
 family_id: planning
+hidden: true  # Hidden by default
 aliases: ["A*", "A-star", "Heuristic Search"]
 order: 1
 

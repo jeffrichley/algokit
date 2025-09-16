@@ -7,6 +7,7 @@ name: Distributed MPC
 family_id: mpc
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Model Predictive Control for large-scale systems using distributed optimization and coordination between multiple local controllers to achieve global objectives."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

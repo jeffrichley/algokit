@@ -5,6 +5,7 @@
 slug: deep-gps
 name: Deep Gaussian Processes
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Deep GP", "Hierarchical GP", "Multi-layer GP"]
 order: 4
 

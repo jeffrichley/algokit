@@ -1,10 +1,21 @@
-from manim import Scene, VGroup, RoundedRectangle, Text, Integer, RIGHT, DOWN, LEFT, WHITE, BLACK
+from manim import (
+    BLACK,
+    DOWN,
+    LEFT,
+    RIGHT,
+    WHITE,
+    Integer,
+    RoundedRectangle,
+    Scene,
+    Text,
+    VGroup,
+)
 
 from agloviz.core.fonts import get_font
 
+
 class HUDPanel(VGroup):
-    """
-    Self-contained HUD panel with text labels and values.
+    """Self-contained HUD panel with text labels and values.
     Automatically sizes background.
     """
 

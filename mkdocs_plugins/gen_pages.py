@@ -207,6 +207,12 @@ class DataDiscovery:
 
         algo_config = family_data["algorithms"]
 
+        # First, filter out hidden algorithms
+        algorithms = [
+            algo for algo in algorithms 
+            if not algo.get("hidden", False)
+        ]
+
         # Apply include filter
         if "include" in algo_config and algo_config["include"]:
             include_slugs = set(algo_config["include"])

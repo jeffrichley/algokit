@@ -5,6 +5,7 @@
 slug: gp-optimization
 name: GP Optimization
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Bayesian Optimization", "GP-based Optimization", "Acquisition Function Optimization"]
 order: 3
 

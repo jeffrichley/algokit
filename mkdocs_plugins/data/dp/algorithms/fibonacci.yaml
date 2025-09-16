@@ -7,6 +7,7 @@ name: Fibonacci Sequence
 family_id: dp
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "Classic sequence where each number is the sum of the two preceding ones, demonstrating recursion, memoization, and dynamic programming."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

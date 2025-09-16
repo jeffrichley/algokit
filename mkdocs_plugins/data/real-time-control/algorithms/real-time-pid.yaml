@@ -5,6 +5,7 @@
 slug: real-time-pid
 name: Real-Time PID
 family_id: real-time-control
+hidden: true  # Hidden by default
 aliases: ["Real-Time PID Control", "RT-PID", "Fast PID"]
 order: 3
 

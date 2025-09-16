@@ -7,6 +7,7 @@ name: Reinforcement Learning DMPs
 family_id: dmps
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "DMPs enhanced with reinforcement learning for parameter optimization, reward-driven learning, and policy gradient methods for movement refinement."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

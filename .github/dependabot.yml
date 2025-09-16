@@ -30,7 +30,6 @@ updates:
         patterns:
           - "ruff*"
           - "mypy*"
-          - "black*"
           - "isort*"
           - "opencv*"
           - "pillow*"

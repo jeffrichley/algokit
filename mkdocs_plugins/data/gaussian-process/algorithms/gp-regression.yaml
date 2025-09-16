@@ -5,6 +5,7 @@
 slug: gp-regression
 name: GP Regression
 family_id: gaussian-process
+hidden: true  # Hidden by default
 aliases: ["Gaussian Process Regression", "GPR", "Kriging"]
 order: 1
 

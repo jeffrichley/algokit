@@ -156,9 +156,13 @@ def apply_algorithm_management(algorithms: list, family: dict) -> list:
     include_list = algo_settings.get("include", [])
     exclude_list = algo_settings.get("exclude", [])
 
-    # Filter algorithms based on include/exclude lists
+    # Filter algorithms based on include/exclude lists and hidden flag
     filtered_algorithms = []
     for algo in algorithms:
+        # First, filter out hidden algorithms
+        if algo.get("hidden", False):
+            continue
+            
         algo_slug = algo.get("slug", algo.get("name", "").lower().replace(" ", "-"))
 
         # Check include list (if not empty, only include specified algorithms)

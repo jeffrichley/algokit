@@ -7,6 +7,7 @@ name: Hierarchical Task Networks (HTNs)
 family_id: hierarchical-rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "A hierarchical reinforcement learning approach that decomposes complex tasks into hierarchical structures of subtasks for planning and execution."
 
 # Detailed description (markdown supported) - full overview for the algorithm page

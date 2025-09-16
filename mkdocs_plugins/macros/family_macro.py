@@ -39,7 +39,10 @@ def load_algorithm_data(family_id: str) -> list:
                 # Add slug from filename if not present
                 if "slug" not in algo_data:
                     algo_data["slug"] = algo_file.stem
-                algorithms.append(algo_data)
+                
+                # Filter out hidden algorithms
+                if not algo_data.get("hidden", False):
+                    algorithms.append(algo_data)
 
     return algorithms
 

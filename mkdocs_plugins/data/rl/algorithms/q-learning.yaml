@@ -7,6 +7,7 @@ name: Q-Learning
 family_id: rl
 
 # Brief one-sentence summary for cards and navigation
+hidden: true  # Hidden by default
 summary: "A model-free reinforcement learning algorithm that learns optimal action-value functions through temporal difference learning."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
@@ -335,9 +336,6 @@ tags:
 
 # Related algorithms and cross-references
 related_algorithms:
-  - slug: "sarsa"
-    relationship: "same_family"
-    description: "On-policy alternative to Q-Learning with similar update rule"
   - slug: "policy-gradient"
     relationship: "same_family"
     description: "Policy-based alternative to value-based Q-Learning"

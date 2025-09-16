@@ -5,6 +5,7 @@
 slug: real-time-adaptive-control
 name: Real-Time Adaptive Control
 family_id: real-time-control
+hidden: true  # Hidden by default
 aliases: ["RT-Adaptive Control", "Real-Time Self-Tuning", "Adaptive RT Control"]
 order: 4
 

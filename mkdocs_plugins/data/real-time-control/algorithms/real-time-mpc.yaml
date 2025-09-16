@@ -5,6 +5,7 @@
 slug: real-time-mpc
 name: Real-Time MPC
 family_id: real-time-control
+hidden: true  # Hidden by default
 aliases: ["Real-Time Model Predictive Control", "RT-MPC", "Fast MPC"]
 order: 2
 

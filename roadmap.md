@@ -42,7 +42,7 @@ algokit/
 ├── notebooks/                      # Teaching/demo notebooks
 ├── assets/                         # GIFs, images, visualizations
 ├── README.md
-├── pyproject.toml                  # With uv, ruff, black, pytest
+├── pyproject.toml                  # With uv, ruff, pytest
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                  # GitHub Actions (test, lint, mypy)
@@ -59,7 +59,7 @@ algokit/
 * [x] Scaffold project directory structure
 * [x] Add `pyproject.toml` with `uv`, `pytest`, `ruff`, `mypy`
 * [x] Add CI via GitHub Actions
-* [x] Configure pre-commit: `black`, `ruff`, `mypy`, `trailing-whitespace`
+* [x] Configure pre-commit: `ruff`, `mypy`, `trailing-whitespace`
 
 #### **🔹 Phase 2: Implementation Modules**
 
