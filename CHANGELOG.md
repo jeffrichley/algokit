@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.10.1 (2025-09-06)
+
+### Fix
+
+- replace custom SVG icons with Material Design icons
+
 ## v0.10.0 (2025-09-06)
 
 ### Feat
