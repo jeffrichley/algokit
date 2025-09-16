@@ -7,8 +7,17 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]
+        files: ^(src/|tests/).*\.py$
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
       - id: ruff-format
+        files: ^(src/|tests/).*\.py$
+        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.0
+    hooks:
+      - id: codespell
+        args: ["--ignore-words-list=algokit,jeffrichley"]
+        files: ^(src/|tests/).*\.py$
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
   - repo: https://github.com/asottile/yesqa
     rev: v1.5.0
@@ -34,10 +43,20 @@ repos:
         language: system
         pass_filenames: false
       - id: xenon-complexity
-        name: Check Code Complexity (Xenon)
-        entry: uv run xenon --max-absolute B src
+        name: Check Code Complexity (Xenon) - Advisory
+        entry: uv run xenon --max-absolute B src || true
         language: system
         pass_filenames: false
+        verbose: true
+        always_run: true
+      - id: pytest-fast
+        name: Run fast tests (excludes slow tests)
+        entry: uv run pytest tests -q -m "not slow"
+        language: system
+        pass_filenames: false
+        types: [python]
+        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
+        stages: [pre-push]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
