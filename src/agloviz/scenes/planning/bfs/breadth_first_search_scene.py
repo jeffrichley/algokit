@@ -188,6 +188,9 @@ class BreadthFirstSearchScene(HarborGridScene):
         # 8. Queue
         self._show_queue()
         
+        # 9. Start BFS
+        self.start_bfs()
+        
         # Scene 3: BFS wavefront exploration
         # self._run_bfs_algorithm()
         
@@ -376,10 +379,27 @@ class BreadthFirstSearchScene(HarborGridScene):
             m.FadeIn(self.snaking_queue, shift=m.RIGHT * 0.5),
             run_time=1.0
         )
-        
+    
+    def start_bfs(self) -> None:
+        """9. Start BFS algorithm by enqueuing the start token."""
         # Enqueue the start token
-        self._enqueue_start_token()
+        self.enqueue_token(self.start_token)
         
+        # Update HUD to show queue has 1 item
+        self._update_hud(visited=0, frontier=1, depth=0, queue=1)
+        
+    def enqueue_token(self, source_token: m.Mobject) -> None:
+        """Enqueue any token into the snaking queue by copying it.
+        
+        Args:
+            source_token: The token to copy and enqueue
+        """
+        # Create a copy of the source token at its current position
+        token_copy = source_token.copy()
+        
+        # Enqueue the copy - SnakeQueue will handle sizing
+        self.snaking_queue.enqueue(token=token_copy, scene=self)
+    
     def _establish_scene(self) -> None:
         """Scene 0: Title + Grid establishment (from bls_video.md)."""
         # 1. Title + grid on
@@ -502,8 +522,6 @@ class BreadthFirstSearchScene(HarborGridScene):
         # 7. HUD counters
         self._build_hud()
         
-        # Enqueue the start token
-        self._enqueue_start_token()
         
     def _build_queue_panel(self) -> None:
         """Build queue visualization panel on the right side."""
@@ -574,34 +592,6 @@ class BreadthFirstSearchScene(HarborGridScene):
             run_time=0.8
         )
         
-    def _enqueue_start_token(self) -> None:
-        """Enqueue the start token into the snaking queue with morphing animation."""
-        # Create token at start position (as a circle initially)
-        start_token = m.Dot(
-            radius=self.cell_size * 0.3,
-            color=m.GREEN_C
-        ).move_to(self.start_token.get_center())
-        
-        # Create the target token for the queue
-        target_token = m.Square(
-            side_length=0.25,
-            fill_color=m.GREEN_C,
-            fill_opacity=0.9,
-            stroke_color=m.WHITE,
-            stroke_width=2
-        )
-        
-        # Enqueue the target token
-        self.snaking_queue.enqueue(token=target_token, scene=self)
-        
-        # Animate morphing and movement
-        self.play(
-            m.Transform(start_token, target_token),
-            run_time=0.8
-        )
-        
-        # Update HUD to show queue has 1 item
-        self._update_hud(visited=0, frontier=1, depth=0, queue=1)
         
     def _update_hud(self, visited: int, frontier: int, depth: int, queue: int) -> None:
         """Update HUD display with new values using HUDPanel."""
@@ -615,65 +605,8 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Use the HUDPanel's built-in update method
         self.hud_panel.update_values(new_values, scene=self, run_time=0.2)
         
-    def _run_bfs_algorithm(self) -> None:
-        """Scene 3: Run the BFS algorithm with visualization."""
-        # Create graph from scenario
-        graph = self.scenario.to_graph()
         
-        # Run BFS with event collection
-        try:
-            path, events = bfs_with_data_collection(graph, self.start_pos, self.goal_pos)
-            self.bfs_events = events
-            self.final_path = path or []
-        except ImportError:
-            # Fallback: create mock events for standalone mode
-            self.bfs_events = self._create_mock_events()
-            self.final_path = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (7, 5)]
-        
-        # Process events for visualization
-        self.visualization_data = process_events_for_visualization(self.bfs_events)
-        
-        # Animate the BFS execution
-        self._animate_bfs_execution()
-        
-    def _create_mock_events(self) -> list[SearchEvent]:
-        """Create mock events for standalone mode."""
-        events = []
-        step = 0
-        
-        # Mock BFS execution
-        queue = [self.start_pos]
-        visited = set()
-        parents = {}
-        
-        while queue:
-            current = queue.pop(0)
-            events.append(SearchEvent(EventType.DEQUEUE, current, step=step))
-            step += 1
-            
-            if current not in visited:
-                visited.add(current)
-                events.append(SearchEvent(EventType.DISCOVER, current, step=step))
-                step += 1
-                
-                if current == self.goal_pos:
-                    events.append(SearchEvent(EventType.GOAL_FOUND, current, step=step))
-                    step += 1
-                    break
-                
-                # Add neighbors
-                for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                    nx, ny = current[0] + dx, current[1] + dy
-                    neighbor = (nx, ny)
-                    
-                    if (0 <= nx < self.grid_width and 0 <= ny < self.grid_height and 
-                        neighbor not in visited and neighbor not in self.obstacles):
-                        queue.append(neighbor)
-                        parents[neighbor] = current
-                        events.append(SearchEvent(EventType.ENQUEUE, neighbor, current, step=step))
-                        step += 1
-        
-        return events
+    
         
     def _animate_bfs_execution(self) -> None:
         """Animate the BFS algorithm execution step by step."""
@@ -774,112 +707,5 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Flash the goal
         self.play(m.Flash(self.goal_star.get_center(), color=m.GOLD), run_time=0.5)
         
-    def _celebrate_goal(self) -> None:
-        """Scene 4: Goal celebration."""
-        if not self.goal_found:
-            return
-            
-        # Freeze motion briefly
-        self.wait(0.3)
         
-        # Confetti effect
-        confetti = []
-        for _ in range(20):
-            confetti.append(m.Dot(
-                radius=0.05,
-                color=m.np.random.choice([m.RED, m.GREEN, m.BLUE, m.YELLOW, m.PINK, m.TEAL])
-            ).move_to(self.goal_star.get_center()))
         
-        confetti_group = m.VGroup(*confetti)
-        
-        # Animate confetti
-        animations = []
-        for dot in confetti:
-            animations.append(dot.animate.scale(0.6).shift(
-                m.np.random.uniform(-2, 2) * m.RIGHT + 
-                m.np.random.uniform(-1, 1) * m.UP
-            ))
-        
-        self.play(m.LaggedStart(*animations, lag_ratio=0.1), run_time=1.0)
-        
-        # Goal reached text
-        goal_text = m.Text(
-            f"Goal reached at depth {len(self.final_path) - 1 if self.final_path else 0}",
-            font_size=24,
-            color=m.GOLD
-        ).move_to(m.ORIGIN)
-        
-        self.play(m.GrowFromCenter(goal_text), run_time=0.8)
-        self.wait(1.0)
-        self.play(m.FadeOut(goal_text), run_time=0.5)
-        
-        # Dim non-path elements
-        grid_group = self.grid_visualizer.get_grid_group()
-        self.play(grid_group.animate.set_opacity(0.3), run_time=0.5)
-        
-    def _reconstruct_path(self) -> None:
-        """Scene 5: Path reconstruction."""
-        if not self.final_path:
-            return
-            
-        # Create path polyline using GridVisualizer
-        path_points = []
-        for node in self.final_path:
-            cell_center = self.grid_visualizer.get_cell_center(node)
-            path_points.append(cell_center)
-        
-        path_line = m.VMobject()
-        path_line.set_points_as_corners(path_points)
-        path_line.set_stroke(m.PINK, width=8)
-        
-        # Animate path creation
-        self.play(m.Create(path_line), run_time=2.0)
-        
-        # Animate tracer moving along path
-        tracer = m.Dot(radius=0.1, color=m.WHITE).move_to(path_line.get_start())
-        self.add(tracer)
-        self.play(m.MoveAlongPath(tracer, path_line), run_time=2.0)
-        
-        # Brighten path cells using GridVisualizer
-        for node in self.final_path:
-            self.grid_visualizer.set_cell_stroke(node, m.PINK, width=6)
-            self.grid_visualizer.set_cell_opacity(node, 1.0)
-        
-        # Path caption
-        path_caption = m.Text(
-            "Shortest path (unweighted BFS)",
-            font_size=18,
-            color=m.WHITE
-        ).to_edge(m.DOWN, buff=0.5)
-        
-        self.play(m.Write(path_caption), run_time=0.8)
-        
-    def _show_complexity(self) -> None:
-        """Scene 6: Show complexity analysis."""
-        # Complexity card
-        complexity_card = m.RoundedRectangle(
-            width=3.0,
-            height=2.0,
-            corner_radius=0.2,
-            stroke_color=m.WHITE,
-            stroke_width=2,
-            fill_color=m.BLACK,
-            fill_opacity=0.8
-        ).to_edge(m.LEFT, buff=0.5).shift(m.UP * 1.0)
-        
-        # Complexity text
-        complexity_text = m.VGroup(
-            m.Text("Time: O(V + E)", font_size=16, color=m.WHITE),
-            m.Text("Space: O(V)", font_size=16, color=m.WHITE),
-            m.Text("(grid ~ O(W·H))", font_size=12, color=m.GRAY)
-        ).arrange(m.DOWN, buff=0.2).move_to(complexity_card.get_center())
-        
-        # Animate complexity card
-        self.play(
-            m.FadeIn(complexity_card, shift=m.LEFT * 0.3),
-            m.Write(complexity_text),
-            run_time=1.0
-        )
-        
-        # Show connections to visual elements
-        self.wait(1.0)

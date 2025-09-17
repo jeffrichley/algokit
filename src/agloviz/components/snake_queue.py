@@ -60,7 +60,7 @@ class SnakeQueue(m.VGroup):
         self.max_capacity = self.tokens_wide * self.tokens_tall
         
         # Token storage
-        self.tokens: list[m.Square] = []
+        self.tokens: list[m.Mobject] = []
         self.token_positions: list[tuple[float, float]] = []
         self.original_positions: list[tuple[float, float]] = []
         
@@ -152,12 +152,12 @@ class SnakeQueue(m.VGroup):
         This method is called by the updater whenever the panel moves, rotates, or scales.
         It recalculates positions based on the current panel state and moves existing tokens.
         """
+        # Recalculate positions based on current panel state
+        self._calculate_positions()
+        
         # Only update if we have tokens
         if not self.tokens:
             return
-            
-        # Recalculate positions based on current panel state
-        self._calculate_positions()
         
         # Move existing tokens to their new positions
         for i, token in enumerate(self.tokens):
@@ -165,13 +165,13 @@ class SnakeQueue(m.VGroup):
                 new_pos = self.token_positions[i]
                 token.move_to([new_pos[0], new_pos[1], 0])
     
-    def enqueue(self, token: m.Square = None, color: str = m.BLUE_C, scene: m.Scene = None) -> m.Square:
+    def enqueue(self, token: m.Mobject = None, color: str = m.BLUE_C, scene: m.Scene = None) -> m.Mobject:
         """Add a token to the queue.
         
         Args:
-            token: Existing token to add (if None, creates a new one)
-            color: Color of the token (only used if token is None)
-            scene: Scene to animate in (optional)
+            token: Existing Mobject token to add (required)
+            color: Color of the token (unused, kept for compatibility)
+            scene: Scene to animate in (required)
             
         Returns:
             The token that was added to the queue
@@ -186,9 +186,17 @@ class SnakeQueue(m.VGroup):
         if token is None:
             raise ValueError("Token is required")
         
-        # Store original position before moving
+        # Store original position and scale before moving
         original_pos = (token.get_center()[0], token.get_center()[1])
         self.original_positions.append(original_pos)
+        
+        # Scale token to fit in queue (token_size is the target size)
+        # Calculate scale factor based on token's current size and target size
+        scale_factor = 1.0
+        current_size = max(token.width, token.height)
+        if current_size > 0:
+            scale_factor = self.token_size / current_size
+            # token.scale(scale_factor)
         
         # Add to storage and group
         self.tokens.append(token)
@@ -202,10 +210,9 @@ class SnakeQueue(m.VGroup):
             # Get the target position for this token
             target_pos = self.token_positions[len(self.tokens) - 1]
             
-            
             # Animate from current position to correct grid position
             scene.play(
-                token.animate.move_to([target_pos[0], target_pos[1], 0]).set_ease(m.rate_functions.ease_in_out_cubic),
+                token.animate.move_to([target_pos[0], target_pos[1], 0]).scale(scale_factor).set_ease(m.rate_functions.ease_in_out_cubic),
                 run_time=0.5
             )
             
@@ -217,7 +224,7 @@ class SnakeQueue(m.VGroup):
         return token
     
     
-    def dequeue(self, scene: m.Scene = None) -> m.Square:
+    def dequeue(self, scene: m.Scene = None) -> m.Mobject:
         """Remove the first token from the queue.
         
         Args:
