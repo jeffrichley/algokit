@@ -98,17 +98,41 @@ class GridOverlay(VGroup):
         return np.array([cell_x, cell_y, 0])
 
 
-    def fill_cell(self, x: int, y: int, color=WHITE, opacity=0.5) -> None:
-        """Fill a cell with color."""
-        idx = y + x * self.grid_height
+    def fill_cell(self, x: int, y: int, color=WHITE, opacity=0.5) -> Square:
+        """Fill a cell with color by creating an overlay fill cell.
+        
+        This creates a new Square with fill that overlays the original grid cell,
+        preserving the original cell's border completely.
+        
+        Returns:
+            The created fill cell for animation purposes
+        """
+        idx = self._get_cell_index((x, y))
         if 0 <= idx < len(self._grid_cells):
-            self._grid_cells[idx].set_fill(color=color, opacity=opacity)
+            original_cell = self._grid_cells[idx]
+            
+            # Create a new fill cell identical to the original but with fill
+            fill_cell = Square(
+                side_length=self.cell_size,
+                color=color,
+                stroke_width=0,  # No border on fill cell
+                fill_opacity=opacity,
+                fill_color=color
+            )
+            
+            # Position it exactly on top of the original cell
+            fill_cell.move_to(original_cell.get_center())
+            
+            # Add it to the overlay so it draws over the original
+            self.add(fill_cell)
+            
+            return fill_cell
         else:
             raise ValueError(f"Cell ({x}, {y}) not found in grid.")
 
     def highlight_cell(self, x: int, y: int, color=WHITE) -> AnimationGroup:
         """Return an animation that highlights a cell by indicating it."""
-        idx = y + x * self.grid_height
+        idx = self._get_cell_index((x, y))
         if 0 <= idx < len(self._grid_cells):
             return AnimationGroup(
                 Indicate(self._grid_cells[idx], color=color)
@@ -117,9 +141,13 @@ class GridOverlay(VGroup):
             raise ValueError(f"Cell ({x}, {y}) not found in grid.")
 
     def _get_cell_index(self, pos: tuple[int, int]) -> int:
-        """Get the index of a cell in the grid_group VGroup (like original)."""
+        """Get the index of a cell in the grid_group VGroup.
+        
+        Must match the creation order: for x in range(width): for y in range(height)
+        So index = x * height + y
+        """
         x, y = pos
-        return y * self.grid_width + x
+        return x * self.grid_height + y
 
     def add_to_cell(self, mobj: Mobject, grid_pos: tuple[int, int]) -> None:
         """Add a Manim object to a specific grid cell, centered within it (like original).
@@ -135,21 +163,24 @@ class GridOverlay(VGroup):
         self.add(mobj)
 
     def add_water_cell(self, x: int, y: int) -> tuple[Mobject, Mobject]:
-        """Add water to a cell with wave effects (like original BFS scene).
+        """Add water to a cell with wave effects using overlay approach.
+        
+        Creates a water fill cell that overlays the original grid cell,
+        preserving the original cell's border completely.
         
         Args:
             x: Grid x coordinate
             y: Grid y coordinate
             
         Returns:
-            Tuple of (cell, wave_group) for animation
+            Tuple of (water_cell, wave_group) for animation
         """
-        # Get the cell
+        # Get the original cell for positioning reference
         cell_index = self._get_cell_index((x, y))
-        cell = self._grid_cells[cell_index]
+        original_cell = self._grid_cells[cell_index]
         
-        # Fill with water color (like original)
-        cell.set_fill(BLUE_E, opacity=0.65)
+        # Create water fill cell using the fill_cell method
+        water_cell = self.fill_cell(x, y, color=BLUE_E, opacity=0.65)
         
         # Create wave overlay (thin Arc pieces like original)
         wave_parts = []
@@ -159,10 +190,10 @@ class GridOverlay(VGroup):
                 angle=PI,
                 color=BLUE_C,
                 stroke_width=1
-            ).move_to(cell.get_center())
+            ).move_to(original_cell.get_center())
             wave_parts.append(wave_arc)
         
         wave_group = VGroup(*wave_parts)
         self.add(wave_group)
         
-        return cell, wave_group
+        return water_cell, wave_group

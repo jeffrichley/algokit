@@ -29,10 +29,21 @@ class GridVisualizer:
         """Get the center position of a cell."""
         return self.grid_overlay.grid_to_screen(grid_pos)
         
-    def set_cell_fill(self, grid_pos: tuple[int, int], color, opacity: float) -> None:
-        """Set fill color and opacity for a cell."""
-        cell = self.get_cell(grid_pos)
-        cell.set_fill(color, opacity=opacity)
+    def set_cell_fill(self, grid_pos: tuple[int, int], color, opacity: float):
+        """Set fill color and opacity for a cell while preserving stroke.
+        
+        Returns:
+            The created fill cell for animation purposes
+        """
+        return self.grid_overlay.fill_cell(grid_pos[0], grid_pos[1], color=color, opacity=opacity)
+        
+    def fill_cell(self, x: int, y: int, color, opacity: float):
+        """Fill a cell with color while preserving stroke (convenience method).
+        
+        Returns:
+            The created fill cell for animation purposes
+        """
+        return self.grid_overlay.fill_cell(x, y, color=color, opacity=opacity)
         
     def set_cell_stroke(self, grid_pos: tuple[int, int], color, width: float) -> None:
         """Set stroke color and width for a cell."""
@@ -55,6 +66,18 @@ class GridVisualizer:
     def animate_grid_growth(self, scene) -> None:
         """Animate grid growth using GridOverlay."""
         self.grid_overlay.animate_grid_growth(scene)
+        
+    def add_water_cell(self, x: int, y: int) -> tuple:
+        """Add water to a cell with wave effects, ensuring proper positioning.
+        
+        Args:
+            x: Grid x coordinate
+            y: Grid y coordinate
+            
+        Returns:
+            Tuple of (cell, wave_group) for animation
+        """
+        return self.grid_overlay.add_water_cell(x, y)
         
 
 

@@ -310,25 +310,9 @@ class BreadthFirstSearchScene(HarborGridScene):
         for obstacle_pos in self.obstacles:
             x, y = obstacle_pos
             
-            # Use GridVisualizer to fill cell with water color
-            self.grid_visualizer.fill_cell(x, y, color=m.BLUE_E, opacity=0.65)
+            # Use GridVisualizer's add_water_cell for coordinated filling and waves
+            cell, wave_group = self.grid_visualizer.add_water_cell(x, y)
             self.cell_states[obstacle_pos] = "obstacle"
-            
-            # Get the cell for wave effects using GridVisualizer
-            cell = self.grid_visualizer.get_cell(obstacle_pos)
-            
-            # Create wave overlay (thin Arc pieces)
-            wave_parts = []
-            for i in range(3):  # 3 wave segments
-                wave_arc = m.Arc(
-                    radius=self.cell_size * 0.15 + i * 0.02,
-                    angle=m.PI,
-                    color=m.BLUE_C,
-                    stroke_width=1
-                ).move_to(cell.get_center())
-                wave_parts.append(wave_arc)
-            
-            wave_group = m.VGroup(*wave_parts)
             
             # Add to animation lists
             obstacle_animations.append(m.GrowFromCenter(cell))
@@ -487,25 +471,9 @@ class BreadthFirstSearchScene(HarborGridScene):
         wave_animations = []
         
         for obstacle_pos in self.obstacles:
-            # Get the cell for this obstacle using GridVisualizer
-            cell = self.grid_visualizer.get_cell(obstacle_pos)
-            
-            # Fill with water color
-            cell.set_fill(m.BLUE_E, opacity=0.65)
+            # Use GridVisualizer's add_water_cell for coordinated filling and waves
+            cell, wave_group = self.grid_visualizer.add_water_cell(obstacle_pos[0], obstacle_pos[1])
             self.cell_states[obstacle_pos] = "obstacle"
-            
-            # Create wave overlay (thin Arc pieces)
-            wave_parts = []
-            for i in range(3):  # 3 wave segments
-                wave_arc = m.Arc(
-                    radius=self.cell_size * 0.15 + i * 0.02,
-                    angle=m.PI,
-                    color=m.BLUE_C,
-                    stroke_width=1
-                ).move_to(cell.get_center())
-                wave_parts.append(wave_arc)
-            
-            wave_group = m.VGroup(*wave_parts)
             
             # Add to animation lists
             obstacle_animations.append(m.GrowFromCenter(cell))
