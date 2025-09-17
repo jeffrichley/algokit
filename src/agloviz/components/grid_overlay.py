@@ -2,6 +2,7 @@ import numpy as np
 from manim import (
     BLUE_C,
     BLUE_E,
+    DOWN,
     PI,
     UP,
     WHITE,
@@ -29,33 +30,11 @@ class GridOverlay(VGroup):
         self.scenario = scenario
         self.grid_group = None
         self._grid_cells = []
+        self.title = None
 
-        # Pre-calculate cell centers for precise positioning (like original)
-        self.cell_centers = self._calculate_cell_centers()
-
+        # Create grid cells immediately in __init__ so they're positioned correctly
         self._create_grid()
-        self._add_title()
 
-    def _calculate_cell_centers(self) -> dict[tuple[int, int], np.ndarray]:
-        """Pre-calculate the center position of each grid cell (like original).
-        
-        Returns:
-            Dictionary mapping (x, y) grid coordinates to screen positions
-        """
-        cell_centers = {}
-        
-        # Calculate grid origin (center of grid)
-        grid_origin_x = -(self.grid_width * self.cell_size) / 2
-        grid_origin_y = (self.grid_height * self.cell_size) / 2
-        
-        for x in range(self.grid_width):
-            for y in range(self.grid_height):
-                # Calculate cell center position
-                cell_x = grid_origin_x + (x + 0.5) * self.cell_size
-                cell_y = grid_origin_y - (y + 0.5) * self.cell_size
-                cell_centers[(x, y)] = np.array([cell_x, cell_y, 0])
-                
-        return cell_centers
 
     def _create_grid(self):
         """Create grid using Manim Square primitives for perfect squares (like original)."""
@@ -71,8 +50,9 @@ class GridOverlay(VGroup):
                     fill_opacity=0.0  # Transparent fill
                 )
                 
-                # Position using pre-calculated cell centers (like original)
-                cell.move_to(self.grid_to_screen((x, y)))
+                # Position relative to this VGroup's center
+                relative_pos = self.grid_to_screen((x, y))
+                cell.move_to(relative_pos)
                 grid_cells.append(cell)
         
         # Group all cells and add to self (like original)
@@ -80,45 +60,24 @@ class GridOverlay(VGroup):
         self._grid_cells = grid_cells
         self.add(self.grid_group)
 
-    def create_grid_with_growth_animation(self, scene) -> None:
-        """Create grid with growth animation - cells start small and grow with rotation (like original)."""
-        grid_cells = []
-        
-        for x in range(self.grid_width):
-            for y in range(self.grid_height):
-                # Create square cell using Manim primitive
-                cell = Square(
-                    side_length=self.cell_size,
-                    color=self.grid_color,
-                    stroke_width=2,
-                    fill_opacity=0.0  # Transparent fill
-                )
-                
-                # Position using pre-calculated cell centers
-                cell.move_to(self.grid_to_screen((x, y)))
-                
-                # Start small and rotated
-                cell.scale(0.1)
-                cell.rotate(np.pi / 2)  # Half rotation
-                
-                grid_cells.append(cell)
-        
-        # Group all cells
-        self.grid_group = VGroup(*grid_cells)
-        self._grid_cells = grid_cells
-        self.add(self.grid_group)
+    def animate_grid_growth(self, scene) -> None:
+        """Animate the existing grid cells with growth animation."""
+        # Set all cells to small and rotated first
+        for cell in self._grid_cells:
+            cell.scale(0.1)
+            cell.rotate(np.pi / 2)  # Half rotation
         
         # Animate growth with rotation back to normal
         scene.play(
             AnimationGroup(
-                *[cell.animate.scale(10).rotate(-np.pi / 2) for cell in grid_cells],
+                *[cell.animate.scale(10).rotate(-np.pi / 2) for cell in self._grid_cells],
                 lag_ratio=0.05  # Slight stagger for wave effect
             ),
             run_time=1.5
         )
 
     def grid_to_screen(self, grid_pos: tuple[int, int]) -> np.ndarray:
-        """Convert grid coordinates to screen coordinates using pre-calculated centers (like original).
+        """Convert grid coordinates to screen coordinates relative to overlay center.
         
         Args:
             grid_pos: (x, y) grid coordinates
@@ -126,21 +85,21 @@ class GridOverlay(VGroup):
         Returns:
             Screen position as numpy array
         """
-        # Use pre-calculated cell centers for precise positioning (like original)
-        if grid_pos in self.cell_centers:
-            return self.cell_centers[grid_pos]
-        else:
-            # Fallback for invalid coordinates
-            return np.array([0, 0, 0])
+        x, y = grid_pos
+        
+        # Calculate position relative to overlay's current center using get_center()
+        overlay_center = self.get_center()
+        
+        # Calculate grid origin relative to overlay center
+        grid_origin_x = overlay_center[0] - (self.grid_width * self.cell_size) / 2
+        grid_origin_y = overlay_center[1] + (self.grid_height * self.cell_size) / 2
+        
+        # Calculate cell center position
+        cell_x = grid_origin_x + (x + 0.5) * self.cell_size
+        cell_y = grid_origin_y - (y + 0.5) * self.cell_size
+        
+        return np.array([cell_x, cell_y, 0])
 
-    def _add_title(self):
-        """Add the title text."""
-        title = Text(
-            f"BFS Grid: {self.scenario.name}",
-            font_size=24,
-            color=WHITE
-        ).to_edge(UP)
-        self.add(title)  # 🔥 Add to self instead of scene
 
     def fill_cell(self, x: int, y: int, color=WHITE, opacity=0.5) -> None:
         """Fill a cell with color."""
