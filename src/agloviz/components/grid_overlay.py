@@ -2,16 +2,13 @@ import numpy as np
 from manim import (
     BLUE_C,
     BLUE_E,
-    DOWN,
     PI,
-    UP,
     WHITE,
     AnimationGroup,
     Arc,
     Indicate,
     Mobject,
     Square,
-    Text,
     VGroup,
 )
 

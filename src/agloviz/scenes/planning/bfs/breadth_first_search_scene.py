@@ -6,7 +6,7 @@ Follows the video plan from bls_video.md.
 
 import sys
 from pathlib import Path
-from typing import Any, List, Tuple, Dict
+from typing import Any
 
 import manim as m
 
@@ -15,16 +15,24 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 try:
-    from algokit.core.helpers import HarborNetScenario, load_harbor_scenario, create_grid_graph
-    from algokit.viz.scenes import HarborGridScene
-    from algokit.viz.adapters import EventType, SearchEvent, process_events_for_visualization
-    from algokit.pathfinding.bfs_with_events import bfs_with_data_collection
-    from agloviz.components.snake_queue import SnakeQueue
-    from agloviz.components.hud_panel import HUDPanel
-    from agloviz.components.tokens import StartToken, GoalToken
-    from agloviz.components.legend_panel import create_bfs_legend
     from agloviz.components.grid_overlay import GridOverlay
+    from agloviz.components.hud_panel import HUDPanel
+    from agloviz.components.legend_panel import create_bfs_legend
+    from agloviz.components.snake_queue import SnakeQueue
+    from agloviz.components.tokens import GoalToken, StartToken
     from agloviz.core.grid_visualizer import GridVisualizer
+    from algokit.core.helpers import (
+        HarborNetScenario,
+        create_grid_graph,
+        load_harbor_scenario,
+    )
+    from algokit.pathfinding.bfs_with_events import bfs_with_data_collection
+    from algokit.viz.adapters import (
+        EventType,
+        SearchEvent,
+        process_events_for_visualization,
+    )
+    from algokit.viz.scenes import HarborGridScene
 except ImportError as e:
     print(f"Warning: Could not import Algokit modules: {e}")
     print("BFS scene will run in standalone mode with placeholder data.")
@@ -107,13 +115,13 @@ class BreadthFirstSearchScene(HarborGridScene):
         self.grid_visualizer = None  # Will be created in _show_grid()
         
         # BFS-specific state
-        self.bfs_events: List[SearchEvent] = []
-        self.visualization_data: Dict[str, Any] = {}
-        self.parent_arrows: Dict[Tuple[int, int], m.Arrow] = {}
-        self.cell_states: Dict[Tuple[int, int], str] = {}  # 'empty', 'frontier', 'visited', 'obstacle'
+        self.bfs_events: list[SearchEvent] = []
+        self.visualization_data: dict[str, Any] = {}
+        self.parent_arrows: dict[tuple[int, int], m.Arrow] = {}
+        self.cell_states: dict[tuple[int, int], str] = {}  # 'empty', 'frontier', 'visited', 'obstacle'
         self.current_depth = 0
         self.goal_found = False
-        self.final_path: List[Tuple[int, int]] = []
+        self.final_path: list[tuple[int, int]] = []
         
     def _load_scenario_from_file(self, scenario_file: str) -> HarborNetScenario:
         """Load scenario from file with proper error handling.
@@ -304,7 +312,7 @@ class BreadthFirstSearchScene(HarborGridScene):
             
             # Use GridVisualizer to fill cell with water color
             self.grid_visualizer.fill_cell(x, y, color=m.BLUE_E, opacity=0.65)
-            self.cell_states[obstacle_pos] = 'obstacle'
+            self.cell_states[obstacle_pos] = "obstacle"
             
             # Get the cell for wave effects using GridVisualizer
             cell = self.grid_visualizer.get_cell(obstacle_pos)
@@ -484,7 +492,7 @@ class BreadthFirstSearchScene(HarborGridScene):
             
             # Fill with water color
             cell.set_fill(m.BLUE_E, opacity=0.65)
-            self.cell_states[obstacle_pos] = 'obstacle'
+            self.cell_states[obstacle_pos] = "obstacle"
             
             # Create wave overlay (thin Arc pieces)
             wave_parts = []
@@ -660,7 +668,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Animate the BFS execution
         self._animate_bfs_execution()
         
-    def _create_mock_events(self) -> List[SearchEvent]:
+    def _create_mock_events(self) -> list[SearchEvent]:
         """Create mock events for standalone mode."""
         events = []
         step = 0
@@ -728,7 +736,7 @@ class BreadthFirstSearchScene(HarborGridScene):
             # Small pause between events
             self.wait(0.1)
             
-    def _animate_dequeue(self, node: Tuple[int, int]) -> None:
+    def _animate_dequeue(self, node: tuple[int, int]) -> None:
         """Animate dequeuing a node from the queue."""
         # Remove token from queue
         if not self.snaking_queue.is_empty():
@@ -740,23 +748,23 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Pulse the cell to show it's being processed
         self.play(m.Indicate(cell, scale_factor=1.1, color=m.YELLOW_C), run_time=0.3)
         
-    def _animate_visit(self, node: Tuple[int, int]) -> None:
+    def _animate_visit(self, node: tuple[int, int]) -> None:
         """Animate visiting a node."""
         cell = self.grid_visualizer.get_cell(node)
         
         # Mark as visited
         cell.set_fill(m.YELLOW_E, opacity=0.4)
-        self.cell_states[node] = 'visited'
+        self.cell_states[node] = "visited"
         
         # Pulse to show it's visited
         self.play(m.Indicate(cell, scale_factor=1.05, color=m.YELLOW_E), run_time=0.2)
         
-    def _animate_enqueue(self, node: Tuple[int, int], parent: Tuple[int, int] | None) -> None:
+    def _animate_enqueue(self, node: tuple[int, int], parent: tuple[int, int] | None) -> None:
         """Animate enqueuing a node."""
         # Mark as frontier using GridVisualizer
         cell = self.grid_visualizer.get_cell(node)
         cell.set_fill(m.BLUE_C, opacity=0.6)
-        self.cell_states[node] = 'frontier'
+        self.cell_states[node] = "frontier"
         
         # Draw parent arrow if parent exists
         if parent:
@@ -775,7 +783,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Show discovery
         self.play(m.Indicate(cell, scale_factor=1.05, color=m.BLUE_C), run_time=0.2)
         
-    def _draw_parent_arrow(self, parent: Tuple[int, int], child: Tuple[int, int]) -> None:
+    def _draw_parent_arrow(self, parent: tuple[int, int], child: tuple[int, int]) -> None:
         """Draw an arrow from parent to child."""
         parent_cell = self.grid_visualizer.get_cell(parent)
         child_cell = self.grid_visualizer.get_cell(child)
@@ -791,7 +799,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         self.parent_arrows[child] = arrow
         self.play(m.GrowArrow(arrow), run_time=0.3)
         
-    def _animate_goal_discovery(self, node: Tuple[int, int]) -> None:
+    def _animate_goal_discovery(self, node: tuple[int, int]) -> None:
         """Animate discovering the goal."""
         cell = self.grid_visualizer.get_cell(node)
         

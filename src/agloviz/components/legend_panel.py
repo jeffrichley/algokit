@@ -4,8 +4,10 @@ A reusable legend component that displays visual swatches with labels,
 automatically sizing the background and arranging items vertically.
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import Any
+
 import manim as m
+
 from agloviz.core.fonts import get_font
 
 
@@ -33,7 +35,7 @@ class LegendPanel(m.VGroup):
     
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         font_size: int = 16,
         corner_radius: float | None = None,
         stroke_width: float | None = None,
@@ -76,7 +78,7 @@ class LegendPanel(m.VGroup):
         
         self._build_legend(items)
     
-    def _build_legend(self, items: List[Dict[str, Any]]) -> None:
+    def _build_legend(self, items: list[dict[str, Any]]) -> None:
         """Build the legend with items and background."""
         legend_groups = []
         
@@ -86,7 +88,7 @@ class LegendPanel(m.VGroup):
             
             # Create text label
             label = m.Text(
-                item['label'],
+                item["label"],
                 font_size=self.font_size,
                 color=m.WHITE
             )
@@ -116,31 +118,31 @@ class LegendPanel(m.VGroup):
         self.add(self.background, self.legend_items)
         self.legend_items.move_to(self.background.get_center())
     
-    def _create_visual_swatch(self, item: Dict[str, Any]) -> m.Mobject:
+    def _create_visual_swatch(self, item: dict[str, Any]) -> m.Mobject:
         """Create visual swatch based on item specification."""
-        visual_type = item.get('visual_type', 'square')
-        props = item.get('visual_props', {})
+        visual_type = item.get("visual_type", "square")
+        props = item.get("visual_props", {})
         
-        if visual_type == 'custom' and 'custom_visual' in item:
-            return item['custom_visual']
-        elif visual_type == 'dot':
+        if visual_type == "custom" and "custom_visual" in item:
+            return item["custom_visual"]
+        elif visual_type == "dot":
             return m.Dot(
-                radius=props.get('radius', 0.08),
-                color=props.get('color', m.WHITE)
+                radius=props.get("radius", 0.08),
+                color=props.get("color", m.WHITE)
             )
-        elif visual_type == 'star':
+        elif visual_type == "star":
             return m.Star(
-                n=props.get('n', 5),
-                outer_radius=props.get('outer_radius', 0.08),
-                color=props.get('color', m.GOLD)
+                n=props.get("n", 5),
+                outer_radius=props.get("outer_radius", 0.08),
+                color=props.get("color", m.GOLD)
             )
-        elif visual_type == 'square':
+        elif visual_type == "square":
             return m.Square(
-                side_length=props.get('side_length', 0.15),
-                fill_color=props.get('fill_color', m.WHITE),
-                fill_opacity=props.get('fill_opacity', 0.6),
-                stroke_width=props.get('stroke_width', 1),
-                stroke_color=props.get('stroke_color', m.WHITE)
+                side_length=props.get("side_length", 0.15),
+                fill_color=props.get("fill_color", m.WHITE),
+                fill_opacity=props.get("fill_opacity", 0.6),
+                stroke_width=props.get("stroke_width", 1),
+                stroke_color=props.get("stroke_color", m.WHITE)
             )
         else:
             # Default to square
@@ -179,43 +181,43 @@ def create_bfs_legend() -> LegendPanel:
     """
     bfs_items = [
         {
-            'label': 'Start',
-            'visual_type': 'dot',
-            'visual_props': {'radius': 0.08, 'color': m.GREEN_C}
+            "label": "Start",
+            "visual_type": "dot",
+            "visual_props": {"radius": 0.08, "color": m.GREEN_C}
         },
         {
-            'label': 'Goal',
-            'visual_type': 'star',
-            'visual_props': {'n': 5, 'outer_radius': 0.08, 'color': m.GOLD}
+            "label": "Goal",
+            "visual_type": "star",
+            "visual_props": {"n": 5, "outer_radius": 0.08, "color": m.GOLD}
         },
         {
-            'label': 'Water',
-            'visual_type': 'square',
-            'visual_props': {
-                'side_length': 0.15,
-                'fill_color': m.BLUE_E,
-                'fill_opacity': 0.65,
-                'stroke_width': 1
+            "label": "Water",
+            "visual_type": "square",
+            "visual_props": {
+                "side_length": 0.15,
+                "fill_color": m.BLUE_E,
+                "fill_opacity": 0.65,
+                "stroke_width": 1
             }
         },
         {
-            'label': 'Frontier',
-            'visual_type': 'square',
-            'visual_props': {
-                'side_length': 0.15,
-                'fill_color': m.BLUE_C,
-                'fill_opacity': 0.6,
-                'stroke_width': 1
+            "label": "Frontier",
+            "visual_type": "square",
+            "visual_props": {
+                "side_length": 0.15,
+                "fill_color": m.BLUE_C,
+                "fill_opacity": 0.6,
+                "stroke_width": 1
             }
         },
         {
-            'label': 'Visited',
-            'visual_type': 'square',
-            'visual_props': {
-                'side_length': 0.15,
-                'fill_color': m.YELLOW_E,
-                'fill_opacity': 0.4,
-                'stroke_width': 1
+            "label": "Visited",
+            "visual_type": "square",
+            "visual_props": {
+                "side_length": 0.15,
+                "fill_color": m.YELLOW_E,
+                "fill_opacity": 0.4,
+                "stroke_width": 1
             }
         }
     ]
@@ -223,7 +225,7 @@ def create_bfs_legend() -> LegendPanel:
     return LegendPanel(items=bfs_items, font_size=16)
 
 
-def create_custom_legend(items: List[Tuple[str, m.Mobject]]) -> LegendPanel:
+def create_custom_legend(items: list[tuple[str, m.Mobject]]) -> LegendPanel:
     """Create a custom legend from a list of (label, visual) tuples.
     
     Args:
@@ -235,9 +237,9 @@ def create_custom_legend(items: List[Tuple[str, m.Mobject]]) -> LegendPanel:
     legend_items = []
     for label, visual in items:
         legend_items.append({
-            'label': label,
-            'visual_type': 'custom',
-            'custom_visual': visual
+            "label": label,
+            "visual_type": "custom",
+            "custom_visual": visual
         })
     
     return LegendPanel(items=legend_items)
