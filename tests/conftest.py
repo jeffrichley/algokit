@@ -88,22 +88,22 @@ def setup_test_environment():
     """Setup test environment for all tests (cross-platform)."""
     # Use non-interactive backend for matplotlib
     matplotlib.use("Agg")
-    
+
     # Ensure src is in Python path (cross-platform)
     src_path = Path("src").resolve()
     if str(src_path) not in sys.path:
         sys.path.insert(0, str(src_path))
-    
+
     # Set environment variables for consistent testing
     os.environ["PYTHONPATH"] = str(src_path)
     os.environ["MATPLOTLIB_BACKEND"] = "Agg"
-    
+
     # Platform-specific environment setup
     if os.name == "nt":  # Windows
         os.environ["PYTHONIOENCODING"] = "utf-8"
-    
+
     yield
-    
+
     # Cleanup if needed
     # Remove src from sys.path if we added it
     if str(src_path) in sys.path:
@@ -164,17 +164,15 @@ def app():
 @pytest.fixture
 def mock_file_system(temp_dir):
     """Mock file system for testing (cross-platform)."""
-    import shutil
-    from pathlib import Path
-    
+
     # Create a mock file structure
     mock_files = {
         "config.yaml": "test: true\n",
         "data.json": '{"test": "data"}\n',
         "output/": None,  # Directory
-        "logs/": None,    # Directory
+        "logs/": None,  # Directory
     }
-    
+
     for path, content in mock_files.items():
         full_path = temp_dir / path
         if content is None:  # Directory
@@ -182,9 +180,9 @@ def mock_file_system(temp_dir):
         else:  # File
             full_path.parent.mkdir(parents=True, exist_ok=True)
             full_path.write_text(content, encoding="utf-8")
-    
+
     yield temp_dir
-    
+
     # Cleanup is handled by temp_dir fixture
 
 
@@ -192,7 +190,7 @@ def mock_file_system(temp_dir):
 def platform_info():
     """Platform information for cross-platform testing."""
     import platform
-    
+
     return {
         "system": platform.system(),
         "platform": platform.platform(),
@@ -217,7 +215,7 @@ def test_timeout():
 @pytest.fixture
 def shared_test_data():
     """Shared test data that can be reused across tests.
-    
+
     This fixture encourages fixture reuse while maintaining
     test isolation. Use this for read-only test data.
     """

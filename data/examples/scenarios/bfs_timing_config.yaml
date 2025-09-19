@@ -1,0 +1,74 @@
+base_timings:
+  celebration_fade_out: 1.5
+  complete_path_animation: 1.0
+  conclusion_text: 1.0
+  confetti_effects: 2.0
+  depth_ring_highlight: 1.2
+  discovery_ping: 0.6
+  discovery_text_fade_in: 0.3
+  discovery_text_fade_out: 0.3
+  educational_text: 1.0
+  frame_fade_in: 0.4
+  frame_stroke_adjust: 0.4
+  goal_discovery_ping: 0.6
+  goal_flash: 0.3
+  goal_label_write: 0.3
+  goal_text_reveal: 1.0
+  grid_wave: 0.8
+  hud_fade_in: 0.8
+  hud_update: 0.2                   # 0.3
+  layer_complete_pulse: 0.7         # 0.8
+  legend_fade_in: 1.0
+  path_cleanup: 1.0                 # 1.2
+  path_dot_grow: 0.3                # 0.4
+  path_highlight_pulse: 0.8
+  path_line_create: 0.2             # 0.3
+  queue_fade_in: 1.0
+  start_indicate: 0.3
+  start_label_write: 0.3
+  subtitle_write: 1.0
+  title_write: 1.8
+  token_entrance: 0.8
+  tracer_movement: 3.0
+event_limits:
+  max_events_displayed: 999999
+  skip_non_essential: false
+path_reconstruction:
+  enabled: true
+  extended_study_pause: true
+  show_educational_text: true
+  tracer_speed_multiplier: 1.0
+speed_multipliers:
+  cinematic:
+    bfs_events: 1.0
+    celebrations: 1.0
+    educational: 1.0
+    path_drawing: 1.0
+    setup: 1.0
+    waits: 1.0
+  development:
+    bfs_events: 8.0
+    celebrations: 3.0
+    educational: 2.0
+    path_drawing: 6.0
+    setup: 4.0
+    waits: 10.0
+  quick_demo:
+    bfs_events: 16.0
+    celebrations: 6.0
+    educational: 4.0
+    path_drawing: 12.0
+    setup: 8.0
+    waits: 20.0
+wait_times:
+  celebration_brief: 0.3
+  celebration_pause: 0.5
+  dequeue_delay: 0.3                # 0.3
+  discovery_ping: 0.8
+  educational_pause: 2.0
+  final_study_pause: 4.0
+  initial_setup: 3.0
+  layer_complete_wait: 1.0
+  path_drawing_complete: 1.0
+  path_reconstruction_brief: 1.0
+  path_reconstruction_pause: 1.5

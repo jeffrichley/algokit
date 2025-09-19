@@ -48,6 +48,7 @@ uv run dev docs
 
 ## 📦 Usage
 
+### Python API
 ```python
 from algokit import main_function
 
@@ -55,6 +56,45 @@ from algokit import main_function
 result = main_function("Hello, World!")
 print(result)  # Output: Processed: Hello, World!
 ```
+
+### CLI Usage
+
+#### Algorithm Visualization
+```bash
+# Render BFS visualization with default settings
+algokit render bfs
+
+# Render with specific quality and timing
+algokit render bfs --quality low --timing cinematic
+
+# Quick render for development
+algokit render bfs --preset quick
+
+# High-quality demo render
+algokit render bfs --preset demo
+
+# Render with custom scenario
+algokit render bfs --scenario "Harbor Storm" --quality high
+
+# Use environment variable for scenario
+AGLOVIZ_SCENARIO_FILE=data/examples/tiny.yaml algokit render bfs
+```
+
+#### Available Commands
+```bash
+# List available algorithms
+algokit render algorithms
+
+# List available scenarios
+algokit render scenarios
+
+# Quick shortcuts
+algokit render quick bfs    # Fast development render
+algokit render demo bfs     # High-quality presentation render
+```
+
+#### Timing Analysis
+All renders automatically generate comprehensive timing reports saved to `output/bfs_timing_report_TIMESTAMP.txt` with detailed statistics on animation and wait times.
 
 ## 🧪 Testing
 

@@ -5,16 +5,16 @@ and data collection systems for post-processing visualization.
 """
 
 from algokit.viz.adapters import (
-    SearchEvent,
     EventType,
+    SearchEvent,
     SimpleTracker,
-    process_events_for_visualization,
     create_algorithm_tracker,
+    process_events_for_visualization,
 )
 
 __all__ = [
     "SearchEvent",
-    "EventType", 
+    "EventType",
     "SimpleTracker",
     "process_events_for_visualization",
     "create_algorithm_tracker",

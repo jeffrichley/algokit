@@ -1,7 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/1185818338_3402100679_3892878435.mp4'
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/624642324_1432596116_1436652178.mp4'
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/624642324_3528744759_3197977988.mp4'
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/624642324_1432596116_2956125568.mp4'
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/624642324_771470382_117860776.mp4'
-file 'file:/Users/jeffrichley/workspace/school/odu/algokit/media/videos/test_grid_hud_scene/480p15/partial_movie_files/TestGridHudScene/624642324_2872842549_2216423209.mp4'

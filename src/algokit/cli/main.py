@@ -47,7 +47,7 @@ def get_global_config() -> Config:
     Returns:
         Global configuration instance.
     """
-    global _global_config  # noqa: PLW0603
+    global _global_config
     if _global_config is None:
         _global_config = Config()
     return _global_config
@@ -161,7 +161,7 @@ def main(
     • [bold]algokit info[/bold] - Show system information
     """
     # Load global configuration
-    global _global_config  # noqa: PLW0603
+    global _global_config
 
     if config_file:
         try:
@@ -252,7 +252,9 @@ def handle_exception(
         # Show helpful message
         console.print("\n[yellow]For help, try:[/yellow]")
         console.print("• [bold]algokit --help[/bold] - Show all available commands")
-        console.print("• [bold]algokit list-families[/bold] - Show available algorithm families")
+        console.print(
+            "• [bold]algokit list-families[/bold] - Show available algorithm families"
+        )
         console.print(
             "• [bold]algokit --verbose[/bold] - Enable verbose output for debugging"
         )
@@ -273,6 +275,19 @@ sys.excepthook = handle_exception
 #     name="sarsa",
 #     help="SARSA (State-Action-Reward-State-Action) reinforcement learning algorithm commands",
 # )
+
+# Add render command
+try:
+    from algokit.cli.render import app as render_app
+
+    app.add_typer(
+        render_app,
+        name="render",
+        help="🎬 Render algorithm visualizations with Manim",
+    )
+except ImportError:
+    # Render command not available if dependencies are missing
+    pass
 
 # ============================================================================
 # GLOBAL COMMANDS
@@ -436,7 +451,9 @@ def status() -> None:
 
     status_table.add_row("CLI Application", "✅ Running", f"Version {__version__}")
     status_table.add_row("Configuration", "✅ Loaded", "Default configuration active")
-    status_table.add_row("Algorithm Implementations", "❌ None", "No algorithms currently implemented")
+    status_table.add_row(
+        "Algorithm Implementations", "❌ None", "No algorithms currently implemented"
+    )
     status_table.add_row("Output Directory", "✅ Ready", str(config.global_.output_dir))
     status_table.add_row("Logging", "✅ Active", f"Level: {config.global_.log_level}")
     status_table.add_row(
