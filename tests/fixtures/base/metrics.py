@@ -17,7 +17,7 @@ class RLTestAssertions:
             assert key in results, f"Missing key: {key}"
 
         assert results["episodes_trained"] > 0
-        assert isinstance(results["final_avg_reward"], (int, float))
+        assert isinstance(results["final_avg_reward"], int | float)
 
     @staticmethod
     def assert_convergence(results: dict[str, Any], min_episodes: int = 1) -> None:
@@ -62,15 +62,6 @@ def rl_assertions():
     return RLTestAssertions()
 
 
-@pytest.fixture
-def performance_benchmarks():
-    """Performance benchmarks for RL algorithms."""
-    return {
-        "q_learning": {
-            "cartpole": {"min_avg_reward": 120, "max_episodes": 400},
-            "frozenlake": {"min_success_rate": 0.85, "max_episodes": 800},
-        },
-    }
 
 
 @pytest.fixture

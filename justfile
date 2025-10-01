@@ -18,6 +18,25 @@ test-cov: install-dev
     uv run pytest tests --cov-report=html
     @echo "Generated coverage HTML at htmlcov/index.html"
 
+# Run algorithm tests with focused coverage (algokit.algorithms and below)
+test-algorithms: install-dev
+    uv run pytest tests/pathfinding/ tests/dynamic_programming/ -c pytest-algorithms.ini -v
+    @echo "Generated algorithm coverage HTML at htmlcov-algorithms/index.html"
+
+# Run pathfinding algorithm tests with focused coverage
+test-pathfinding: install-dev
+    uv run pytest tests/pathfinding/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-pathfinding --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
+    @echo "Generated pathfinding coverage HTML at htmlcov-pathfinding/index.html"
+
+# Run dynamic programming algorithm tests with focused coverage  
+test-dynamic-programming: install-dev
+    uv run pytest tests/dynamic_programming/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-dp --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
+    @echo "Generated dynamic programming coverage HTML at htmlcov-dp/index.html"
+
+# Run algorithm property-based tests
+test-algorithm-properties: install-dev
+    uv run pytest tests/pathfinding/test_*_properties.py --cov=src/algokit/algorithms --cov-report=term-missing --cov-fail-under=90 -v
+
 # Run linting and formatting
 lint: install-dev
     uv run ruff check src/ tests/ --fix

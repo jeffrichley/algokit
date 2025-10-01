@@ -4,12 +4,12 @@ import networkx as nx
 import pytest
 
 from algokit.core.helpers import HarborNetScenario, create_grid_graph
-from algokit.pathfinding.bfs import (
+from algokit.algorithms.pathfinding.bfs import (
     bfs_all_reachable,
     bfs_path_length,
     bfs_shortest_path,
 )
-from algokit.pathfinding.bfs_with_events import bfs_with_data_collection
+from algokit.algorithms.pathfinding.bfs_with_events import bfs_with_data_collection
 
 
 class TestBFSShortestPath:

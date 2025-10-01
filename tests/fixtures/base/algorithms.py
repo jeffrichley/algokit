@@ -55,18 +55,6 @@ def integration_test_config():
     )
 
 
-@pytest.fixture
-def performance_test_config():
-    """Performance test configuration."""
-    return TestAlgorithmConfig(
-        episodes=100,
-        max_steps_per_episode=200,
-        learning_rate=0.1,
-        discount_factor=0.9,
-        epsilon=0.1,
-        verbose=True,
-        render=False,
-    )
 
 
 @pytest.fixture

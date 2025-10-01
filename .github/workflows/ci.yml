@@ -40,8 +40,10 @@ jobs:
       - name: Typecheck
         run: uv run mypy src tests
 
-      - name: Unit tests
-        run: uv run pytest tests -m "not slow" --cov-report=xml
+      - name: Unit tests (all tests, algorithm coverage only)
+        run: |
+          # Run all tests but only measure coverage for algorithms
+          uv run pytest tests -m "not slow" -c pytest-algorithms.ini --cov-report=xml:coverage-algorithms.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -78,8 +80,10 @@ jobs:
       - name: Typecheck
         run: uv run mypy src tests
 
-      - name: Full unit suite
-        run: uv run pytest tests --cov-report=xml --cov-report=html
+      - name: Full unit suite (all tests, algorithm coverage only)
+        run: |
+          # Run all tests but only measure coverage for algorithms
+          uv run pytest tests -c pytest-algorithms.ini --cov-report=xml:coverage-algorithms.xml --cov-report=html:htmlcov-algorithms
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

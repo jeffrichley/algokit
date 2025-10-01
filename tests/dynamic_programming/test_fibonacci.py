@@ -2,7 +2,7 @@
 
 import pytest
 
-from algokit.dynamic_programming.fibonacci import fibonacci
+from algokit.algorithms.dynamic_programming.fibonacci import fibonacci
 
 
 @pytest.mark.unit

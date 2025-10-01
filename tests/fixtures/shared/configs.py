@@ -9,7 +9,6 @@ def test_timeouts():
     return {
         "unit": 5,  # 5 seconds for unit tests
         "integration": 30,  # 30 seconds for integration tests
-        "performance": 300,  # 5 minutes for performance tests
         "benchmark": 600,  # 10 minutes for benchmark tests
     }
 
@@ -40,7 +39,6 @@ def algorithm_test_configs():
         "q_learning": {
             "unit": {"episodes": 1, "max_steps": 5},
             "integration": {"episodes": 2, "max_steps": 10},
-            "performance": {"episodes": 100, "max_steps": 200},
         },
     }
 

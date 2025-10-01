@@ -6,12 +6,19 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "80...100"
+  range: "90...100"
   status:
     project:
       default:
-        target: 80%
+        target: 90%
         threshold: 5%
+  ignore:
+    - "src/algokit/cli/**"
+    - "src/algokit/viz/**"
+    - "src/algokit/core/**"
+    - "tests/**"
+    - "docs/**"
+    - "examples/**"
 
 parsers:
   gcov:

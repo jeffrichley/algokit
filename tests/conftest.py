@@ -47,7 +47,7 @@ def pytest_collection_modifyitems(
             item.add_marker(pytest.mark.ppo)
 
         # Mark slow tests
-        if "performance" in str(item.fspath) or "slow" in item.name:
+        if "slow" in item.name:
             item.add_marker(pytest.mark.slow)
 
         # Mark benchmark tests
@@ -137,10 +137,6 @@ def rl_assertions():
     return mock_assertions
 
 
-@pytest.fixture(scope="session")
-def performance_benchmarks():
-    """Performance benchmark helpers."""
-    return {}  # No algorithms currently implemented
 
 
 # CLI Testing fixtures

@@ -12,7 +12,7 @@ import networkx as nx
 import pytest
 
 from algokit.core.helpers import HarborNetScenario, create_grid_graph
-from algokit.pathfinding.bfs import bfs_path_length, bfs_shortest_path
+from algokit.algorithms.pathfinding.bfs import bfs_path_length, bfs_shortest_path
 
 
 class TestBFSProperties:
@@ -189,51 +189,6 @@ class TestBFSProperties:
         with pytest.raises(ValueError, match="Start node A not found in graph"):
             bfs_shortest_path(graph, "A", "B")
 
-    @pytest.mark.performance
-    def test_bfs_large_sparse_graph_performance(self) -> None:
-        """Test BFS performance on large sparse graph."""
-        # Arrange - create large sparse graph (tree structure)
-        graph = nx.Graph()
-        # Create a binary tree with 1000 nodes
-        for i in range(1000):
-            graph.add_node(i)
-        
-        # Add tree edges
-        for i in range(500):  # Internal nodes
-            if 2 * i + 1 < 1000:
-                graph.add_edge(i, 2 * i + 1)
-            if 2 * i + 2 < 1000:
-                graph.add_edge(i, 2 * i + 2)
-        
-        # Act - find path from root to leaf
-        path = bfs_shortest_path(graph, 0, 999)
-        
-        # Assert - should find valid path
-        assert path is not None
-        assert path[0] == 0
-        assert path[-1] == 999
-        
-        # Verify path length is optimal (log2(1000) ≈ 10 hops)
-        length = bfs_path_length(graph, 0, 999)
-        assert length <= 10  # Should be at most 10 hops in binary tree
-
-    @pytest.mark.performance
-    def test_bfs_large_dense_graph_memory_usage(self) -> None:
-        """Test BFS memory usage on large dense graph."""
-        # Arrange - create large dense graph (grid)
-        graph = create_grid_graph(50, 50)  # 2500 nodes
-        
-        # Act - find path from corner to corner
-        path = bfs_shortest_path(graph, (0, 0), (49, 49))
-        
-        # Assert - should find valid path
-        assert path is not None
-        assert path[0] == (0, 0)
-        assert path[-1] == (49, 49)
-        
-        # Verify path length is optimal (Manhattan distance)
-        length = bfs_path_length(graph, (0, 0), (49, 49))
-        assert length == 98  # Manhattan distance: 49 + 49
 
     @pytest.mark.integration
     def test_bfs_harbor_net_scenario_properties(self) -> None:

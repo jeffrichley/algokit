@@ -16,7 +16,7 @@ from algokit.core.helpers import (
     save_harbor_scenario,
     validate_graph,
 )
-from algokit.dynamic_programming import fibonacci
+from algokit.algorithms.dynamic_programming import fibonacci
 
 # CLI imports
 try:

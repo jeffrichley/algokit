@@ -6,7 +6,7 @@ polluting the core algorithm code.
 """
 
 from algokit.core.utils.decorators import with_event_tracking
-from algokit.pathfinding.bfs import bfs_shortest_path
+from algokit.algorithms.pathfinding.bfs import bfs_shortest_path
 
 
 # Create the decorated version for convenience
