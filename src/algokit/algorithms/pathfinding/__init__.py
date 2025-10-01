@@ -4,6 +4,11 @@ This module contains implementations of graph traversal and pathfinding algorith
 including BFS, DFS, Dijkstra, and A* search algorithms.
 """
 
+from algokit.algorithms.pathfinding.astar import (
+    astar_all_distances,
+    astar_shortest_distance,
+    astar_shortest_path,
+)
 from algokit.algorithms.pathfinding.bfs import (
     bfs_all_reachable,
     bfs_path_length,
@@ -21,8 +26,20 @@ from algokit.algorithms.pathfinding.dijkstra import (
     dijkstra_shortest_distance,
     dijkstra_shortest_path,
 )
+from algokit.core.utils.distances import (
+    euclidean_distance,
+    manhattan_distance,
+    zero_heuristic,
+)
 
 __all__ = [
+    # A* algorithms
+    "astar_shortest_path",
+    "astar_shortest_distance",
+    "astar_all_distances",
+    "manhattan_distance",
+    "euclidean_distance",
+    "zero_heuristic",
     # BFS algorithms
     "bfs_shortest_path",
     "bfs_with_data_collection",
