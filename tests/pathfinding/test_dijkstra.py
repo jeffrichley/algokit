@@ -3,7 +3,6 @@
 import networkx as nx
 import pytest
 
-from algokit.core.helpers import create_grid_graph
 from algokit.algorithms.pathfinding.dijkstra import (
     dijkstra_all_distances,
     dijkstra_shortest_distance,
@@ -60,18 +59,18 @@ class TestDijkstraShortestPath:
         # Arrange - create graph with different edge weights
         graph = nx.Graph()
         graph.add_edges_from([
-            ('A', 'B', {'weight': 1.0}),
-            ('B', 'C', {'weight': 1.0}),
-            ('A', 'C', {'weight': 5.0}),  # Direct path is more expensive
+            ("A", "B", {"weight": 1.0}),
+            ("B", "C", {"weight": 1.0}),
+            ("A", "C", {"weight": 5.0}),  # Direct path is more expensive
         ])
 
         # Act - find path from A to C
-        result = dijkstra_shortest_path(graph, 'A', 'C')
+        result = dijkstra_shortest_path(graph, "A", "C")
 
         # Assert - should choose the longer but cheaper path
         assert result is not None
         path, weight = result
-        assert path == ['A', 'B', 'C']
+        assert path == ["A", "B", "C"]
         assert weight == 2.0
 
     @pytest.mark.unit
@@ -79,12 +78,12 @@ class TestDijkstraShortestPath:
         """Test Dijkstra returns None when no path exists."""
         # Arrange - create graph with disconnected components
         graph = nx.Graph()
-        graph.add_nodes_from(['A', 'B', 'C'])
-        graph.add_edge('A', 'B', weight=1.0)
+        graph.add_nodes_from(["A", "B", "C"])
+        graph.add_edge("A", "B", weight=1.0)
         # 'C' is disconnected
 
         # Act - try to find path between disconnected nodes
-        result = dijkstra_shortest_path(graph, 'A', 'C')
+        result = dijkstra_shortest_path(graph, "A", "C")
 
         # Assert - no path should be found
         assert result is None
@@ -194,13 +193,13 @@ class TestDijkstraShortestDistance:
         # Arrange - create graph with different weights
         graph = nx.Graph()
         graph.add_edges_from([
-            ('A', 'B', {'weight': 2.0}),
-            ('B', 'C', {'weight': 3.0}),
-            ('A', 'C', {'weight': 10.0}),  # Direct path is expensive
+            ("A", "B", {"weight": 2.0}),
+            ("B", "C", {"weight": 3.0}),
+            ("A", "C", {"weight": 10.0}),  # Direct path is expensive
         ])
 
         # Act - find shortest distance
-        distance = dijkstra_shortest_distance(graph, 'A', 'C')
+        distance = dijkstra_shortest_distance(graph, "A", "C")
 
         # Assert - should choose the cheaper path
         assert distance == 5.0  # 2.0 + 3.0
@@ -210,12 +209,12 @@ class TestDijkstraShortestDistance:
         """Test Dijkstra shortest distance when no path exists."""
         # Arrange - create disconnected graph
         graph = nx.Graph()
-        graph.add_nodes_from(['A', 'B', 'C'])
-        graph.add_edge('A', 'B', weight=1.0)
+        graph.add_nodes_from(["A", "B", "C"])
+        graph.add_edge("A", "B", weight=1.0)
         # 'C' is disconnected
 
         # Act - try to find distance between disconnected nodes
-        distance = dijkstra_shortest_distance(graph, 'A', 'C')
+        distance = dijkstra_shortest_distance(graph, "A", "C")
 
         # Assert - should return None
         assert distance is None
@@ -268,21 +267,21 @@ class TestDijkstraAllDistances:
         # Arrange - create graph with disconnected components
         graph = nx.Graph()
         graph.add_edges_from([
-            ('A', 'B', {'weight': 1.0}),
-            ('B', 'C', {'weight': 2.0}),
-            ('D', 'E', {'weight': 1.0}),
+            ("A", "B", {"weight": 1.0}),
+            ("B", "C", {"weight": 2.0}),
+            ("D", "E", {"weight": 1.0}),
         ])
 
         # Act - find all distances from first component
-        distances = dijkstra_all_distances(graph, 'A')
+        distances = dijkstra_all_distances(graph, "A")
 
         # Assert - should only find first component
         assert len(distances) == 3  # Nodes A, B, C
-        assert 'A' in distances
-        assert 'B' in distances
-        assert 'C' in distances
-        assert 'D' not in distances
-        assert 'E' not in distances
+        assert "A" in distances
+        assert "B" in distances
+        assert "C" in distances
+        assert "D" not in distances
+        assert "E" not in distances
 
     @pytest.mark.unit
     def test_dijkstra_all_distances_invalid_start(self) -> None:
@@ -324,19 +323,19 @@ class TestDijkstraComparisonWithBFS:
         # Arrange - create graph where shortest path by hops != shortest by weight
         graph = nx.Graph()
         graph.add_edges_from([
-            ('A', 'B', {'weight': 1.0}),
-            ('B', 'C', {'weight': 1.0}),
-            ('C', 'D', {'weight': 1.0}),
-            ('A', 'D', {'weight': 2.5}),  # Direct path has lower total weight
+            ("A", "B", {"weight": 1.0}),
+            ("B", "C", {"weight": 1.0}),
+            ("C", "D", {"weight": 1.0}),
+            ("A", "D", {"weight": 2.5}),  # Direct path has lower total weight
         ])
 
         # Act - find shortest path with Dijkstra
-        result = dijkstra_shortest_path(graph, 'A', 'D')
+        result = dijkstra_shortest_path(graph, "A", "D")
 
         # Assert - should choose direct path (lower weight)
         assert result is not None
         path, weight = result
-        assert path == ['A', 'D']  # Direct path
+        assert path == ["A", "D"]  # Direct path
         assert weight == 2.5
 
     @pytest.mark.unit
@@ -345,13 +344,13 @@ class TestDijkstraComparisonWithBFS:
         # Arrange - create graph without weight attributes
         graph = nx.Graph()
         graph.add_edges_from([
-            ('A', 'B'),
-            ('B', 'C'),
-            ('A', 'C'),
+            ("A", "B"),
+            ("B", "C"),
+            ("A", "C"),
         ])
 
         # Act - find shortest path
-        result = dijkstra_shortest_path(graph, 'A', 'C')
+        result = dijkstra_shortest_path(graph, "A", "C")
 
         # Assert - should work with default weight of 1.0
         assert result is not None

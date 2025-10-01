@@ -6,6 +6,7 @@ __email__ = "jeffrichley@gmail.com"
 
 
 # Core helpers and utilities
+from algokit.algorithms.dynamic_programming import fibonacci
 from algokit.core.helpers import (
     HarborNetScenario,
     create_grid_graph,
@@ -16,7 +17,6 @@ from algokit.core.helpers import (
     save_harbor_scenario,
     validate_graph,
 )
-from algokit.algorithms.dynamic_programming import fibonacci
 
 # CLI imports
 try:

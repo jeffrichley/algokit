@@ -9,13 +9,13 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from algokit.core.helpers import create_grid_graph
 from algokit.algorithms.pathfinding.dfs import (
     dfs_all_reachable,
     dfs_connected_components,
     dfs_path,
     dfs_recursive_path,
 )
+from algokit.core.helpers import create_grid_graph
 
 
 class TestDFSProperties:

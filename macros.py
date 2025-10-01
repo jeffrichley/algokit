@@ -321,7 +321,7 @@ def render_algorithm_page(family_id: str, algorithm_slug: str) -> str:
                 parts.append(context)
 
             # Generate URL with properly structured query
-            query = ' | '.join(parts)
+            query = " | ".join(parts)
             url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
 
             # Default button text
@@ -627,7 +627,7 @@ def define_env(env):
                     parts.append(context)
 
                 # Generate URL with properly structured query
-                query = ' | '.join(parts)
+                query = " | ".join(parts)
                 url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
 
                 # Default button text
@@ -819,7 +819,7 @@ def define_env(env):
             parts.append(context)
 
         # Generate URL with properly structured query
-        query = ' | '.join(parts)
+        query = " | ".join(parts)
         url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
 
         # Default button text

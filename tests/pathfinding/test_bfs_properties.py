@@ -11,8 +11,8 @@ This module tests the fundamental properties of BFS to ensure correctness:
 import networkx as nx
 import pytest
 
-from algokit.core.helpers import HarborNetScenario, create_grid_graph
 from algokit.algorithms.pathfinding.bfs import bfs_path_length, bfs_shortest_path
+from algokit.core.helpers import HarborNetScenario, create_grid_graph
 
 
 class TestBFSProperties:

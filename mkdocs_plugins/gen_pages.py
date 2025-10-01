@@ -429,27 +429,27 @@ def update_mkdocs_navigation(discovery: DataDiscovery) -> None:
 
     # Read current mkdocs.yml
     mkdocs_path = Path(__file__).parent.parent / "mkdocs.yml"
-    with open(mkdocs_path, "r", encoding="utf-8") as f:
+    with open(mkdocs_path, encoding="utf-8") as f:
         content = f.read()
 
     # Find and replace the nav section
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
     in_nav_section = False
     nav_indent = 0
 
     for line in lines:
-        if line.strip().startswith('nav:'):
+        if line.strip().startswith("nav:"):
             in_nav_section = True
             nav_indent = len(line) - len(line.lstrip())
             # Add the new navigation
             new_lines.extend(nav_lines)
-            new_lines.append('')  # Add blank line after nav
+            new_lines.append("")  # Add blank line after nav
             continue
 
         if in_nav_section:
             # Check if we're still in the nav section
-            if line.strip() and not line.startswith(' ' * (nav_indent + 1)) and not line.startswith(' ' * nav_indent):
+            if line.strip() and not line.startswith(" " * (nav_indent + 1)) and not line.startswith(" " * nav_indent):
                 # We've left the nav section
                 in_nav_section = False
                 new_lines.append(line)  # Add the current line
@@ -459,10 +459,10 @@ def update_mkdocs_navigation(discovery: DataDiscovery) -> None:
         new_lines.append(line)
 
     # Write the updated content
-    with open(mkdocs_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(new_lines))
+    with open(mkdocs_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(new_lines))
 
-    print(f"DEBUG: Updated mkdocs.yml with dynamic navigation")
+    print("DEBUG: Updated mkdocs.yml with dynamic navigation")
 
 
 def main():

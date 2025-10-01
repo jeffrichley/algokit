@@ -5,8 +5,8 @@ import random
 import networkx as nx
 import pytest
 
-from algokit.core.helpers import create_grid_graph
 from algokit.algorithms.pathfinding.bfs import bfs_path_length, bfs_shortest_path
+from algokit.core.helpers import create_grid_graph
 
 
 class TestBFSPropertyBased:

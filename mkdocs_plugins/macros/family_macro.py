@@ -4,8 +4,8 @@ This module provides the family_page() macro function that renders
 family overview pages using Jinja2 templates and YAML data.
 """
 
-from pathlib import Path
 import urllib.parse
+from pathlib import Path
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -124,7 +124,7 @@ def chatgpt_widget(
         parts.append(context)
 
     # Generate URL
-    query = ' | '.join(parts)
+    query = " | ".join(parts)
     url = f"https://chat.openai.com/?q={urllib.parse.quote(query)}"
 
     # Default button text
@@ -132,7 +132,7 @@ def chatgpt_widget(
         button_text = f"🤖 Ask ChatGPT about {algorithm}"
 
     # Generate HTML with proper Material Design styling
-    return f'''
+    return f"""
     <a href="{url}"
        target="_blank"
        rel="noopener noreferrer"
@@ -140,7 +140,7 @@ def chatgpt_widget(
        style="margin: 8px 4px; text-decoration: none;">
         {button_text}
     </a>
-    '''
+    """
 
 
 def family_page(family_id: str) -> str:

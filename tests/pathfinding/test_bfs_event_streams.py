@@ -3,9 +3,9 @@
 import networkx as nx
 import pytest
 
-from algokit.core.helpers import create_grid_graph
 from algokit.algorithms.pathfinding.bfs import bfs_shortest_path
 from algokit.algorithms.pathfinding.bfs_with_events import bfs_with_data_collection
+from algokit.core.helpers import create_grid_graph
 from algokit.viz.adapters import EventType
 
 
