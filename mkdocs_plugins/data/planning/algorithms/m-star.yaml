@@ -5,7 +5,7 @@
 slug: m-star
 name: M*
 family_id: planning
-hidden: true  # Hidden by default
+hidden: false  # Algorithm is implemented
 aliases: ["M*", "Multi-Agent Pathfinding", "MAPF"]
 order: 7
 
@@ -323,8 +323,10 @@ status:
 
 # References and resources
 references:
-  - bib_key: "wagner2011"
-  - bib_key: "stern2019"
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "wagner2011"
+      - bib_key: "stern2019"
 
 # Related algorithms
 related_algorithms:

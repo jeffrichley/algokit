@@ -12,13 +12,13 @@
 # Global metadata and configuration
 metadata:
   version: "1.0.0"
-  last_updated: "2025-09-03"
+  last_updated: "2025-10-02"
   total_families: 9
-  total_algorithms: 40
+  total_algorithms: 44
   implementation_status:
-    complete: 6
-    planned: 34
-    percentage: 15.0
+    complete: 10
+    planned: 30
+    percentage: 22.7
 
 # Algorithm families with overview information
 families:
@@ -169,9 +169,9 @@ families:
       - "search-algorithms"
       - "optimization"
       - "graph-algorithms"
-    status: "planned"
-    algorithms_count: 0
-    planned_count: 4
+    status: "complete"
+    algorithms_count: 4
+    planned_count: 0
 
   gaussian-process:
     name: "Gaussian Processes"
@@ -540,6 +540,84 @@ algorithms:
       - "a-star-search"
       - "dijkstra"
       - "conflict-based-search"
+
+  breadth-first-search:
+    name: "Breadth-First Search"
+    family: "planning"
+    status: "complete"
+    description: "Graph traversal algorithm that explores nodes level by level, guaranteeing shortest path in unweighted graphs"
+    overview: "Breadth-First Search (BFS) is a fundamental graph traversal algorithm that explores nodes in layers, starting from the root and moving outward level by level. BFS guarantees finding the shortest path in unweighted graphs and is complete and optimal for such cases."
+    complexity:
+      time: "O(V + E)"
+      space: "O(V)"
+      notes: "V = vertices, E = edges"
+    tags:
+      - "planning"
+      - "algorithms"
+      - "graph-search"
+      - "breadth-first"
+      - "shortest-path"
+      - "level-order"
+    implementation:
+      source_file: "src/algokit/algorithms/pathfinding/bfs.py"
+      test_file: "tests/pathfinding/test_bfs.py"
+      approaches:
+        - "Basic BFS Implementation"
+        - "BFS with Path Reconstruction"
+        - "BFS with Event Tracking"
+    mathematical_formulation:
+      queue_operations: "FIFO (First In, First Out) queue"
+      exploration_order: "Level by level, left to right"
+      optimality: "Guarantees shortest path in unweighted graphs"
+    applications:
+      - "Shortest path finding"
+      - "Level-order tree traversal"
+      - "Social network analysis"
+      - "Web crawling"
+      - "Puzzle solving"
+    related_algorithms:
+      - "depth-first-search"
+      - "dijkstra"
+      - "a-star-search"
+
+  depth-first-search:
+    name: "Depth-First Search"
+    family: "planning"
+    status: "complete"
+    description: "Graph traversal algorithm that explores as far as possible along each branch before backtracking"
+    overview: "Depth-First Search (DFS) is a graph traversal algorithm that explores as far as possible along each branch before backtracking. DFS uses a stack (either explicitly or through recursion) and is particularly useful for topological sorting, cycle detection, and maze solving."
+    complexity:
+      time: "O(V + E)"
+      space: "O(V)"
+      notes: "V = vertices, E = edges (space for recursion stack)"
+    tags:
+      - "planning"
+      - "algorithms"
+      - "graph-search"
+      - "depth-first"
+      - "backtracking"
+      - "recursive"
+    implementation:
+      source_file: "src/algokit/algorithms/pathfinding/dfs.py"
+      test_file: "tests/pathfinding/test_dfs.py"
+      approaches:
+        - "Recursive DFS Implementation"
+        - "Iterative DFS with Stack"
+        - "DFS with Path Tracking"
+    mathematical_formulation:
+      stack_operations: "LIFO (Last In, First Out) stack"
+      exploration_order: "Deep first, then backtrack"
+      termination: "When all reachable nodes are visited"
+    applications:
+      - "Maze solving"
+      - "Topological sorting"
+      - "Cycle detection"
+      - "Connected components"
+      - "Tree traversal"
+    related_algorithms:
+      - "breadth-first-search"
+      - "topological-sort"
+      - "strongly-connected-components"
 
   # Reinforcement Learning Family (Planned)
   q-learning:

@@ -5,7 +5,7 @@
 slug: a-star-search
 name: A* Search
 family_id: planning
-hidden: true  # Hidden by default
+hidden: false  # Algorithm is implemented
 aliases: ["A*", "A-star", "Heuristic Search"]
 order: 1
 
@@ -223,8 +223,10 @@ status:
 
 # References and resources
 references:
-  - bib_key: "cormen2009"
-  - bib_key: "russell2003"
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "cormen2009"
+      - bib_key: "russell2003"
 
 # Related algorithms
 related_algorithms:
