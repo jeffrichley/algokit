@@ -83,7 +83,9 @@ class ParameterDefinition(BaseModel):
 
     @field_validator("default")
     @classmethod
-    def validate_default_type(cls, v, info):
+    def validate_default_type(
+        cls, v: str | int | float | bool | list[Any] | dict[str, Any] | None, info: Any
+    ) -> str | int | float | bool | list[Any] | dict[str, Any] | None:
         """Validate that default value matches parameter type."""
         if v is None:
             return v

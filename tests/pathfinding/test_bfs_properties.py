@@ -7,7 +7,6 @@ This module tests the fundamental properties of BFS to ensure correctness:
 - Parent pointer reconstruction
 """
 
-
 import networkx as nx
 import pytest
 
@@ -28,14 +27,14 @@ class TestBFSProperties:
             graph.add_node(i)
         for i in range(4):
             graph.add_edge(i, i + 1)
-        
+
         # Act - run BFS and count operations
         path = bfs_shortest_path(graph, 0, 4)
-        
+
         # Assert - verify path is optimal
         assert path == [0, 1, 2, 3, 4]
         assert len(path) == 5  # Minimum possible path length
-        
+
         # Verify we found the shortest path (4 hops)
         length = bfs_path_length(graph, 0, 4)
         assert length == 4
@@ -49,14 +48,14 @@ class TestBFSProperties:
         graph.add_edges_from([("A", "B"), ("B", "C")])
         # Long path: A-D-E-F-C (4 hops)
         graph.add_edges_from([("A", "D"), ("D", "E"), ("E", "F"), ("F", "C")])
-        
+
         # Act - find path from A to C
         path = bfs_shortest_path(graph, "A", "C")
-        
+
         # Assert - should find the shorter path
         assert path == ["A", "B", "C"]
         assert len(path) == 3  # 2 hops + start node
-        
+
         # Verify path length is correct
         length = bfs_path_length(graph, "A", "C")
         assert length == 2
@@ -72,19 +71,15 @@ class TestBFSProperties:
         #  1     2
         # / \   / \
         # 3  4  5  6
-        graph.add_edges_from([
-            (0, 1), (0, 2),
-            (1, 3), (1, 4),
-            (2, 5), (2, 6)
-        ])
-        
+        graph.add_edges_from([(0, 1), (0, 2), (1, 3), (1, 4), (2, 5), (2, 6)])
+
         # Act - find path from root to leaf
         path = bfs_shortest_path(graph, 0, 6)
-        
+
         # Assert - should find shortest path (2 hops)
         assert path == [0, 2, 6]
         assert len(path) == 3
-        
+
         # Verify all paths from root to leaves are 2 hops
         for leaf in [3, 4, 5, 6]:
             length = bfs_path_length(graph, 0, leaf)
@@ -101,26 +96,33 @@ class TestBFSProperties:
         # 3-4-5
         # |   |
         # 6-7-8
-        graph.add_edges_from([
-            (0, 1), (1, 2),
-            (0, 3), (2, 5),
-            (3, 4), (4, 5),
-            (3, 6), (5, 8),
-            (6, 7), (7, 8)
-        ])
-        
+        graph.add_edges_from(
+            [
+                (0, 1),
+                (1, 2),
+                (0, 3),
+                (2, 5),
+                (3, 4),
+                (4, 5),
+                (3, 6),
+                (5, 8),
+                (6, 7),
+                (7, 8),
+            ]
+        )
+
         # Act - find path from corner to corner
         path = bfs_shortest_path(graph, 0, 8)
-        
+
         # Assert - verify path is valid and optimal
         assert path is not None
         assert path[0] == 0
         assert path[-1] == 8
-        
+
         # Verify each step in path is a valid edge
         for i in range(len(path) - 1):
             assert graph.has_edge(path[i], path[i + 1])
-        
+
         # Verify path length is optimal (4 hops)
         assert len(path) == 5  # 4 hops + start node
         length = bfs_path_length(graph, 0, 8)
@@ -133,15 +135,16 @@ class TestBFSProperties:
         graph = nx.Graph()
         # Diamond structure: A-B-C and A-D-C (both 2 hops)
         graph.add_edges_from([("A", "B"), ("B", "C"), ("A", "D"), ("D", "C")])
-        
+
         # Act - find path multiple times
         paths = []
         for _ in range(10):
             path = bfs_shortest_path(graph, "A", "C")
             paths.append(path)
-        
+
         # Assert - all paths should be valid and same length
         for path in paths:
+            assert path is not None, "BFS should find a path in connected graph"
             assert len(path) == 3  # 2 hops + start node
             assert path[0] == "A"
             assert path[-1] == "C"
@@ -157,13 +160,13 @@ class TestBFSProperties:
         graph.add_edges_from([("A", "B"), ("B", "C")])
         # Component 2: D-E-F
         graph.add_edges_from([("D", "E"), ("E", "F")])
-        
+
         # Act - try to find path between disconnected components
         path = bfs_shortest_path(graph, "A", "F")
-        
+
         # Assert - should return None
         assert path is None
-        
+
         # Verify path length also returns None
         length = bfs_path_length(graph, "A", "F")
         assert length is None
@@ -174,7 +177,7 @@ class TestBFSProperties:
         # Arrange - create graph with single node
         graph = nx.Graph()
         graph.add_node("A")
-        
+
         # Act & Assert - should raise error for same start/goal
         with pytest.raises(ValueError, match="Start and goal nodes cannot be the same"):
             bfs_shortest_path(graph, "A", "A")
@@ -184,11 +187,10 @@ class TestBFSProperties:
         """Test BFS behavior with empty graph."""
         # Arrange - create empty graph
         graph = nx.Graph()
-        
+
         # Act & Assert - should raise error for missing nodes
         with pytest.raises(ValueError, match="Start node A not found in graph"):
             bfs_shortest_path(graph, "A", "B")
-
 
     @pytest.mark.integration
     def test_bfs_harbor_net_scenario_properties(self) -> None:
@@ -202,28 +204,32 @@ class TestBFSProperties:
             goal=(9, 9),
             obstacles={(4, 4), (5, 5), (6, 6)},  # Diagonal obstacle line
         )
-        graph = create_grid_graph(scenario.width, scenario.height, blocked=scenario.obstacles)
-        
+        graph = create_grid_graph(
+            scenario.width, scenario.height, blocked=scenario.obstacles
+        )
+
         # Act - find path
         path = bfs_shortest_path(graph, scenario.start, scenario.goal)
-        
+
         # Assert - verify BFS properties
         assert path is not None
         assert path[0] == scenario.start
         assert path[-1] == scenario.goal
-        
+
         # Verify path avoids obstacles
         for node in path:
             assert node not in scenario.obstacles
-        
+
         # Verify path length is optimal
         length = bfs_path_length(graph, scenario.start, scenario.goal)
         assert length == len(path) - 1  # Path length should match distance
-        
+
         # Verify each step is a valid move
         for i in range(len(path) - 1):
             current = path[i]
             next_node = path[i + 1]
             # Should be adjacent (Manhattan distance = 1)
-            manhattan_dist = abs(current[0] - next_node[0]) + abs(current[1] - next_node[1])
+            manhattan_dist = abs(current[0] - next_node[0]) + abs(
+                current[1] - next_node[1]
+            )
             assert manhattan_dist == 1

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from algokit.cli.models.config import Config
-from algokit.cli.models.output import OutputArtifact, RunMetadata
+from algokit.cli.models.output import ArtifactType, OutputArtifact, RunMetadata
 from algokit.cli.utils.logging import get_logger
 
 
@@ -158,7 +158,7 @@ class OutputManager:
         # Create artifact metadata
         artifact = OutputArtifact(
             name=artifact_path.name,
-            type=params.artifact_type,
+            type=ArtifactType(params.artifact_type),
             path=artifact_path,
             size_bytes=artifact_path.stat().st_size if artifact_path.exists() else 0,
             algorithm=params.algorithm,
@@ -517,7 +517,7 @@ class OutputManager:
 
                 shutil.rmtree(run_dir)
                 cleaned_runs.append(run_dir)
-                cleaned_size_mb += run_size_mb
+                cleaned_size_mb += int(run_size_mb)
 
                 self.logger.info(
                     f"Optimized storage by removing: {run_dir.name} ({run_size_mb:.2f} MB)"
@@ -542,7 +542,7 @@ def get_output_manager(config: Config | None = None) -> OutputManager:
     Returns:
         Global OutputManager instance.
     """
-    global _output_manager  # noqa: PLW0603
+    global _output_manager
 
     if _output_manager is None or config is not None:
         _output_manager = OutputManager(config)

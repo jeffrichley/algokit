@@ -11,12 +11,14 @@ from algokit.cli.core.executor import (
 )
 from algokit.cli.core.executor import TimeoutError as ExecutorTimeoutError
 from algokit.cli.core.validator import (
-    ParameterValidator,
+    ParameterDefinitionValidationError as ParameterValidationError,
+)
+from algokit.cli.core.validator import (
+    ParameterDefinitionValidator,
     ValidationReport,
     ValidationResult,
     ValidationSeverity,
 )
-from algokit.cli.core.validator import ValidationError as ParameterValidationError
 
 __all__ = [
     # Executor classes
@@ -29,7 +31,7 @@ __all__ = [
     "ResourceError",
     "AlgorithmWrapper",
     # Validator classes
-    "ParameterValidator",
+    "ParameterDefinitionValidator",
     "ValidationResult",
     "ValidationReport",
     "ValidationSeverity",

@@ -32,7 +32,7 @@ class HarborNetScenario:
         obstacles: set[tuple[int, int]] | None = None,
         description: str | None = None,
         narrative: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize a HarborNet scenario.
 
@@ -347,7 +347,7 @@ def save_graph_to_json(graph: nx.Graph, file_path: str | Path) -> None:
         graph: NetworkX graph to save
         file_path: Path to save graph file
     """
-    data = {
+    data: dict[str, Any] = {
         "nodes": [],
         "edges": [],
         "metadata": dict(graph.graph),

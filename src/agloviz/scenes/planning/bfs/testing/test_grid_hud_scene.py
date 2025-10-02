@@ -1,4 +1,4 @@
-from manim import *
+from manim import BLUE_C, LEFT, ORIGIN, WHITE, Scene
 
 from agloviz.components.grid_overlay import GridOverlay
 from agloviz.components.hud_panel import HUDPanel
@@ -6,14 +6,14 @@ from agloviz.config.scenario import Scenario
 
 
 class TestGridHudScene(Scene):
-    def construct(self):
+    def construct(self) -> None:
         # 🎯 Create and display the smart grid
         grid = GridOverlay(
             grid_width=10,
             grid_height=6,
             cell_size=0.6,
             grid_color=WHITE,
-            scenario=Scenario(name="Test")
+            scenario=Scenario(name="Test"),
         )
         grid.move_to(ORIGIN)
         self.add(grid)
@@ -24,8 +24,7 @@ class TestGridHudScene(Scene):
 
         # 🎯 Create and show the HUD panel
         hud = HUDPanel(
-            values={"Visited": 0, "Frontier": 1, "Depth": 0, "Queue": 1},
-            max_lines=2
+            values={"Visited": 0, "Frontier": 1, "Depth": 0, "Queue": 1}, max_lines=2
         )
         hud.to_edge(LEFT, buff=0.4)
         self.add(hud)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from manim import (
     BLACK,
     DOWN,
@@ -10,8 +12,9 @@ from manim import (
     Text,
     VGroup,
 )
+from manim.typing import Color
 
-from agloviz.core.fonts import get_font
+from agloviz.core.font_utils import get_font
 
 
 class HUDPanel(VGroup):
@@ -32,18 +35,28 @@ class HUDPanel(VGroup):
         font_size: int = 20,
         corner_radius: float | None = None,
         stroke_width: float | None = None,
-        stroke_color = None,
-        fill_color = None,
+        stroke_color: Color | None = None,
+        fill_color: Color | None = None,
         fill_opacity: float | None = None,
-        **kwargs
+        **kwargs: Any,
     ):
         super().__init__(**kwargs)
         # Use provided style values or defaults
-        self.corner_radius = corner_radius if corner_radius is not None else self.DEFAULT_CORNER_RADIUS
-        self.stroke_width = stroke_width if stroke_width is not None else self.DEFAULT_STROKE_WIDTH
-        self.stroke_color = stroke_color if stroke_color is not None else self.DEFAULT_STROKE_COLOR
-        self.fill_color = fill_color if fill_color is not None else self.DEFAULT_FILL_COLOR
-        self.fill_opacity = fill_opacity if fill_opacity is not None else self.DEFAULT_BG_FILL_OPACITY
+        self.corner_radius = (
+            corner_radius if corner_radius is not None else self.DEFAULT_CORNER_RADIUS
+        )
+        self.stroke_width = (
+            stroke_width if stroke_width is not None else self.DEFAULT_STROKE_WIDTH
+        )
+        self.stroke_color = (
+            stroke_color if stroke_color is not None else self.DEFAULT_STROKE_COLOR
+        )
+        self.fill_color = (
+            fill_color if fill_color is not None else self.DEFAULT_FILL_COLOR
+        )
+        self.fill_opacity = (
+            fill_opacity if fill_opacity is not None else self.DEFAULT_BG_FILL_OPACITY
+        )
 
         self.max_lines = max_lines
         self.font_size = font_size
@@ -53,17 +66,16 @@ class HUDPanel(VGroup):
 
         self._build_panel(values)
 
-    def _build_panel(self, values: dict[str, float]):
+    def _build_panel(self, values: dict[str, float]) -> None:
         # Create label-number pairs
-        rows = [[] for _ in range(self.max_lines)]
+        rows: list[list[Any]] = [[] for _ in range(self.max_lines)]
         keys = list(values.keys())
         for i, key in enumerate(keys):
-            
             tracker = Integer(
                 int(values[key]),
                 font_size=self.font_size,
             ).set_font(get_font("hud"))
-            
+
             label = Text(
                 f"{key}:",
                 font_size=self.font_size,
@@ -80,7 +92,9 @@ class HUDPanel(VGroup):
 
         # Arrange the rows vertically
         line_groups = [VGroup(*row).arrange(RIGHT, buff=0.4) for row in rows if row]
-        self.text_block = VGroup(*line_groups).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
+        self.text_block = VGroup(*line_groups).arrange(
+            DOWN, aligned_edge=LEFT, buff=0.25
+        )
 
         # Compute size needed for background
         padding_x = 0.4
@@ -97,13 +111,15 @@ class HUDPanel(VGroup):
             stroke_width=self.stroke_width,
             stroke_color=self.stroke_color,
             fill_color=self.fill_color,
-            fill_opacity=self.fill_opacity
+            fill_opacity=self.fill_opacity,
         )
 
         self.add(background, self.text_block)
         self.text_block.move_to(background.get_center())
 
-    def update_values(self, new_values: dict[str, float], scene: Scene, run_time: float = 0.5) -> None:
+    def update_values(
+        self, new_values: dict[str, float], scene: Scene, run_time: float = 0.5
+    ) -> None:
         """Animate updates to existing HUD values."""
         animations = []
 

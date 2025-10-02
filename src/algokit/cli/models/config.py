@@ -54,7 +54,7 @@ class GlobalConfig(BaseModel):
 
     @field_validator("max_runs")
     @classmethod
-    def validate_max_runs(cls, v):
+    def validate_max_runs(cls, v: int) -> int:
         """Validate max_runs is positive."""
         if v <= 0:
             raise ValueError("max_runs must be positive")
@@ -81,7 +81,7 @@ class RLConfig(BaseModel):
 
     @field_validator("default_episodes")
     @classmethod
-    def validate_episodes(cls, v):
+    def validate_episodes(cls, v: int) -> int:
         """Validate episodes is positive."""
         if v <= 0:
             raise ValueError("default_episodes must be positive")
@@ -89,7 +89,7 @@ class RLConfig(BaseModel):
 
     @field_validator("default_learning_rate")
     @classmethod
-    def validate_learning_rate(cls, v):
+    def validate_learning_rate(cls, v: float) -> float:
         """Validate learning rate is in valid range."""
         if not 0 < v <= 1:
             raise ValueError("default_learning_rate must be in range (0, 1]")
@@ -97,7 +97,7 @@ class RLConfig(BaseModel):
 
     @field_validator("default_gamma")
     @classmethod
-    def validate_gamma(cls, v):
+    def validate_gamma(cls, v: float) -> float:
         """Validate gamma is in valid range."""
         if not 0 <= v <= 1:
             raise ValueError("default_gamma must be in range [0, 1]")
@@ -105,7 +105,7 @@ class RLConfig(BaseModel):
 
     @field_validator("default_epsilon")
     @classmethod
-    def validate_epsilon(cls, v):
+    def validate_epsilon(cls, v: float) -> float:
         """Validate epsilon is in valid range."""
         if not 0 <= v <= 1:
             raise ValueError("default_epsilon must be in range [0, 1]")
@@ -113,7 +113,7 @@ class RLConfig(BaseModel):
 
     @field_validator("default_epsilon_decay")
     @classmethod
-    def validate_epsilon_decay(cls, v):
+    def validate_epsilon_decay(cls, v: float) -> float:
         """Validate epsilon decay is in valid range."""
         if not 0 < v <= 1:
             raise ValueError("default_epsilon_decay must be in range (0, 1]")
@@ -135,7 +135,7 @@ class DMPsConfig(BaseModel):
 
     @field_validator("default_duration")
     @classmethod
-    def validate_duration(cls, v):
+    def validate_duration(cls, v: float) -> float:
         """Validate duration is positive."""
         if v <= 0:
             raise ValueError("default_duration must be positive")
@@ -143,7 +143,7 @@ class DMPsConfig(BaseModel):
 
     @field_validator("default_scaling")
     @classmethod
-    def validate_scaling(cls, v):
+    def validate_scaling(cls, v: float) -> float:
         """Validate scaling is positive."""
         if v <= 0:
             raise ValueError("default_scaling must be positive")
@@ -151,7 +151,7 @@ class DMPsConfig(BaseModel):
 
     @field_validator("default_alpha")
     @classmethod
-    def validate_alpha(cls, v):
+    def validate_alpha(cls, v: float) -> float:
         """Validate alpha is positive."""
         if v <= 0:
             raise ValueError("default_alpha must be positive")
@@ -159,7 +159,7 @@ class DMPsConfig(BaseModel):
 
     @field_validator("default_beta")
     @classmethod
-    def validate_beta(cls, v):
+    def validate_beta(cls, v: float) -> float:
         """Validate beta is positive."""
         if v <= 0:
             raise ValueError("default_beta must be positive")
@@ -181,7 +181,7 @@ class ControlConfig(BaseModel):
 
     @field_validator("default_sampling_rate")
     @classmethod
-    def validate_sampling_rate(cls, v):
+    def validate_sampling_rate(cls, v: float) -> float:
         """Validate sampling rate is positive."""
         if v <= 0:
             raise ValueError("default_sampling_rate must be positive")
@@ -219,7 +219,7 @@ class OutputConfig(BaseModel):
 
     @field_validator("video_fps")
     @classmethod
-    def validate_video_fps(cls, v):
+    def validate_video_fps(cls, v: int) -> int:
         """Validate video FPS is positive."""
         if v <= 0:
             raise ValueError("video_fps must be positive")
@@ -227,7 +227,7 @@ class OutputConfig(BaseModel):
 
     @field_validator("log_retention_days")
     @classmethod
-    def validate_retention_days(cls, v):
+    def validate_retention_days(cls, v: int) -> int:
         """Validate retention days is non-negative."""
         if v < 0:
             raise ValueError("log_retention_days must be non-negative")
@@ -246,7 +246,7 @@ class ExecutionConfig(BaseModel):
 
     @field_validator("max_workers")
     @classmethod
-    def validate_max_workers(cls, v):
+    def validate_max_workers(cls, v: int) -> int:
         """Validate max workers is positive."""
         if v <= 0:
             raise ValueError("max_workers must be positive")
@@ -254,7 +254,7 @@ class ExecutionConfig(BaseModel):
 
     @field_validator("timeout_seconds")
     @classmethod
-    def validate_timeout(cls, v):
+    def validate_timeout(cls, v: int) -> int:
         """Validate timeout is positive."""
         if v <= 0:
             raise ValueError("timeout_seconds must be positive")
@@ -262,7 +262,7 @@ class ExecutionConfig(BaseModel):
 
     @field_validator("memory_limit_gb")
     @classmethod
-    def validate_memory_limit(cls, v):
+    def validate_memory_limit(cls, v: int) -> int:
         """Validate memory limit is positive."""
         if v <= 0:
             raise ValueError("memory_limit_gb must be positive")
@@ -537,8 +537,9 @@ class Config(BaseModel):
         # Set the final value
         current[keys[-1]] = value
 
-        # Reconstruct the config object
-        self.__init__(**config_dict)
+        # Update the config object with new values
+        for key, value in config_dict.items():
+            setattr(self, key, value)
 
     def validate_config(self) -> list[str]:
         """Validate the entire configuration.

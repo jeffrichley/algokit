@@ -114,7 +114,7 @@ class SimpleTracker:
 
         class TrackedDeque:
             def __init__(self, tracker: SimpleTracker) -> None:
-                self._deque = deque()
+                self._deque: deque[Any] = deque()
                 self._tracker = tracker
 
             def popleft(self) -> Any:
@@ -152,7 +152,7 @@ class SimpleTracker:
 
         class TrackedSet:
             def __init__(self, tracker: SimpleTracker) -> None:
-                self._set = set()
+                self._set: set[Any] = set()
                 self._tracker = tracker
 
             def add(self, item: Any) -> None:
@@ -210,12 +210,12 @@ def process_events_for_visualization(events: list[SearchEvent]) -> dict[str, Any
     Returns:
         Dictionary containing visualization data
     """
-    visualization_data = {
+    visualization_data: dict[str, Any] = {
         "steps": [],
         "frontier_history": [],
         "visited_history": [],
-        "path": None,
-        "goal_found_step": None,
+        "path": [],
+        "goal_found_step": 0,
     }
 
     current_frontier: list[Any] = []

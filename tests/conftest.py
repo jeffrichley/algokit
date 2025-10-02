@@ -137,8 +137,6 @@ def rl_assertions():
     return mock_assertions
 
 
-
-
 # CLI Testing fixtures
 @pytest.fixture(scope="function")
 def cli_runner():

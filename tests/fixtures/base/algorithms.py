@@ -55,8 +55,6 @@ def integration_test_config():
     )
 
 
-
-
 @pytest.fixture
 def benchmark_test_config():
     """Benchmark test configuration."""

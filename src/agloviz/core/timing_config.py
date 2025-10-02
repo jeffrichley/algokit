@@ -18,7 +18,7 @@ class BfsTimingConfig:
         if config_file is None:
             # Default config file location
             project_root = Path(__file__).parent.parent.parent.parent
-            config_file = (
+            config_file = str(
                 project_root
                 / "data"
                 / "examples"

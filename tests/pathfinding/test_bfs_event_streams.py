@@ -28,6 +28,25 @@ class TestBFSEventStreams:
         assert enqueue_events[0].node in [(1, 0), (0, 1)]
 
     @pytest.mark.unit
+    def test_bfs_events_decorator_functionality(self) -> None:
+        """Test that the decorator is actually working and collecting events."""
+        # Arrange - create simple 2x2 grid
+        graph = create_grid_graph(2, 2)
+
+        # Act - run BFS with event tracking
+        path, events = bfs_with_data_collection(graph, (0, 0), (1, 1))
+
+        # Assert - verify that events are actually collected (not empty)
+        assert events is not None
+        assert len(events) > 0, "Decorator should collect events, but got empty list"
+
+        # Verify we have different types of events
+        event_types = {e.type for e in events}
+        assert EventType.ENQUEUE in event_types, "Should have ENQUEUE events"
+        assert EventType.DEQUEUE in event_types, "Should have DEQUEUE events"
+        assert EventType.DISCOVER in event_types, "Should have DISCOVER events"
+
+    @pytest.mark.unit
     def test_bfs_events_dequeue_order(self) -> None:
         """Test that events are dequeued in correct order."""
         # Arrange - create simple 2x2 grid
@@ -114,11 +133,16 @@ class TestBFSEventStreams:
         # Assert - verify proxy objects worked correctly
         assert path is not None
         assert len(events) > 0
-        
+
         # Check that we have the expected event types
         event_types = {e.type for e in events}
-        expected_types = {EventType.ENQUEUE, EventType.DEQUEUE, EventType.DISCOVER, 
-                         EventType.GOAL_FOUND, EventType.PATH_RECONSTRUCT}
+        expected_types = {
+            EventType.ENQUEUE,
+            EventType.DEQUEUE,
+            EventType.DISCOVER,
+            EventType.GOAL_FOUND,
+            EventType.PATH_RECONSTRUCT,
+        }
         assert expected_types.issubset(event_types)
 
     @pytest.mark.unit
@@ -136,7 +160,7 @@ class TestBFSEventStreams:
         # Assert - no path found, but events should still be collected
         assert path is None
         assert len(events) > 0
-        
+
         # Should have enqueue/dequeue events but no goal found
         event_types = {e.type for e in events}
         assert EventType.GOAL_FOUND not in event_types
@@ -156,7 +180,7 @@ class TestBFSEventStreams:
         assert all(isinstance(step, int) for step in steps)
         assert min(steps) >= 0
         assert max(steps) <= len(events)
-        
+
         # Steps should be mostly sequential (allowing for some flexibility)
         unique_steps = set(steps)
         assert len(unique_steps) > 1  # Should have multiple steps

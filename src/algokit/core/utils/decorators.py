@@ -5,12 +5,20 @@ logging, or other functionality to pure algorithm implementations
 without polluting the core algorithm code.
 """
 
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar
 
-from algokit.viz.adapters import EventType, SimpleTracker
+import networkx as nx
+
+from algokit.viz.adapters import EventType, SearchEvent, SimpleTracker
+
+Node = TypeVar("Node")
 
 
-def with_event_tracking(func):
+def with_event_tracking[Node](
+    func: Callable[[nx.Graph, Node, Node], list[Node] | None],
+) -> Callable[[nx.Graph, Node, Node], tuple[list[Node] | None, list[SearchEvent]]]:
     """Decorator to add event tracking to BFS algorithm.
 
     This decorator wraps the pure BFS algorithm to collect events for
@@ -31,7 +39,9 @@ def with_event_tracking(func):
     """
 
     @wraps(func)
-    def wrapper(graph, start, goal):
+    def wrapper(
+        graph: nx.Graph, start: Node, goal: Node
+    ) -> tuple[list[Node] | None, list[SearchEvent]]:
         # Validate inputs (same as pure function)
         if start not in graph:
             raise ValueError(f"Start node {start} not found in graph")
@@ -122,7 +132,7 @@ def with_event_tracking(func):
     return wrapper
 
 
-def with_logging(func):
+def with_logging[T](func: Callable[..., T]) -> Callable[..., T]:
     """Decorator to add logging to algorithm functions.
 
     This decorator adds logging functionality to track algorithm execution
@@ -136,7 +146,7 @@ def with_logging(func):
     """
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> T:
         # Add logging here if needed
         # For now, just call the original function
         return func(*args, **kwargs)
@@ -144,7 +154,7 @@ def with_logging(func):
     return wrapper
 
 
-def with_timing(func):
+def with_timing[T](func: Callable[..., T]) -> Callable[..., tuple[T, float]]:
     """Decorator to add timing information to algorithm functions.
 
     This decorator measures execution time of algorithm functions
@@ -159,7 +169,7 @@ def with_timing(func):
     import time
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> tuple[T, float]:
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()

@@ -111,7 +111,7 @@ class OutputArtifact(BaseModel):
 
     @field_validator("size_bytes")
     @classmethod
-    def validate_size_bytes(cls, v):
+    def validate_size_bytes(cls, v: int) -> int:
         """Validate size is non-negative."""
         if v < 0:
             raise ValueError("size_bytes must be non-negative")
@@ -119,7 +119,7 @@ class OutputArtifact(BaseModel):
 
     @field_validator("path")
     @classmethod
-    def validate_path(cls, v):
+    def validate_path(cls, v: str | Path) -> Path:
         """Validate path is a Path object."""
         if isinstance(v, str):
             return Path(v)
@@ -255,7 +255,7 @@ class RunMetadata(BaseModel):
 
     @field_validator("duration_seconds")
     @classmethod
-    def validate_duration(cls, v):
+    def validate_duration(cls, v: float | None) -> float | None:
         """Validate duration is non-negative."""
         if v is not None and v < 0:
             raise ValueError("duration_seconds must be non-negative")
@@ -263,7 +263,7 @@ class RunMetadata(BaseModel):
 
     @field_validator("exit_code")
     @classmethod
-    def validate_exit_code(cls, v):
+    def validate_exit_code(cls, v: int | None) -> int | None:
         """Validate exit code is valid."""
         if v is not None and not isinstance(v, int):
             raise ValueError("exit_code must be an integer")
@@ -271,7 +271,7 @@ class RunMetadata(BaseModel):
 
     @field_validator("output_dir")
     @classmethod
-    def validate_output_dir(cls, v):
+    def validate_output_dir(cls, v: str | Path) -> Path:
         """Validate output directory is a Path object."""
         if isinstance(v, str):
             return Path(v)

@@ -93,7 +93,7 @@ def astar_single(
     """Standard A* for a single agent (admissible heuristic from precomputed costs)."""
     if start == goal:
         return [start]
-    open_heap = []
+    open_heap: list[tuple[float, Pos]] = []
     g = {start: 0.0}
     f0 = g[start] + h_costs.get(start, 0.0)
     heapq.heappush(open_heap, (f0, start))
@@ -168,10 +168,10 @@ class JointNode:
         self.poses = poses
         self.t = t
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.poses, self.t))
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, JointNode)
             and self.poses == other.poses
@@ -224,7 +224,7 @@ def coupled_astar_repair(
 
     # Open set
     start_node = JointNode(start_poses, start_time)
-    open_heap = []
+    open_heap: list[tuple[float, int, JointNode]] = []
     g_cost = {start_node: 0.0}
     f0 = h(start_poses)
     heapq.heappush(open_heap, (f0, 0, start_node))  # (f, tie, node)

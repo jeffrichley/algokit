@@ -74,7 +74,9 @@ class TestDFSPath:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             dfs_path(graph, (99, 99), (2, 2))
 
     @pytest.mark.unit
@@ -84,7 +86,9 @@ class TestDFSPath:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Goal node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Goal node \\(99, 99\\) not found in graph"
+        ):
             dfs_path(graph, (0, 0), (99, 99))
 
     @pytest.mark.unit
@@ -115,7 +119,7 @@ class TestDFSPath:
         assert len(path) >= 9  # At least Manhattan distance
         assert path[0] == (0, 0)
         assert path[-1] == (4, 4)
-        
+
         # Verify each step is a valid edge
         for i in range(len(path) - 1):
             assert graph.has_edge(path[i], path[i + 1])
@@ -252,7 +256,9 @@ class TestDFSAllReachable:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             dfs_all_reachable(graph, (99, 99))
 
 
@@ -284,22 +290,22 @@ class TestDFSConnectedComponents:
 
         # Assert - should find three components
         assert len(components) == 3
-        
+
         # Sort components by size for consistent testing
         components.sort(key=len, reverse=True)
-        
+
         # Largest component: 0, 1, 2
         assert len(components[0]) == 3
         assert 0 in components[0]
         assert 1 in components[0]
         assert 2 in components[0]
-        
+
         # Medium component: 5, 6, 7
         assert len(components[1]) == 3
         assert 5 in components[1]
         assert 6 in components[1]
         assert 7 in components[1]
-        
+
         # Smallest component: 3, 4
         assert len(components[2]) == 2
         assert 3 in components[2]
@@ -341,15 +347,20 @@ class TestDFSComparisonWithBFS:
         """Test that DFS may find longer paths than BFS."""
         # Arrange - create graph where DFS might find longer path
         graph = nx.Graph()
-        graph.add_edges_from([
-            (0, 1), (1, 2), (2, 3), (3, 4),  # Long path
-            (0, 4),  # Direct edge
-        ])
+        graph.add_edges_from(
+            [
+                (0, 1),
+                (1, 2),
+                (2, 3),
+                (3, 4),  # Long path
+                (0, 4),  # Direct edge
+            ]
+        )
 
         # Act - find paths with both algorithms
         dfs_result = dfs_path(graph, 0, 4)
         # Note: We can't easily test BFS here without importing it in this test
-        
+
         # Assert - DFS path should be valid
         assert dfs_result is not None
         assert dfs_result[0] == 0

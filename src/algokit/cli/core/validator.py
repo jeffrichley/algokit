@@ -1,4 +1,4 @@
-"""Parameter validation system for CLI operations.
+"""ParameterDefinition validation system for CLI operations.
 
 This module provides comprehensive parameter validation for algorithm parameters,
 environment compatibility, and input sanitization for all CLI operations.
@@ -12,7 +12,7 @@ from typing import Any
 
 import gymnasium as gym
 
-from algokit.cli.models.algorithm import Algorithm, Parameter
+from algokit.cli.models.algorithm import Algorithm, ParameterDefinition, ParameterType
 from algokit.cli.models.config import Config
 
 
@@ -61,7 +61,7 @@ class ValidationReport:
         self.is_valid = len(self.errors) == 0 and len(self.critical_errors) == 0
 
 
-class ParameterValidationError(Exception):
+class ParameterDefinitionValidationError(Exception):
     """Exception raised when validation fails."""
 
     def __init__(self, message: str, report: ValidationReport | None = None) -> None:
@@ -75,7 +75,7 @@ class ParameterValidationError(Exception):
         self.report = report
 
 
-class ParameterValidator:
+class ParameterDefinitionValidator:
     """Comprehensive parameter validation system for algorithm parameters and environment compatibility."""
 
     def __init__(self, config: Config) -> None:
@@ -99,7 +99,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
             mode: Execution mode (train, replay, demo, test, benchmark)
 
         Returns:
@@ -132,6 +132,9 @@ class ParameterValidator:
         return ValidationReport(
             is_valid=True,  # Will be updated in __post_init__
             results=results,
+            warnings=[],
+            errors=[],
+            critical_errors=[],
         )
 
     def _validate_required_parameters(
@@ -141,7 +144,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
             mode: Execution mode
 
         Returns:
@@ -175,7 +178,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -222,7 +225,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -243,7 +246,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
             mode: Execution mode
 
         Returns:
@@ -338,7 +341,7 @@ class ParameterValidator:
         """Validate learning rate parameter.
 
         Args:
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -365,7 +368,7 @@ class ParameterValidator:
         """Validate discount factor parameter.
 
         Args:
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -392,7 +395,7 @@ class ParameterValidator:
         """Validate epsilon and epsilon decay parameters.
 
         Args:
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -439,7 +442,7 @@ class ParameterValidator:
         """Validate episodes parameter.
 
         Args:
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -469,7 +472,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to validate
+            parameters: ParameterDefinitions to validate
 
         Returns:
             List of validation results
@@ -482,14 +485,14 @@ class ParameterValidator:
         return results
 
     def _validate_parameter_type(
-        self, param_name: str, param_value: Any, param_spec: Parameter
+        self, param_name: str, param_value: Any, param_spec: ParameterDefinition
     ) -> ValidationResult | None:
         """Validate parameter type.
 
         Args:
-            param_name: Parameter name
-            param_value: Parameter value
-            param_spec: Parameter specification
+            param_name: ParameterDefinition name
+            param_value: ParameterDefinition value
+            param_spec: ParameterDefinition specification
 
         Returns:
             Validation result if type is invalid, None otherwise
@@ -501,7 +504,7 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be a number",
+                message=f"ParameterDefinition '{param_name}' must be a number",
                 parameter_name=param_name,
                 error_code="INVALID_PARAMETER_TYPE",
             )
@@ -510,7 +513,7 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be an integer",
+                message=f"ParameterDefinition '{param_name}' must be an integer",
                 parameter_name=param_name,
                 error_code="INVALID_PARAMETER_TYPE",
             )
@@ -519,7 +522,7 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be a string",
+                message=f"ParameterDefinition '{param_name}' must be a string",
                 parameter_name=param_name,
                 error_code="INVALID_PARAMETER_TYPE",
             )
@@ -528,7 +531,7 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be a boolean",
+                message=f"ParameterDefinition '{param_name}' must be a boolean",
                 parameter_name=param_name,
                 error_code="INVALID_PARAMETER_TYPE",
             )
@@ -536,14 +539,14 @@ class ParameterValidator:
         return None
 
     def _validate_parameter_range(
-        self, param_name: str, param_value: Any, param_spec: Parameter
+        self, param_name: str, param_value: Any, param_spec: ParameterDefinition
     ) -> ValidationResult | None:
         """Validate parameter range and constraints.
 
         Args:
-            param_name: Parameter name
-            param_value: Parameter value
-            param_spec: Parameter specification
+            param_name: ParameterDefinition name
+            param_value: ParameterDefinition value
+            param_spec: ParameterDefinition specification
 
         Returns:
             Validation result if range is invalid, None otherwise
@@ -553,7 +556,7 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be >= {param_spec.min_value}",
+                message=f"ParameterDefinition '{param_name}' must be >= {param_spec.min_value}",
                 parameter_name=param_name,
                 suggested_value=param_spec.min_value,
                 error_code="PARAMETER_BELOW_MINIMUM",
@@ -564,20 +567,20 @@ class ParameterValidator:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be <= {param_spec.max_value}",
+                message=f"ParameterDefinition '{param_name}' must be <= {param_spec.max_value}",
                 parameter_name=param_name,
                 suggested_value=param_spec.max_value,
                 error_code="PARAMETER_ABOVE_MAXIMUM",
             )
 
         # Check allowed values
-        if param_spec.allowed_values and param_value not in param_spec.allowed_values:
+        if param_spec.choices and param_value not in param_spec.choices:
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.ERROR,
-                message=f"Parameter '{param_name}' must be one of {param_spec.allowed_values}",
+                message=f"ParameterDefinition '{param_name}' must be one of {param_spec.choices}",
                 parameter_name=param_name,
-                suggested_value=param_spec.allowed_values[0],
+                suggested_value=param_spec.choices[0],
                 error_code="PARAMETER_NOT_ALLOWED",
             )
 
@@ -609,69 +612,69 @@ class ParameterValidator:
 
     def _get_parameter_specification(
         self, _algorithm: Algorithm, param_name: str
-    ) -> Parameter | None:
+    ) -> ParameterDefinition | None:
         """Get parameter specification from algorithm configuration.
 
         Args:
             algorithm: Algorithm configuration
-            param_name: Parameter name
+            param_name: ParameterDefinition name
 
         Returns:
-            Parameter specification if found, None otherwise
+            ParameterDefinition specification if found, None otherwise
         """
         # This would typically come from the algorithm's parameter definitions
         # For now, we'll use a simple mapping based on common parameters
 
         common_params = {
-            "env": Parameter(
+            "env": ParameterDefinition(
                 name="env",
-                type="str",
+                type=ParameterType.STRING,
                 description="Environment name",
                 required=True,
-                default_value="CartPole-v1",
+                default="CartPole-v1",
             ),
-            "episodes": Parameter(
+            "episodes": ParameterDefinition(
                 name="episodes",
-                type="int",
+                type=ParameterType.INTEGER,
                 description="Number of training episodes",
                 required=True,
-                default_value=1000,
+                default=1000,
                 min_value=1,
                 max_value=1000000,
             ),
-            "learning_rate": Parameter(
+            "learning_rate": ParameterDefinition(
                 name="learning_rate",
-                type="float",
+                type=ParameterType.FLOAT,
                 description="Learning rate (alpha)",
                 required=True,
-                default_value=0.1,
+                default=0.1,
                 min_value=0.0,
                 max_value=1.0,
             ),
-            "gamma": Parameter(
+            "gamma": ParameterDefinition(
                 name="gamma",
-                type="float",
+                type=ParameterType.FLOAT,
                 description="Discount factor",
                 required=True,
-                default_value=0.9,
+                default=0.9,
                 min_value=0.0,
                 max_value=1.0,
             ),
-            "epsilon": Parameter(
+            "epsilon": ParameterDefinition(
                 name="epsilon",
-                type="float",
+                type=ParameterType.FLOAT,
                 description="Exploration rate",
                 required=True,
-                default_value=0.1,
+                default=0.1,
                 min_value=0.0,
                 max_value=1.0,
             ),
-            "epsilon_decay": Parameter(
+            "epsilon_decay": ParameterDefinition(
                 name="epsilon_decay",
-                type="float",
+                type=ParameterType.FLOAT,
                 description="Epsilon decay rate",
                 required=False,
-                default_value=0.995,
+                default=0.995,
                 min_value=0.0,
                 max_value=1.0,
             ),
@@ -683,7 +686,7 @@ class ParameterValidator:
         """Initialize the list of supported environments."""
         try:
             # Get all registered environments from gymnasium
-            env_specs = gym.envs.registry.all()
+            env_specs = gym.envs.registry.values()  # type: ignore[attr-defined]
             self._supported_environments = {spec.id for spec in env_specs}
         except Exception:
             # Fallback to common environments if gymnasium is not available
@@ -713,7 +716,7 @@ class ParameterValidator:
                 "name": env_name,
                 "observation_space": env.observation_space,
                 "action_space": env.action_space,
-                "reward_range": env.reward_range,
+                "reward_range": getattr(env, "reward_range", None),
                 "spec": env.spec,
             }
             env.close()
@@ -763,7 +766,7 @@ class ParameterValidator:
 
         Args:
             algorithm: Algorithm configuration
-            parameters: Parameters to normalize
+            parameters: ParameterDefinitions to normalize
             mode: Execution mode
 
         Returns:
@@ -825,8 +828,8 @@ class ParameterValidator:
 
         for param_name in required_params:
             param_spec = self._get_parameter_specification(algorithm, param_name)
-            if param_spec and param_spec.default_value is not None:
-                suggestions[param_name] = param_spec.default_value
+            if param_spec and param_spec.default is not None:
+                suggestions[param_name] = param_spec.default
 
         # Add mode-specific suggestions
         if mode == "train":

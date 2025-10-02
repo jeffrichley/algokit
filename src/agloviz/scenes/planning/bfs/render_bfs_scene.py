@@ -17,7 +17,7 @@ sys.path.insert(0, str(project_root / "src"))
 class RenderBfsScene(BreadthFirstSearchScene):
     """Renderable BFS scene for Manim."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         # Check for scenario file from environment variable first
         scenario_file = os.environ.get("AGLOVIZ_SCENARIO_FILE")
 
@@ -44,7 +44,7 @@ class RenderBfsScene(BreadthFirstSearchScene):
                 height=5,
                 start=(0, 0),
                 goal=(6, 4),
-                obstacles=[(1, 2), (1, 1), (2, 1), (3, 1), (3, 2), (4, 3), (5, 3)],
+                obstacles={(1, 2), (1, 1), (2, 1), (3, 1), (3, 2), (4, 3), (5, 3)},
                 text_below_grid_offset=3.5,
             )
             super().__init__(scenario, **kwargs)

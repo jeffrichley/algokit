@@ -41,13 +41,13 @@ except ImportError as e:
     print("BFS scene will run in standalone mode with placeholder data.")
 
     # Create minimal placeholder classes
-    class HarborNetScenario:
-        def __init__(self, **kwargs):
+    class HarborNetScenario:  # type: ignore[no-redef]
+        def __init__(self, **kwargs: Any) -> None:
             for key, value in kwargs.items():
                 setattr(self, key, value)
 
-    class HarborGridScene(m.Scene):
-        def __init__(self, scenario, **kwargs):
+    class HarborGridScene(m.Scene):  # type: ignore[no-redef]
+        def __init__(self, scenario: Any, **kwargs: Any) -> None:
             super().__init__(**kwargs)
             self.scenario = scenario
             self.grid_width = scenario.width
@@ -58,7 +58,7 @@ except ImportError as e:
             self.cell_size = 0.8
             self.grid_group = m.VGroup()
 
-        def construct(self):
+        def construct(self) -> None:
             # Placeholder implementation
             text = m.Text("BFS Scene - Standalone Mode", font_size=48)
             self.play(m.Write(text))
@@ -78,7 +78,7 @@ class BreadthFirstSearchScene(HarborGridScene):
     - Scene 6: Complexity display
     """
 
-    def __init__(self, scenario=None, **kwargs: Any) -> None:
+    def __init__(self, scenario: Any = None, **kwargs: Any) -> None:
         """Initialize the BFS scene.
 
         Args:
@@ -101,7 +101,7 @@ class BreadthFirstSearchScene(HarborGridScene):
                     height=5,
                     start=(0, 0),
                     goal=(6, 4),
-                    obstacles=[(1, 2), (1, 1), (2, 1), (3, 1), (3, 2), (4, 3), (5, 3)],
+                    obstacles={(1, 2), (1, 1), (2, 1), (3, 1), (3, 2), (4, 3), (5, 3)},
                     text_below_grid_offset=3.5,
                 )
         elif isinstance(scenario, str):
@@ -117,7 +117,9 @@ class BreadthFirstSearchScene(HarborGridScene):
         self.cell_centers = self._calculate_cell_centers_shifted()
 
         # Initialize GridVisualizer for proper grid management
-        self.grid_visualizer = None  # Will be created in _show_grid()
+        self.grid_visualizer: GridVisualizer | None = (
+            None  # Will be created in _show_grid()
+        )
 
         # BFS-specific state
         self.bfs_events: list[SearchEvent] = []
@@ -494,17 +496,20 @@ class BreadthFirstSearchScene(HarborGridScene):
         self.start_token = StartToken(cell_size=self.cell_size)
 
         # Place token using GridVisualizer
-        self.grid_visualizer.place_token(self.start_token, self.start_pos)
+        if self.grid_visualizer is not None:
+            self.grid_visualizer.place_token(self.start_token, self.start_pos)
 
         # Add label after placement
         self.start_token.add_label_after_placement()
 
         # Animate start placement using token's built-in animation
         self.start_token.animate_entrance(self)
-        start_cell = self.grid_visualizer.get_cell(self.start_pos)
-        self.play(
-            m.Indicate(start_cell), run_time=self.get_animation_time("start_indicate")
-        )
+        if self.grid_visualizer is not None:
+            start_cell = self.grid_visualizer.get_cell(self.start_pos)
+            self.play(
+                m.Indicate(start_cell),
+                run_time=self.get_animation_time("start_indicate"),
+            )
         self.play(
             m.Write(self.start_token.label),
             run_time=self.get_animation_time("start_label_write"),
@@ -516,7 +521,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         self.goal_star = GoalToken(cell_size=self.cell_size)
 
         # Place token using GridVisualizer
-        self.grid_visualizer.place_token(self.goal_star, self.goal_pos)
+        self.grid_visualizer.place_token(self.goal_star, self.goal_pos)  # type: ignore[union-attr]
 
         # Add label after placement
         self.goal_star.add_label_after_placement()
@@ -539,7 +544,7 @@ class BreadthFirstSearchScene(HarborGridScene):
             water_token = WaterToken(cell_size=self.cell_size)
 
             # Position it at the cell center using GridVisualizer
-            self.grid_visualizer.place_token(water_token, obstacle_pos)
+            self.grid_visualizer.place_token(water_token, obstacle_pos)  # type: ignore[union-attr]
 
             # Store the token for later reference
             self.water_tokens[obstacle_pos] = water_token
@@ -552,7 +557,7 @@ class BreadthFirstSearchScene(HarborGridScene):
     def _show_hud(self) -> None:
         """7. Show HUD."""
         # Initial HUD values
-        hud_values = {"Visited": 0, "Frontier": 0, "Depth": 0, "Queue": 0}
+        hud_values = {"Visited": 0.0, "Frontier": 0.0, "Depth": 0.0, "Queue": 0.0}
 
         # Create HUD panel with proper styling
         self.hud_panel = HUDPanel(
@@ -596,13 +601,13 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Build new values dict with only provided parameters
         new_values = {}
         if visited is not None:
-            new_values["Visited"] = visited
+            new_values["Visited"] = float(visited)
         if frontier is not None:
-            new_values["Frontier"] = frontier
+            new_values["Frontier"] = float(frontier)
         if depth is not None:
-            new_values["Depth"] = depth
+            new_values["Depth"] = float(depth)
         if queue is not None:
-            new_values["Queue"] = queue
+            new_values["Queue"] = float(queue)
 
         # Update HUD with animation using HUDPanel's update_values method
         if new_values:
@@ -996,7 +1001,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         token = Token(cell_size=self.cell_size)
 
         # Position it at the cell center using GridVisualizer
-        self.grid_visualizer.place_token(token, node)
+        self.grid_visualizer.place_token(token, node)  # type: ignore[union-attr]
 
         # Store the token for later reference
         self.tokens[node] = token
@@ -1039,7 +1044,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         else:
             # For regular nodes, create frontier token
             token = Token(cell_size=self.cell_size)
-            self.grid_visualizer.place_token(token, node)
+            self.grid_visualizer.place_token(token, node)  # type: ignore[union-attr]
             self.tokens[node] = token
             self.cell_states[node] = "frontier"
             # Animate the token entrance
@@ -1206,7 +1211,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         for node in nodes:
             if node in self.obstacles:  # Skip obstacle nodes
                 continue
-            cell_center = self.grid_visualizer.get_cell_center(node)
+            cell_center = self.grid_visualizer.get_cell_center(node)  # type: ignore[union-attr]
             ring = m.Square(
                 side_length=self.cell_size * 1.2,  # Slightly larger than cell
                 stroke_color=color,
@@ -1328,7 +1333,10 @@ class BreadthFirstSearchScene(HarborGridScene):
             complete_path.append(current_node)
             # Find parent of current node from BFS events
             current_parent = self._find_parent_of_node(current_node)
-            current_node = current_parent
+            if current_parent is not None:
+                current_node = current_parent
+            else:
+                break
 
         # Reverse to get start -> ... -> node order
         complete_path.reverse()
@@ -1337,7 +1345,7 @@ class BreadthFirstSearchScene(HarborGridScene):
         # Step 3: Draw dots and lines for every step in the actual shortest path
         dots = []
         for pos in complete_path:
-            cell_center = self.grid_visualizer.get_cell_center(pos)
+            cell_center = self.grid_visualizer.get_cell_center(pos)  # type: ignore[union-attr]
             dot = m.Dot(radius=0.05, color=m.YELLOW).move_to(cell_center)
             dots.append(dot)
 
@@ -1754,12 +1762,12 @@ class BreadthFirstSearchScene(HarborGridScene):
     def _place_start_goal(self) -> None:
         """Place start and goal markers with animations using proper token components."""
         # Start token using StartToken component
-        start_cell = self.grid_visualizer.get_cell(self.start_pos)
+        start_cell = self.grid_visualizer.get_cell(self.start_pos)  # type: ignore[union-attr]
         self.start_token = StartToken(cell_size=self.cell_size)
         self.start_token.move_to(start_cell.get_center())
 
         # Goal token using GoalToken component
-        goal_cell = self.grid_visualizer.get_cell(self.goal_pos)
+        goal_cell = self.grid_visualizer.get_cell(self.goal_pos)  # type: ignore[union-attr]
         self.goal_star = GoalToken(cell_size=self.cell_size)
         self.goal_star.move_to(goal_cell.get_center())
 
@@ -1829,7 +1837,7 @@ class BreadthFirstSearchScene(HarborGridScene):
     def _build_hud(self) -> None:
         """Build HUD counters using the HUDPanel component."""
         # Initial HUD values
-        hud_values = {"Visited": 0, "Frontier": 0, "Depth": 0, "Queue": 0}
+        hud_values = {"Visited": 0.0, "Frontier": 0.0, "Depth": 0.0, "Queue": 0.0}
 
         # Create HUD panel with proper styling
         self.hud_panel = HUDPanel(
@@ -1889,14 +1897,14 @@ class BreadthFirstSearchScene(HarborGridScene):
             _token = self.snaking_queue.dequeue(scene=self)
 
         # Mark cell as being processed using GridVisualizer
-        cell = self.grid_visualizer.get_cell(node)
+        cell = self.grid_visualizer.get_cell(node)  # type: ignore[union-attr]
 
         # Pulse the cell to show it's being processed
         self.play(m.Indicate(cell, scale_factor=1.1, color=m.YELLOW_C), run_time=0.3)
 
     def _animate_visit(self, node: tuple[int, int]) -> None:
         """Animate visiting a node."""
-        cell = self.grid_visualizer.get_cell(node)
+        cell = self.grid_visualizer.get_cell(node)  # type: ignore[union-attr]
 
         # Mark as visited
         cell.set_fill(m.YELLOW_E, opacity=0.4)
@@ -1910,7 +1918,7 @@ class BreadthFirstSearchScene(HarborGridScene):
     ) -> None:
         """Animate enqueuing a node."""
         # Mark as frontier using GridVisualizer
-        cell = self.grid_visualizer.get_cell(node)
+        cell = self.grid_visualizer.get_cell(node)  # type: ignore[union-attr]
         cell.set_fill(m.BLUE_C, opacity=0.6)
         self.cell_states[node] = "frontier"
 
@@ -1935,8 +1943,8 @@ class BreadthFirstSearchScene(HarborGridScene):
         self, parent: tuple[int, int], child: tuple[int, int]
     ) -> None:
         """Draw an arrow from parent to child."""
-        parent_cell = self.grid_visualizer.get_cell(parent)
-        child_cell = self.grid_visualizer.get_cell(child)
+        parent_cell = self.grid_visualizer.get_cell(parent)  # type: ignore[union-attr]
+        child_cell = self.grid_visualizer.get_cell(child)  # type: ignore[union-attr]
 
         arrow = m.Arrow(
             parent_cell.get_center(),
@@ -1951,7 +1959,7 @@ class BreadthFirstSearchScene(HarborGridScene):
 
     def _animate_goal_discovery(self, node: tuple[int, int]) -> None:
         """Animate discovering the goal."""
-        _cell = self.grid_visualizer.get_cell(node)
+        _cell = self.grid_visualizer.get_cell(node)  # type: ignore[union-attr]
 
         # Flash the goal
         self.play(m.Flash(self.goal_star.get_center(), color=m.GOLD), run_time=0.5)

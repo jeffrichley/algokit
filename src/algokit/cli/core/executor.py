@@ -19,7 +19,13 @@ from typing import Any, Protocol
 
 from algokit.cli.models.algorithm import Algorithm
 from algokit.cli.models.config import Config
-from algokit.cli.models.output import OutputArtifact, RunMetadata, RunStatus, RunType
+from algokit.cli.models.output import (
+    ArtifactType,
+    OutputArtifact,
+    RunMetadata,
+    RunStatus,
+    RunType,
+)
 
 
 class ExecutionMode(str, Enum):
@@ -289,7 +295,7 @@ class AlgorithmExecutor:
         # Execute training in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
 
-        def train_wrapper():
+        def train_wrapper() -> Any:
             return algorithm_wrapper.train(**context.parameters)
 
         result = await loop.run_in_executor(self._executor_pool, train_wrapper)
@@ -321,7 +327,7 @@ class AlgorithmExecutor:
         # Execute replay in thread pool
         loop = asyncio.get_event_loop()
 
-        def replay_wrapper():
+        def replay_wrapper() -> Any:
             return algorithm_wrapper.replay(**context.parameters)
 
         result = await loop.run_in_executor(self._executor_pool, replay_wrapper)
@@ -351,7 +357,7 @@ class AlgorithmExecutor:
         # Execute demo in thread pool
         loop = asyncio.get_event_loop()
 
-        def demo_wrapper():
+        def demo_wrapper() -> Any:
             return algorithm_wrapper.demo(**context.parameters)
 
         result = await loop.run_in_executor(self._executor_pool, demo_wrapper)
@@ -379,7 +385,7 @@ class AlgorithmExecutor:
         # Execute test in thread pool
         loop = asyncio.get_event_loop()
 
-        def test_wrapper():
+        def test_wrapper() -> Any:
             return algorithm_wrapper.test(**context.parameters)
 
         result = await loop.run_in_executor(self._executor_pool, test_wrapper)
@@ -409,7 +415,7 @@ class AlgorithmExecutor:
         # Execute benchmark in thread pool
         loop = asyncio.get_event_loop()
 
-        def benchmark_wrapper():
+        def benchmark_wrapper() -> Any:
             return algorithm_wrapper.benchmark(**context.parameters)
 
         result = await loop.run_in_executor(self._executor_pool, benchmark_wrapper)
@@ -473,13 +479,15 @@ class AlgorithmExecutor:
             family=context.algorithm.family_id,
             run_type=RunType(context.mode.value),
             status=RunStatus.COMPLETED,
-            started_at=context.start_time,
+            started_at=context.start_time or datetime.now(),
             completed_at=context.end_time,
             duration_seconds=(context.end_time - context.start_time).total_seconds()
             if context.end_time and context.start_time
             else 0,
             parameters=context.parameters,
-            output_dir=Path(context.output_dir),
+            output_dir=Path(context.output_dir)
+            if context.output_dir
+            else Path("output"),
             metrics=result.get("metrics", {}),
             artifacts=[],
         )
@@ -487,20 +495,22 @@ class AlgorithmExecutor:
         # Create output artifacts from results
         for artifact_type, artifact_data in result.get("artifacts", {}).items():
             artifact = OutputArtifact(
-                artifact_id=f"{context.metadata.run_id}_{artifact_type}",
-                artifact_type=artifact_type,
-                file_path=str(
+                name=f"{artifact_type}_{context.metadata.run_id}",
+                type=ArtifactType(artifact_type),
+                path=Path(
                     context.output_dir
                     / f"{artifact_type}.{artifact_data.get('format', 'json')}"
-                ),
+                )
+                if context.output_dir
+                else Path(f"{artifact_type}.{artifact_data.get('format', 'json')}"),
                 size_bytes=len(str(artifact_data)),
-                created_at=datetime.now(),
-                metadata=artifact_data.get("metadata", {}),
-                checksum=None,  # Will be calculated if needed
+                algorithm=context.algorithm.name,
+                family=context.algorithm.family_id,
                 run_id=context.metadata.run_id,
+                metadata=artifact_data.get("metadata", {}),
             )
             context.artifacts.append(artifact)
-            context.metadata.artifacts.append(artifact.artifact_id)
+            context.metadata.artifacts.append(artifact)
 
     def _generate_execution_id(self, algorithm: Algorithm, mode: ExecutionMode) -> str:
         """Generate unique execution ID.

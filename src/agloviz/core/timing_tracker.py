@@ -7,7 +7,7 @@ from typing import Any
 class TimingTracker:
     """Tracks timing requests and generates comprehensive usage reports."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize timing tracker."""
         # Track animation timing requests: {animation_name: [list of requested times]}
         self.animation_requests: dict[str, list[float]] = defaultdict(list)
@@ -81,6 +81,24 @@ class TimingTracker:
         self.total_legacy_requests += 1
         return returned_time
 
+    def _get_base_animation_time(self, animation_name: str) -> float:
+        """Get base animation time from config if available."""
+        if self.timing_config is None:
+            return 0.0
+        try:  # type: ignore[unreachable]
+            return self.timing_config.get_animation_time(animation_name, "cinematic")
+        except Exception:
+            return 0.0
+
+    def _get_base_wait_time(self, wait_name: str) -> float:
+        """Get base wait time from config if available."""
+        if self.timing_config is None:
+            return 0.0
+        try:  # type: ignore[unreachable]
+            return self.timing_config.get_wait_time(wait_name, "cinematic")
+        except Exception:
+            return 0.0
+
     def get_animation_stats(self, animation_name: str) -> dict[str, Any]:
         """Get statistics for a specific animation.
 
@@ -99,14 +117,7 @@ class TimingTracker:
         avg_time = total_time / count
 
         # Get base time from config if available
-        base_time = 0.0
-        if self.timing_config:
-            try:
-                base_time = self.timing_config.get_animation_time(
-                    animation_name, "cinematic"
-                )
-            except Exception:
-                base_time = 0.0
+        base_time = self._get_base_animation_time(animation_name)
 
         return {
             "count": count,
@@ -134,12 +145,7 @@ class TimingTracker:
         avg_time = total_time / count
 
         # Get base time from config if available
-        base_time = 0.0
-        if self.timing_config:
-            try:
-                base_time = self.timing_config.get_wait_time(wait_name, "cinematic")
-            except Exception:
-                base_time = 0.0
+        base_time = self._get_base_wait_time(wait_name)
 
         return {
             "count": count,
@@ -296,8 +302,8 @@ class TimingTracker:
         lines.append("")
 
         # Timing mode information
-        if self.timing_config:
-            lines.append("⚙️  TIMING CONFIGURATION")
+        if self.timing_config is not None:
+            lines.append("⚙️  TIMING CONFIGURATION")  # type: ignore[unreachable]
             lines.append("-" * 30)
             lines.append(f"Current Mode: {self.timing_config.current_mode}")
             lines.append(

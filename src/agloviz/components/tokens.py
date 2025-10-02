@@ -1,10 +1,12 @@
+from typing import Any
+
 import manim as m
 
 
 class StartToken(m.Dot):
     """Start token that extends Manim's Dot class directly."""
 
-    def __init__(self, cell_size: float, **kwargs):
+    def __init__(self, cell_size: float, **kwargs: Any) -> None:
         super().__init__(radius=cell_size * 0.3, color=m.GREEN_C, **kwargs)
         self.cell_size = cell_size
         self.label = m.Text("Start", font_size=18, color=m.WHITE)
@@ -21,7 +23,7 @@ class StartToken(m.Dot):
 class GoalToken(m.Star):
     """Goal token that extends Manim's Star class directly."""
 
-    def __init__(self, cell_size: float, **kwargs):
+    def __init__(self, cell_size: float, **kwargs: Any) -> None:
         super().__init__(n=5, outer_radius=cell_size * 0.3, color=m.GOLD, **kwargs)
         self.cell_size = cell_size
         self.label = m.Text("Goal", font_size=18, color=m.WHITE)
@@ -38,7 +40,7 @@ class GoalToken(m.Star):
 class Token(m.Square):
     """Token that extends Manim's Square class directly."""
 
-    def __init__(self, cell_size: float, **kwargs):
+    def __init__(self, cell_size: float, **kwargs: Any) -> None:
         super().__init__(
             side_length=cell_size * 0.6,  # Same size as star (0.3 radius * 2)
             fill_color=m.PURPLE_A,
@@ -57,7 +59,7 @@ class Token(m.Square):
 class WaterToken(m.VGroup):
     """Water token with wave effects that extends Manim's VGroup."""
 
-    def __init__(self, cell_size: float, **kwargs):
+    def __init__(self, cell_size: float, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.cell_size = cell_size
 

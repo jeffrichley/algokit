@@ -74,7 +74,9 @@ class TestBFSShortestPath:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             bfs_shortest_path(graph, (99, 99), (2, 2))
 
     @pytest.mark.unit
@@ -84,7 +86,9 @@ class TestBFSShortestPath:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Goal node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Goal node \\(99, 99\\) not found in graph"
+        ):
             bfs_shortest_path(graph, (0, 0), (99, 99))
 
     @pytest.mark.unit
@@ -241,7 +245,9 @@ class TestBFSAllReachable:
         graph = create_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             bfs_all_reachable(graph, (99, 99))
 
 
@@ -260,7 +266,9 @@ class TestBFSWithHarborNet:
             goal=(4, 4),
             obstacles={(1, 1), (2, 2), (3, 3)},
         )
-        graph = create_grid_graph(scenario.width, scenario.height, blocked=scenario.obstacles)
+        graph = create_grid_graph(
+            scenario.width, scenario.height, blocked=scenario.obstacles
+        )
 
         # Act - find path using BFS
         path = bfs_shortest_path(graph, scenario.start, scenario.goal)
@@ -283,7 +291,9 @@ class TestBFSWithHarborNet:
             goal=(3, 3),
             obstacles={(1, 1), (2, 2)},
         )
-        graph = create_grid_graph(scenario.width, scenario.height, blocked=scenario.obstacles)
+        graph = create_grid_graph(
+            scenario.width, scenario.height, blocked=scenario.obstacles
+        )
 
         # Act - find path with event tracking
         path, events = bfs_with_data_collection(graph, scenario.start, scenario.goal)

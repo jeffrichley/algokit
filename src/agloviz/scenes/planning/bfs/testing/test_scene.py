@@ -1,4 +1,12 @@
-from manim import *
+from manim import (
+    LEFT,
+    ORIGIN,
+    WHITE,
+    ApplyWave,
+    GrowFromCenter,
+    Scene,
+    Write,
+)
 
 from agloviz.components.grid_overlay import GridOverlay
 from agloviz.components.hud_panel import HUDPanel
@@ -8,7 +16,7 @@ from agloviz.core.grid_visualizer import GridVisualizer
 
 
 class TestScene(Scene):
-    def construct(self):
+    def construct(self) -> None:
         # 🧩 1. Setup scenario (placeholder)
         scenario = Scenario(name="BFS Demo")
 
@@ -18,13 +26,13 @@ class TestScene(Scene):
             grid_height=6,
             cell_size=0.8,
             grid_color=WHITE,
-            scenario=scenario
+            scenario=scenario,
         )
         grid.move_to(ORIGIN)
-        
+
         # Create grid with growth animation (like original)
         grid.create_grid_with_growth_animation(self)
-        
+
         # Add grid shimmer effect (like original)
         self.play(ApplyWave(grid.grid_group, amplitude=0.05), run_time=0.8)
 
@@ -38,11 +46,11 @@ class TestScene(Scene):
         # 🧲 5. Place tokens using the visualizer
         visualizer.place_token(start_token, (0, 0))
         visualizer.place_token(goal_token, (7, 5))
-        
+
         # Position labels relative to tokens after they're placed (like original)
         start_token.add_label_after_placement()
         goal_token.add_label_after_placement()
-        
+
         # Animate token entrances (like original)
         self.play(GrowFromCenter(start_token), run_time=0.5)
         self.play(Write(start_token.label), run_time=0.3)
@@ -51,15 +59,14 @@ class TestScene(Scene):
 
         # 🔷 6. Add water cell with wave effects (like original)
         water_cell, wave_group = grid.add_water_cell(3, 2)
-        
+
         # Animate water with ripple effect (like original)
         self.play(GrowFromCenter(water_cell), run_time=0.5)
         self.play(GrowFromCenter(wave_group), run_time=0.4)
 
         # 📊 7. HUD display
         hud = HUDPanel(
-            values={"Visited": 0, "Frontier": 0, "Depth": 0, "Queue": 1},
-            max_lines=2
+            values={"Visited": 0, "Frontier": 0, "Depth": 0, "Queue": 1}, max_lines=2
         )
         hud.to_edge(LEFT, buff=0.4)
         self.add(hud)

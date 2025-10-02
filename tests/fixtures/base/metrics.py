@@ -62,8 +62,6 @@ def rl_assertions():
     return RLTestAssertions()
 
 
-
-
 @pytest.fixture
 def test_metrics():
     """Standard test metrics for validation."""

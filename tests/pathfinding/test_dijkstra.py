@@ -10,15 +10,17 @@ from algokit.algorithms.pathfinding.dijkstra import (
 )
 
 
-def create_weighted_grid_graph(width: int, height: int, default_weight: float = 1.0) -> nx.Graph:
+def create_weighted_grid_graph(
+    width: int, height: int, default_weight: float = 1.0
+) -> nx.Graph:
     """Create a weighted grid graph for testing."""
     graph = nx.Graph()
-    
+
     # Add nodes
     for x in range(width):
         for y in range(height):
             graph.add_node((x, y))
-    
+
     # Add weighted edges
     for x in range(width):
         for y in range(height):
@@ -28,7 +30,7 @@ def create_weighted_grid_graph(width: int, height: int, default_weight: float = 
             # Bottom neighbor
             if y + 1 < height:
                 graph.add_edge((x, y), (x, y + 1), weight=default_weight)
-    
+
     return graph
 
 
@@ -58,11 +60,13 @@ class TestDijkstraShortestPath:
         """Test Dijkstra finds optimal path in weighted graph."""
         # Arrange - create graph with different edge weights
         graph = nx.Graph()
-        graph.add_edges_from([
-            ("A", "B", {"weight": 1.0}),
-            ("B", "C", {"weight": 1.0}),
-            ("A", "C", {"weight": 5.0}),  # Direct path is more expensive
-        ])
+        graph.add_edges_from(
+            [
+                ("A", "B", {"weight": 1.0}),
+                ("B", "C", {"weight": 1.0}),
+                ("A", "C", {"weight": 5.0}),  # Direct path is more expensive
+            ]
+        )
 
         # Act - find path from A to C
         result = dijkstra_shortest_path(graph, "A", "C")
@@ -105,7 +109,9 @@ class TestDijkstraShortestPath:
         graph = create_weighted_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             dijkstra_shortest_path(graph, (99, 99), (2, 2))
 
     @pytest.mark.unit
@@ -115,7 +121,9 @@ class TestDijkstraShortestPath:
         graph = create_weighted_grid_graph(3, 3)
 
         # Act & Assert - should raise ValueError
-        with pytest.raises(ValueError, match="Goal node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Goal node \\(99, 99\\) not found in graph"
+        ):
             dijkstra_shortest_path(graph, (0, 0), (99, 99))
 
     @pytest.mark.unit
@@ -151,7 +159,7 @@ class TestDijkstraShortestPath:
         assert len(path) >= 9  # At least Manhattan distance
         assert path[0] == (0, 0)
         assert path[-1] == (4, 4)
-        
+
         # Verify each step is a valid edge
         for i in range(len(path) - 1):
             assert graph.has_edge(path[i], path[i + 1])
@@ -192,11 +200,13 @@ class TestDijkstraShortestDistance:
         """Test Dijkstra shortest distance in weighted graph."""
         # Arrange - create graph with different weights
         graph = nx.Graph()
-        graph.add_edges_from([
-            ("A", "B", {"weight": 2.0}),
-            ("B", "C", {"weight": 3.0}),
-            ("A", "C", {"weight": 10.0}),  # Direct path is expensive
-        ])
+        graph.add_edges_from(
+            [
+                ("A", "B", {"weight": 2.0}),
+                ("B", "C", {"weight": 3.0}),
+                ("A", "C", {"weight": 10.0}),  # Direct path is expensive
+            ]
+        )
 
         # Act - find shortest distance
         distance = dijkstra_shortest_distance(graph, "A", "C")
@@ -266,11 +276,13 @@ class TestDijkstraAllDistances:
         """Test Dijkstra finds only connected component."""
         # Arrange - create graph with disconnected components
         graph = nx.Graph()
-        graph.add_edges_from([
-            ("A", "B", {"weight": 1.0}),
-            ("B", "C", {"weight": 2.0}),
-            ("D", "E", {"weight": 1.0}),
-        ])
+        graph.add_edges_from(
+            [
+                ("A", "B", {"weight": 1.0}),
+                ("B", "C", {"weight": 2.0}),
+                ("D", "E", {"weight": 1.0}),
+            ]
+        )
 
         # Act - find all distances from first component
         distances = dijkstra_all_distances(graph, "A")
@@ -290,7 +302,9 @@ class TestDijkstraAllDistances:
         graph = create_weighted_grid_graph(3, 3)
 
         # Act & Assert - should raise error
-        with pytest.raises(ValueError, match="Start node \\(99, 99\\) not found in graph"):
+        with pytest.raises(
+            ValueError, match="Start node \\(99, 99\\) not found in graph"
+        ):
             dijkstra_all_distances(graph, (99, 99))
 
 
@@ -305,9 +319,10 @@ class TestDijkstraComparisonWithBFS:
 
         # Act - find path with Dijkstra
         dijkstra_result = dijkstra_shortest_path(graph, (0, 0), (2, 2))
-        
+
         # Import BFS for comparison
         from algokit.algorithms.pathfinding.bfs import bfs_shortest_path
+
         bfs_result = bfs_shortest_path(graph, (0, 0), (2, 2))
 
         # Assert - both should find paths of same length
@@ -322,12 +337,14 @@ class TestDijkstraComparisonWithBFS:
         """Test that Dijkstra finds optimal path in weighted graph."""
         # Arrange - create graph where shortest path by hops != shortest by weight
         graph = nx.Graph()
-        graph.add_edges_from([
-            ("A", "B", {"weight": 1.0}),
-            ("B", "C", {"weight": 1.0}),
-            ("C", "D", {"weight": 1.0}),
-            ("A", "D", {"weight": 2.5}),  # Direct path has lower total weight
-        ])
+        graph.add_edges_from(
+            [
+                ("A", "B", {"weight": 1.0}),
+                ("B", "C", {"weight": 1.0}),
+                ("C", "D", {"weight": 1.0}),
+                ("A", "D", {"weight": 2.5}),  # Direct path has lower total weight
+            ]
+        )
 
         # Act - find shortest path with Dijkstra
         result = dijkstra_shortest_path(graph, "A", "D")
@@ -343,11 +360,13 @@ class TestDijkstraComparisonWithBFS:
         """Test that Dijkstra handles edges without weight attributes."""
         # Arrange - create graph without weight attributes
         graph = nx.Graph()
-        graph.add_edges_from([
-            ("A", "B"),
-            ("B", "C"),
-            ("A", "C"),
-        ])
+        graph.add_edges_from(
+            [
+                ("A", "B"),
+                ("B", "C"),
+                ("A", "C"),
+            ]
+        )
 
         # Act - find shortest path
         result = dijkstra_shortest_path(graph, "A", "C")

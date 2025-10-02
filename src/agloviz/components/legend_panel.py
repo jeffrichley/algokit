@@ -8,8 +8,9 @@ import contextlib
 from typing import Any
 
 import manim as m
+from manim.typing import Color
 
-from agloviz.core.fonts import get_font
+from agloviz.core.font_utils import get_font
 
 
 class LegendItem:
@@ -40,12 +41,12 @@ class LegendPanel(m.VGroup):
         font_size: int = 16,
         corner_radius: float | None = None,
         stroke_width: float | None = None,
-        stroke_color=None,
-        fill_color=None,
+        stroke_color: Color | None = None,
+        fill_color: Color | None = None,
         fill_opacity: float | None = None,
         item_buff: float = 0.15,
         swatch_label_buff: float = 0.1,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize the legend panel.
 

@@ -37,10 +37,10 @@ class TestEventSystem:
         # Act - perform deque operations that should emit events
         with tracker.track(queue=deque(["A"])) as tracked:
             queue = tracked["queue"]
-            
+
             # Dequeue should emit DEQUEUE event
             queue.popleft()
-            
+
             # Append should emit ENQUEUE event
             queue.append("B")
 
@@ -60,10 +60,10 @@ class TestEventSystem:
         # Act - perform set operations that should emit events
         with tracker.track(visited={"A"}) as tracked:
             visited = tracked["visited"]
-            
+
             # Adding new item should emit DISCOVER event
             visited.add("B")
-            
+
             # Adding existing item should not emit event
             visited.add("A")
 
@@ -82,25 +82,27 @@ class TestEventSystem:
         with tracker.track(queue=deque(["start"]), visited={"start"}) as tracked:
             queue = tracked["queue"]
             visited = tracked["visited"]
-            
+
             # Dequeue start node
             queue.popleft()
-            
+
             # Discover and enqueue neighbors
             for neighbor in ["A", "B"]:
                 if neighbor not in visited:
                     visited.add(neighbor)
                     queue.append(neighbor)
-            
+
             # Emit goal found
             tracker.emit(EventType.GOAL_FOUND, "B")
-            
+
             # Emit path reconstruction
             tracker.emit(EventType.PATH_RECONSTRUCT, "start")
             tracker.emit(EventType.PATH_RECONSTRUCT, "B")
 
         # Assert - verify all expected events were emitted
-        assert len(tracker.events) == 8  # 1 dequeue + 2 discover + 2 enqueue + 1 goal + 2 path
+        assert (
+            len(tracker.events) == 8
+        )  # 1 dequeue + 2 discover + 2 enqueue + 1 goal + 2 path
         assert tracker.events[0].type == EventType.DEQUEUE
         assert tracker.events[1].type == EventType.DISCOVER
         assert tracker.events[2].type == EventType.ENQUEUE
@@ -115,7 +117,7 @@ class TestEventSystem:
         """Test that events are processed correctly for visualization."""
         # Arrange - create tracker and emit test events
         tracker = SimpleTracker()
-        
+
         # Act - create events and process for visualization
         tracker.emit(EventType.ENQUEUE, "A")
         tracker.emit(EventType.DEQUEUE, "A")

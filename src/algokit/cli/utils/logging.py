@@ -124,7 +124,14 @@ class LoggingManager:
         self.file_logger.setLevel(level)
 
         # Update configuration
-        self.config.global_.log_level = logging.getLevelName(level)
+        from algokit.cli.models.config import LogLevel
+
+        level_name = logging.getLevelName(level)
+        try:
+            self.config.global_.log_level = LogLevel(level_name)
+        except ValueError:
+            # If the level name doesn't match our enum, use INFO as default
+            self.config.global_.log_level = LogLevel.INFO
 
     def get_logger(self, name: str | None = None) -> logging.Logger:
         """Get a logger instance for a specific module or component.
@@ -272,7 +279,7 @@ def get_logging_manager(config: Config | None = None) -> LoggingManager:
     Returns:
         Global LoggingManager instance.
     """
-    global _logging_manager  # noqa: PLW0603
+    global _logging_manager
 
     if _logging_manager is None or config is not None:
         _logging_manager = LoggingManager(config)
@@ -306,7 +313,7 @@ def setup_logging(config: Config | None = None) -> LoggingManager:
 
 def cleanup_logging() -> None:
     """Clean up logging resources and handlers."""
-    global _logging_manager  # noqa: PLW0603
+    global _logging_manager
 
     if _logging_manager is not None:
         # Close all handlers

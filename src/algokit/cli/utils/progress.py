@@ -83,7 +83,7 @@ class ProgressTracker:
         total: int = 100,
         description: str | None = None,
         task_type: str = "general",
-    ):
+    ) -> Any:
         """Context manager for tracking a single task with progress.
 
         Args:
@@ -299,7 +299,11 @@ class ProgressTracker:
         Returns:
             List of dictionaries with task status information
         """
-        return [self.get_task_status(task_name) for task_name in self.active_tasks]
+        return [
+            status
+            for task_name in self.active_tasks
+            if (status := self.get_task_status(task_name)) is not None
+        ]
 
     def display_progress_summary(self) -> None:
         """Display a summary of current progress in a Rich table."""
@@ -450,7 +454,7 @@ def get_progress_tracker(config: Config | None = None) -> ProgressTracker:
     Returns:
         Global ProgressTracker instance.
     """
-    global _progress_tracker  # noqa: PLW0603
+    global _progress_tracker
 
     if _progress_tracker is None or config is not None:
         _progress_tracker = ProgressTracker(config)
@@ -464,7 +468,7 @@ def track_progress(
     total: int = 100,
     description: str | None = None,
     task_type: str = "general",
-):
+) -> Any:
     """Context manager for tracking progress of a single task.
 
     Args:
