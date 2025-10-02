@@ -170,3 +170,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Algorithm Kit** - A python implementation of control and learning algorithms
+# Trigger Commitizen bump
