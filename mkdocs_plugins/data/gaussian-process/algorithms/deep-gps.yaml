@@ -217,7 +217,7 @@ educational_value:
 
 # Status and development
 status:
-  level: "complete"
+  current: "complete"
   implementation_quality: "high"
   documentation_quality: "high"
   test_coverage: "medium"
