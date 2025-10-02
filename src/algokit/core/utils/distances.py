@@ -6,7 +6,8 @@ graph traversal algorithms.
 """
 
 import math
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 Node = TypeVar("Node")
 
@@ -118,7 +119,9 @@ def zero_heuristic(node: Node, goal: Node) -> float:
     return 0.0
 
 
-def create_manhattan_heuristic(goal: tuple[int, int]) -> Callable[[tuple[int, int]], float]:
+def create_manhattan_heuristic(
+    goal: tuple[int, int],
+) -> Callable[[tuple[int, int]], float]:
     """Create a Manhattan distance heuristic function for a specific goal.
 
     This factory function creates a heuristic function that calculates
@@ -145,7 +148,9 @@ def create_manhattan_heuristic(goal: tuple[int, int]) -> Callable[[tuple[int, in
     return heuristic
 
 
-def create_euclidean_heuristic(goal: tuple[float, float]) -> Callable[[tuple[float, float]], float]:
+def create_euclidean_heuristic(
+    goal: tuple[float, float],
+) -> Callable[[tuple[float, float]], float]:
     """Create a Euclidean distance heuristic function for a specific goal.
 
     This factory function creates a heuristic function that calculates

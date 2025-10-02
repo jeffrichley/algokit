@@ -474,7 +474,7 @@ algorithms:
   a-star-search:
     name: "A* Search Algorithm"
     family: "planning"
-    status: "planned"
+    status: "complete"
     description: "Heuristic search algorithm that finds the shortest path between two points using both actual cost and estimated cost to goal"
     overview: "A* (A-star) is a widely-used pathfinding and graph traversal algorithm that finds the shortest path between two points in a weighted graph. It combines the benefits of Dijkstra's algorithm (which finds shortest paths) with those of best-first search (which uses heuristics to guide the search)."
     complexity:
@@ -489,8 +489,8 @@ algorithms:
       - "pathfinding"
       - "graph-search"
     implementation:
-      source_file: "src/algokit/planning/a_star_search.py"
-      test_file: "tests/planning/test_a_star_search.py"
+      source_file: "src/algokit/algorithms/pathfinding/astar.py"
+      test_file: "tests/pathfinding/test_astar.py"
       approaches:
         - "Basic A* Implementation"
         - "Grid-based A* with Obstacles"
@@ -501,7 +501,45 @@ algorithms:
     related_algorithms:
       - "dijkstra"
       - "best-first-search"
-      - "bidirectional-search"
+      - "m-star-search"
+
+  m-star-search:
+    name: "M* Multi-Robot Path Planning"
+    family: "planning"
+    status: "complete"
+    description: "Complete and optimal multi-robot path planning algorithm using subdimensional expansion"
+    overview: "M* is a complete and optimal multi-robot path planning algorithm that uses subdimensional expansion. It initially plans paths for each robot independently and only couples robots when they interact, minimizing the search space and ensuring efficient planning for multiple robots in shared environments."
+    complexity:
+      time: "O(b^d × k)"
+      space: "O(b^d × k)"
+      notes: "b = branching factor, d = depth of solution, k = number of robots"
+    tags:
+      - "planning"
+      - "algorithms"
+      - "multi-robot"
+      - "pathfinding"
+      - "subdimensional-expansion"
+      - "collision-avoidance"
+    implementation:
+      source_file: "src/algokit/algorithms/pathfinding/mstar.py"
+      test_file: "tests/pathfinding/test_mstar.py"
+      approaches:
+        - "Basic M* Implementation"
+        - "Multi-Robot Planning with Collision Avoidance"
+        - "Subdimensional Expansion"
+    mathematical_formulation:
+      subdimensional_expansion: "Dynamically generates low-dimensional search spaces"
+      coupling_condition: "Robots are coupled when interactions are detected"
+      optimality: "Guarantees optimal solutions when they exist"
+    applications:
+      - "Multi-robot coordination"
+      - "Warehouse automation"
+      - "Autonomous vehicle coordination"
+      - "Robotic swarm planning"
+    related_algorithms:
+      - "a-star-search"
+      - "dijkstra"
+      - "conflict-based-search"
 
   # Reinforcement Learning Family (Planned)
   q-learning:
@@ -588,10 +626,10 @@ relationships:
 # Implementation progress tracking
 progress:
   overall:
-    total_algorithms: 40
-    implemented: 6
-    planned: 34
-    percentage: 15.0
+    total_algorithms: 41
+    implemented: 8
+    planned: 33
+    percentage: 19.5
   by_family:
     dynamic-programming:
       total: 6
@@ -620,9 +658,9 @@ progress:
       percentage: 0.0
     planning:
       total: 4
-      implemented: 0
-      planned: 4
-      percentage: 0.0
+      implemented: 2
+      planned: 2
+      percentage: 50.0
     gaussian-process:
       total: 6
       implemented: 0

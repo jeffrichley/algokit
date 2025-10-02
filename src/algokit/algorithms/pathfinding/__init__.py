@@ -26,6 +26,7 @@ from algokit.algorithms.pathfinding.dijkstra import (
     dijkstra_shortest_distance,
     dijkstra_shortest_path,
 )
+from algokit.algorithms.pathfinding.mstar import mstar_plan_paths
 from algokit.core.utils.distances import (
     euclidean_distance,
     manhattan_distance,
@@ -54,4 +55,8 @@ __all__ = [
     "dijkstra_shortest_path",
     "dijkstra_shortest_distance",
     "dijkstra_all_distances",
+    # M* algorithms
+    "MStarPlanner",
+    "mstar_plan_paths",
+    "mstar_plan_single_robot",
 ]
