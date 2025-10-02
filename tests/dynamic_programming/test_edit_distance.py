@@ -201,7 +201,7 @@ def test_hamming_distance_basic() -> None:
     """Test basic Hamming distance calculation."""
     # Arrange - Set up test inputs for Hamming distance
     str1 = "abc"
-    str2 = "and"
+    str2 = "abd"
     expected_distance = 1  # Only one character differs
 
     # Act - Calculate Hamming distance

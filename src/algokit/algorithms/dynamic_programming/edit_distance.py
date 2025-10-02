@@ -224,7 +224,7 @@ def hamming_distance(str1: str, str2: str) -> int:
         ValueError: If strings have different lengths.
 
     Examples:
-        >>> hamming_distance("abc", "and")
+        >>> hamming_distance("abc", "abd")
         1
         >>> hamming_distance("abc", "abc")
         0
