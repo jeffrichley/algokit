@@ -71,6 +71,7 @@ jobs:
           sudo apt-get install -y \
             libcairo2-dev \
             libpango1.0-dev \
+            libpangocairo-1.0-0 \
             pkg-config \
             swig
 
@@ -128,6 +129,7 @@ jobs:
           sudo apt-get install -y \
             libcairo2-dev \
             libpango1.0-dev \
+            libpangocairo-1.0-0 \
             pkg-config \
             swig
 
@@ -162,6 +164,7 @@ jobs:
           sudo apt-get install -y \
             libcairo2-dev \
             libpango1.0-dev \
+            libpangocairo-1.0-0 \
             pkg-config \
             swig
 
