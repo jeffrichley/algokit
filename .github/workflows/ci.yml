@@ -64,6 +64,64 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcairo2-dev \
+            libpango1.0-dev \
+            pkg-config \
+            python3-dev \
+            libffi-dev \
+            libssl-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxss1 \
+            libgconf-2-4 \
+            libxrandr2 \
+            libasound2 \
+            libpangocairo-1.0-0 \
+            libpangoft2-1.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libgtk-3-0 \
+            libx11-6 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            # Box2D dependencies
+            libswig-dev \
+            swig \
+            # Additional dependencies for manim
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libxrandr2 \
+            libxinerama1 \
+            libxcursor1 \
+            libxi6 \
+            libxss1 \
+            libgconf-2-4
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install pkg-config cairo pango gdk-pixbuf libffi swig
+
       - name: Install uv
         uses: astral-sh/setup-uv@v2
         with:
@@ -107,6 +165,58 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcairo2-dev \
+            libpango1.0-dev \
+            pkg-config \
+            python3-dev \
+            libffi-dev \
+            libssl-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxss1 \
+            libgconf-2-4 \
+            libxrandr2 \
+            libasound2 \
+            libpangocairo-1.0-0 \
+            libpangoft2-1.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libgtk-3-0 \
+            libx11-6 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            # Box2D dependencies
+            libswig-dev \
+            swig \
+            # Additional dependencies for manim
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libxrandr2 \
+            libxinerama1 \
+            libxcursor1 \
+            libxi6 \
+            libxss1 \
+            libgconf-2-4
+
       - name: Install uv
         uses: astral-sh/setup-uv@v2
         with:
@@ -131,6 +241,58 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcairo2-dev \
+            libpango1.0-dev \
+            pkg-config \
+            python3-dev \
+            libffi-dev \
+            libssl-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxss1 \
+            libgconf-2-4 \
+            libxrandr2 \
+            libasound2 \
+            libpangocairo-1.0-0 \
+            libpangoft2-1.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libgtk-3-0 \
+            libx11-6 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            # Box2D dependencies
+            libswig-dev \
+            swig \
+            # Additional dependencies for manim
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libxrandr2 \
+            libxinerama1 \
+            libxcursor1 \
+            libxi6 \
+            libxss1 \
+            libgconf-2-4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v2
