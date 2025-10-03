@@ -4,10 +4,14 @@ This module contains the pure DFS algorithm implementation.
 The algorithm is clean, readable, and easy to understand for junior developers.
 """
 
+from typing import TypeVar
+
 import networkx as nx
 
+Node = TypeVar("Node")
 
-def dfs_path[Node](
+
+def dfs_path(
     graph: nx.Graph,
     start: Node,
     goal: Node,
@@ -81,7 +85,7 @@ def dfs_path[Node](
     return None
 
 
-def dfs_recursive_path[Node](
+def dfs_recursive_path(
     graph: nx.Graph,
     start: Node,
     goal: Node,
@@ -199,7 +203,7 @@ def dfs_all_reachable[Node](
     return visited
 
 
-def dfs_connected_components[Node](graph: nx.Graph) -> list[set[Node]]:
+def dfs_connected_components(graph: nx.Graph) -> list[set[Node]]:
     """Find all connected components in the graph using DFS.
 
     This uses DFS to identify all disconnected subgraphs in the graph.
