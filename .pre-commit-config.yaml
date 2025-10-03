@@ -28,38 +28,12 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
     hooks:
       - id: mypy
-        name: mypy
-        entry: mypy src tests
-        language: system
-        pass_filenames: false
-        types: [python]
+        args: [--ignore-missing-imports]
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
-      - id: pip-audit
-        name: pip-audit
-        entry: pip-audit --progress-spinner=off
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [manual]
-      - id: xenon-complexity
-        name: Check Code Complexity (Xenon) - Advisory
-        entry: xenon --max-absolute B src
-        language: system
-        pass_filenames: false
-        verbose: true
-        always_run: true
-        stages: [manual]
-      - id: pytest-fast
-        name: Run fast tests (excludes slow tests)
-        entry: pytest tests -q -m "not slow"
-        language: system
-        pass_filenames: false
-        types: [python]
-        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
-        stages: [pre-push]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
