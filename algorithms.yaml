@@ -69,9 +69,9 @@ families:
       - "deep-learning"
       - "optimization"
       - "control-systems"
-    status: "planned"
-    algorithms_count: 0
-    planned_count: 6
+    status: "in-progress"
+    algorithms_count: 1
+    planned_count: 5
 
   control:
     name: "Control Systems"
@@ -623,7 +623,7 @@ algorithms:
   q-learning:
     name: "Q-Learning"
     family: "reinforcement-learning"
-    status: "planned"
+    status: "complete"
     description: "Model-free, off-policy reinforcement learning algorithm for learning optimal action-value functions"
     overview: "Q-Learning is a model-free, off-policy reinforcement learning algorithm that learns the optimal action-value function (Q-function) for a Markov Decision Process (MDP). It's one of the most fundamental and widely-used algorithms in reinforcement learning."
     complexity:
@@ -705,9 +705,9 @@ relationships:
 progress:
   overall:
     total_algorithms: 41
-    implemented: 8
-    planned: 33
-    percentage: 19.5
+    implemented: 9
+    planned: 32
+    percentage: 22.0
   by_family:
     dynamic-programming:
       total: 6
@@ -716,9 +716,9 @@ progress:
       percentage: 100.0
     reinforcement-learning:
       total: 6
-      implemented: 0
-      planned: 6
-      percentage: 0.0
+      implemented: 1
+      planned: 5
+      percentage: 16.7
     control:
       total: 5
       implemented: 0
