@@ -32,8 +32,7 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        args: [--config-file=pyproject.toml]
-        exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$|viz-source/|examples/|scripts/|viz_tests/)
+        args: [--config-file=mypy.ini]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
