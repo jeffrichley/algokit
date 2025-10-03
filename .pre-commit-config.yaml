@@ -32,7 +32,7 @@ repos:
     rev: v1.17.1
     hooks:
       - id: mypy
-        args: [--config-file=pyproject.toml, --ignore-missing-imports]
+        args: [--config-file=pyproject.toml, --install-types, --non-interactive]
         files: ^(src/algokit/|tests/).*\.py$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

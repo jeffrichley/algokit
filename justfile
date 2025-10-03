@@ -48,7 +48,7 @@ format: install-dev
 
 # Run type checking
 type-check: install-dev
-    uv run mypy --config-file=pyproject.toml src tests
+    uv run mypy --config-file=pyproject.toml --install-types --non-interactive src tests
 
 # Build documentation
 docs: install-docs
@@ -79,7 +79,7 @@ validate-yaml-verbose: install-docs
 quality: install-dev install-docs
     uv run ruff check src/ tests/ --fix
     uv run ruff format src/ tests/
-    PYTHONPATH= uv run mypy --config-file=pyproject.toml src tests
+    PYTHONPATH= uv run mypy --config-file=pyproject.toml --install-types --non-interactive src tests
     uv run mkdocs build
     uv run python -m linkcheckmd docs
     uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
