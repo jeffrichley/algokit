@@ -28,7 +28,7 @@ test-pathfinding: install-dev
     uv run pytest tests/pathfinding/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-pathfinding --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
     @echo "Generated pathfinding coverage HTML at htmlcov-pathfinding/index.html"
 
-# Run dynamic programming algorithm tests with focused coverage  
+# Run dynamic programming algorithm tests with focused coverage
 test-dynamic-programming: install-dev
     uv run pytest tests/dynamic_programming/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-dp --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
     @echo "Generated dynamic programming coverage HTML at htmlcov-dp/index.html"

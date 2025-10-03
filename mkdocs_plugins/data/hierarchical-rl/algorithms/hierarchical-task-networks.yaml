@@ -148,7 +148,7 @@ implementations:
               # Get action probabilities
               state_idx = self.state_to_index(state)
               action_probs = self.task_policies[task.name][state_idx]
-              
+
               # Sample action
               return np.random.choice(self.action_size, p=action_probs)
 
@@ -162,7 +162,7 @@ implementations:
               # Get subtask probabilities
               state_idx = self.state_to_index(state)
               subtask_probs = self.task_policies[task.name][state_idx]
-              
+
               # Sample subtask
               subtask_idx = np.random.choice(len(task.subtasks), p=subtask_probs)
               return task.subtasks[subtask_idx]
@@ -173,7 +173,7 @@ implementations:
               # Store experience
               if current_task.name not in self.task_buffers:
                   self.task_buffers[current_task.name] = []
-              
+
               self.task_buffers[current_task.name].append((state, action, reward, next_state, done))
 
               # Update policy if enough experience
@@ -204,7 +204,7 @@ implementations:
                           target = r
                       else:
                           target = r + self.gamma * np.max(self.task_policies[task.name][s_next_idx])
-                      
+
                       self.task_policies[task.name][s_idx, a] = current_q + self.alpha * (target - current_q)
                   else:
                       # Update subtask selection policy
@@ -213,7 +213,7 @@ implementations:
                           target = r
                       else:
                           target = r + self.gamma * np.max(self.task_policies[task.name][s_next_idx])
-                      
+
                       self.task_policies[task.name][s_idx, a] = current_q + self.alpha * (target - current_q)
 
           def state_to_index(self, state: np.ndarray) -> int:
@@ -256,7 +256,7 @@ complexity:
       time: "O(|T| × |S| × |A| × episodes)"
       space: "O(|T| × |S| × |A|)"
       notes: "Time complexity depends on number of tasks, state space, and episodes. Space grows with task hierarchy size"
-    
+
     - approach: "HTN with Planning"
       time: "O(|T| × |S| × |A| × episodes + planning_time)"
       space: "O(|T| × |S| × |A| + planning_space)"

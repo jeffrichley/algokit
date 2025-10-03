@@ -25,7 +25,7 @@ formulation: |
   Given two strings s₁ and s₂, find the minimum number of operations to transform s₁ into s₂.
   Operations allowed:
   - **Insertion**: Add a character
-  - **Deletion**: Remove a character  
+  - **Deletion**: Remove a character
   - **Substitution**: Replace a character
 
   **Recurrence Relation:**
@@ -83,7 +83,7 @@ implementations:
       - "Exponential time complexity"
       - "Redundant computation of same subproblems"
     use_cases: ["Educational purposes", "Very small input sizes"]
-    
+
   - name: "Memoized (Top-Down)"
     description: "Recursive approach with memoization to avoid redundant calculations"
     complexity:
@@ -97,7 +97,7 @@ implementations:
       - "Recursion stack overhead"
       - "May cause stack overflow for large inputs"
     use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
-    
+
   - name: "Tabulated (Bottom-Up)"
     description: "Iterative approach building solution from base cases"
     complexity:
@@ -111,7 +111,7 @@ implementations:
       - "Computes all subproblems"
       - "Less intuitive than recursive approach"
     use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
-    
+
   - name: "Space-Optimized"
     description: "Uses only two rows of DP table instead of full 2D table"
     complexity:
@@ -124,7 +124,7 @@ implementations:
       - "Cannot reconstruct actual edit sequence"
       - "Slightly more complex implementation"
     use_cases: ["When only distance is needed", "Memory-constrained systems"]
-    
+
   - name: "With Operations Tracking"
     description: "Tracks actual operations performed to transform strings"
     complexity:

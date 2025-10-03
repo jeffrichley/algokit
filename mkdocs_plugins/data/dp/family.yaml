@@ -70,7 +70,7 @@ algorithms:
   comparison:
     enabled: true
     metrics: ["status", "time_complexity", "space_complexity", "difficulty", "applications"]
-  
+
   # Explicit list of algorithms in this family
   algorithm_list:
     - slug: "fibonacci"
@@ -126,7 +126,7 @@ family_status:
   implementation_coverage: "100%"
   test_coverage: "high"
   documentation_quality: "complete"
-  
+
   # Status breakdown
   status_breakdown:
     complete: 6
@@ -191,4 +191,3 @@ template_options:
   show_related_families: true
   show_references: true
   custom_sections: true
-

@@ -16,14 +16,14 @@ def main() -> None:
     """Run dynamic programming algorithm demonstrations."""
     print("🐍 Dynamic Programming Algorithms Demo")
     print("=" * 50)
-    
+
     # Fibonacci Sequence
     print("\n📊 Fibonacci Sequence")
     print("-" * 20)
     n = 10
     result = fibonacci(n)
     print(f"Fibonacci({n}) = {result}")
-    
+
     # Coin Change Problem
     print("\n🪙 Coin Change Problem")
     print("-" * 20)
@@ -35,7 +35,7 @@ def main() -> None:
     print(f"Amount: {amount}")
     print(f"Minimum coins needed: {min_coins}")
     print(f"Actual coins used: {actual_coins}")
-    
+
     # 0/1 Knapsack Problem
     print("\n🎒 0/1 Knapsack Problem")
     print("-" * 20)
@@ -48,7 +48,7 @@ def main() -> None:
     print(f"Capacity: {capacity}")
     print(f"Maximum value: {max_value}")
     print(f"Selected items (indices): {selected_items}")
-    
+
     # Longest Common Subsequence
     print("\n🔤 Longest Common Subsequence")
     print("-" * 20)
@@ -58,7 +58,7 @@ def main() -> None:
     print(f"String 1: {text1}")
     print(f"String 2: {text2}")
     print(f"LCS length: {lcs_length}")
-    
+
     # Edit Distance
     print("\n✏️ Edit Distance (Levenshtein)")
     print("-" * 20)
@@ -68,7 +68,7 @@ def main() -> None:
     print(f"String 1: {str1}")
     print(f"String 2: {str2}")
     print(f"Edit distance: {distance}")
-    
+
     # Matrix Chain Multiplication
     print("\n🔢 Matrix Chain Multiplication")
     print("-" * 20)
@@ -77,7 +77,7 @@ def main() -> None:
     print(f"Matrix dimensions: {dimensions}")
     print(f"Minimum scalar multiplications: {min_cost}")
     print(f"Optimal parenthesization: {expression}")
-    
+
     print("\n✨ Demo completed successfully!")
 
 

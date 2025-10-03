@@ -2,7 +2,7 @@
 
 A comprehensive CLI for rendering algorithm visualizations with Manim.
 
-> **✅ CLI Refactored**: The CLI has been updated to eliminate the confusing double `render` command structure. 
+> **✅ CLI Refactored**: The CLI has been updated to eliminate the confusing double `render` command structure.
 > Use `algokit render bfs` instead of `algokit render render bfs`. See [CLI_REFACTOR_GUIDE.md](CLI_REFACTOR_GUIDE.md) for details.
 
 ## 🚀 Quick Start
@@ -11,7 +11,7 @@ A comprehensive CLI for rendering algorithm visualizations with Manim.
 # List available scenarios
 algokit render scenarios
 
-# List available algorithms  
+# List available algorithms
 algokit render algorithms
 
 # Quick render for testing
@@ -107,7 +107,7 @@ algokit render bfs --quality high --timing cinematic
 ```bash
 # Test all scenarios quickly
 algokit render quick --scenario "Tiny Test"
-algokit render quick --scenario "Harbor Flood Small"  
+algokit render quick --scenario "Harbor Flood Small"
 algokit render quick --scenario "Harbor Storm Medium"
 ```
 

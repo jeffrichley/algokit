@@ -35,7 +35,7 @@ formulation:
 
     The multi-task learning objective is:
     min_{θ_shared, θ_1, ..., θ_N} Σ_{i=1}^N L_i(θ_shared, θ_i) + λ_shared * R_shared(θ_shared) + λ_task * Σ_{i=1}^N R_task(θ_i)
-    
+
     Where:
     - L_i is the loss for task T_i
     - R_shared is the regularization for shared parameters
@@ -87,7 +87,7 @@ implementations:
           Multi-task DMP learning with shared representation and task-specific adaptation.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, n_tasks: int = 3,
                        lambda_shared: float = 0.1, lambda_task: float = 0.01):
               """
@@ -111,22 +111,22 @@ implementations:
               self.n_tasks = n_tasks
               self.lambda_shared = lambda_shared
               self.lambda_task = lambda_task
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # Shared parameters
               self.w_shared = np.zeros((n_dims, n_basis))
-              
+
               # Task-specific parameters
               self.w_task = {}
               for task_id in range(n_tasks):
                   self.w_task[task_id] = np.zeros((n_dims, n_basis))
-              
+
               # Task similarity matrix
               self.task_similarity = np.eye(n_tasks)
-              
+
               # Learning history
               self.learning_history = []
               self.task_performance = {}
@@ -154,23 +154,23 @@ implementations:
                   Shared loss value
               """
               total_loss = 0.0
-              
+
               for task_id, demos in task_data.items():
                   for y_demo, dy_demo, ddy_demo in demos:
                       T = len(y_demo)
                       y_0 = y_demo[0]
                       g = y_demo[-1]
-                      
+
                       # Generate canonical system trajectory
                       x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-                      
+
                       # Compute predicted trajectory
                       y_pred = self.predict_trajectory(task_id, y_0, g, x)
-                      
+
                       # Compute loss
                       loss = np.sum((y_demo - y_pred)**2)
                       total_loss += loss
-              
+
               return total_loss
 
           def compute_task_specific_loss(self, task_id: int, task_data: List[Tuple[np.ndarray, np.ndarray, np.ndarray]]) -> float:
@@ -185,22 +185,22 @@ implementations:
                   Task-specific loss value
               """
               total_loss = 0.0
-              
+
               for y_demo, dy_demo, ddy_demo in task_data:
                   T = len(y_demo)
                   y_0 = y_demo[0]
                   g = y_demo[-1]
-                  
+
                   # Generate canonical system trajectory
                   x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-                  
+
                   # Compute predicted trajectory
                   y_pred = self.predict_trajectory(task_id, y_0, g, x)
-                  
+
                   # Compute loss
                   loss = np.sum((y_demo - y_pred)**2)
                   total_loss += loss
-              
+
               return total_loss
 
           def compute_regularization_loss(self) -> Tuple[float, float]:
@@ -212,12 +212,12 @@ implementations:
               """
               # Shared regularization
               shared_reg = self.lambda_shared * np.sum(self.w_shared**2)
-              
+
               # Task-specific regularization
               task_reg = 0.0
               for task_id in range(self.n_tasks):
                   task_reg += self.lambda_task * np.sum(self.w_task[task_id]**2)
-              
+
               return shared_reg, task_reg
 
           def predict_trajectory(self, task_id: int, y_0: np.ndarray, g: np.ndarray, x: np.ndarray) -> np.ndarray:
@@ -235,10 +235,10 @@ implementations:
               """
               T = len(x)
               y_pred = np.zeros((T, self.n_dims))
-              
+
               # Combined weights (shared + task-specific)
               w_combined = self.w_shared + self.w_task[task_id]
-              
+
               # Predict trajectory
               for t in range(T):
                   # Forcing function
@@ -246,14 +246,14 @@ implementations:
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x[t] - self.c)**2)
                       f[d] = (np.sum(psi * w_combined[d]) * x[t]) / (np.sum(psi) + 1e-10)
-                  
+
                   # Transformation system
                   if t == 0:
                       y_pred[t] = y_0
                   else:
                       ddy = self.alpha_y * (self.beta_y * (g - y_pred[t-1]) - 0) + f
                       y_pred[t] = y_pred[t-1] + ddy * 0.01  # Simplified integration
-              
+
               return y_pred
 
           def learn_from_multiple_tasks(self, task_data: Dict[int, List[Tuple[np.ndarray, np.ndarray, np.ndarray]]],
@@ -269,25 +269,25 @@ implementations:
               self.w_shared = np.random.normal(0, 0.1, (self.n_dims, self.n_basis))
               for task_id in range(self.n_tasks):
                   self.w_task[task_id] = np.random.normal(0, 0.01, (self.n_dims, self.n_basis))
-              
+
               # Learning loop
               for iteration in range(max_iterations):
                   # Update shared parameters
                   self.update_shared_parameters(task_data)
-                  
+
                   # Update task-specific parameters
                   for task_id in range(self.n_tasks):
                       if task_id in task_data:
                           self.update_task_parameters(task_id, task_data[task_id])
-                  
+
                   # Compute total loss
                   shared_loss = self.compute_shared_loss(task_data)
-                  task_loss = sum(self.compute_task_specific_loss(task_id, demos) 
+                  task_loss = sum(self.compute_task_specific_loss(task_id, demos)
                                 for task_id, demos in task_data.items())
                   shared_reg, task_reg = self.compute_regularization_loss()
-                  
+
                   total_loss = shared_loss + task_loss + shared_reg + task_reg
-                  
+
                   # Store learning history
                   self.learning_history.append({
                       'iteration': iteration,
@@ -297,7 +297,7 @@ implementations:
                       'task_reg': task_reg,
                       'total_loss': total_loss
                   })
-                  
+
                   # Check convergence
                   if iteration > 0:
                       loss_change = abs(total_loss - self.learning_history[-2]['total_loss'])
@@ -313,23 +313,23 @@ implementations:
               """
               # Compute gradient of shared loss
               grad_shared = np.zeros((self.n_dims, self.n_basis))
-              
+
               for task_id, demos in task_data.items():
                   for y_demo, dy_demo, ddy_demo in demos:
                       T = len(y_demo)
                       y_0 = y_demo[0]
                       g = y_demo[-1]
-                      
+
                       # Generate canonical system trajectory
                       x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-                      
+
                       # Compute gradient
                       for t in range(T):
                           for d in range(self.n_dims):
                               psi = np.exp(-self.h * (x[t] - self.c)**2)
                               error = y_demo[t, d] - self.predict_trajectory(task_id, y_0, g, x)[t, d]
                               grad_shared[d] += -2 * error * psi * x[t] / (np.sum(psi) + 1e-10)
-              
+
               # Update shared parameters
               learning_rate = 0.01
               self.w_shared += learning_rate * grad_shared
@@ -344,22 +344,22 @@ implementations:
               """
               # Compute gradient of task-specific loss
               grad_task = np.zeros((self.n_dims, self.n_basis))
-              
+
               for y_demo, dy_demo, ddy_demo in task_data:
                   T = len(y_demo)
                   y_0 = y_demo[0]
                   g = y_demo[-1]
-                  
+
                   # Generate canonical system trajectory
                   x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-                  
+
                   # Compute gradient
                   for t in range(T):
                       for d in range(self.n_dims):
                           psi = np.exp(-self.h * (x[t] - self.c)**2)
                           error = y_demo[t, d] - self.predict_trajectory(task_id, y_0, g, x)[t, d]
                           grad_task[d] += -2 * error * psi * x[t] / (np.sum(psi) + 1e-10)
-              
+
               # Update task-specific parameters
               learning_rate = 0.01
               self.w_task[task_id] += learning_rate * grad_task
@@ -382,39 +382,39 @@ implementations:
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def multi_task_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Combined weights
                   w_combined = self.w_shared + self.w_task[task_id]
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * w_combined[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Transformation system
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(multi_task_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
           def visualize_learning(self, title: str = "Multi-task Learning") -> None:
@@ -427,15 +427,15 @@ implementations:
               if not self.learning_history:
                   print("No learning history available")
                   return
-              
+
               fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
-              
+
               # Plot loss curves
               iterations = [entry['iteration'] for entry in self.learning_history]
               shared_losses = [entry['shared_loss'] for entry in self.learning_history]
               task_losses = [entry['task_loss'] for entry in self.learning_history]
               total_losses = [entry['total_loss'] for entry in self.learning_history]
-              
+
               ax1.plot(iterations, shared_losses, 'b-', label='Shared Loss')
               ax1.plot(iterations, task_losses, 'r-', label='Task Loss')
               ax1.plot(iterations, total_losses, 'g-', label='Total Loss')
@@ -444,11 +444,11 @@ implementations:
               ax1.set_title('Learning Progress')
               ax1.legend()
               ax1.grid(True)
-              
+
               # Plot regularization
               shared_regs = [entry['shared_reg'] for entry in self.learning_history]
               task_regs = [entry['task_reg'] for entry in self.learning_history]
-              
+
               ax2.plot(iterations, shared_regs, 'b-', label='Shared Regularization')
               ax2.plot(iterations, task_regs, 'r-', label='Task Regularization')
               ax2.set_xlabel('Iteration')
@@ -456,7 +456,7 @@ implementations:
               ax2.set_title('Regularization')
               ax2.legend()
               ax2.grid(True)
-              
+
               plt.suptitle(title)
               plt.tight_layout()
               plt.show()
@@ -483,7 +483,7 @@ implementations:
           Multi-task DMP with explicit transfer learning mechanisms.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, n_tasks: int = 3,
                        lambda_shared: float = 0.1, lambda_task: float = 0.01,
                        transfer_strength: float = 0.5):
@@ -503,7 +503,7 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, n_tasks, lambda_shared, lambda_task)
               self.transfer_strength = transfer_strength
-              
+
               # Transfer matrices
               self.transfer_matrices = {}
               for task_id in range(n_tasks):
@@ -520,7 +520,7 @@ implementations:
                   Transfer loss value
               """
               transfer_loss = 0.0
-              
+
               # Transfer from similar tasks
               for other_task_id in range(self.n_tasks):
                   if other_task_id != task_id:
@@ -529,7 +529,7 @@ implementations:
                           # Transfer loss based on similarity
                           weight_diff = self.w_task[task_id] - self.w_task[other_task_id]
                           transfer_loss += similarity * np.sum(weight_diff**2)
-              
+
               return transfer_loss
 
           def update_transfer_matrices(self, task_data: Dict[int, List[Tuple[np.ndarray, np.ndarray, np.ndarray]]]) -> None:
@@ -542,10 +542,10 @@ implementations:
               for task_id in range(self.n_tasks):
                   if task_id not in task_data:
                       continue
-                  
+
                   # Compute transfer matrix for this task
                   transfer_matrix = np.zeros((self.n_basis, self.n_basis))
-                  
+
                   for other_task_id in range(self.n_tasks):
                       if other_task_id != task_id and other_task_id in task_data:
                           similarity = self.task_similarity[task_id, other_task_id]
@@ -558,11 +558,11 @@ implementations:
                                           self.w_task[other_task_id][:, j]
                                       )[0, 1]
                                       transfer_matrix[i, j] += similarity * correlation
-                  
+
                   # Normalize transfer matrix
                   if np.sum(transfer_matrix) > 0:
                       transfer_matrix = transfer_matrix / np.sum(transfer_matrix)
-                  
+
                   self.transfer_matrices[task_id] = transfer_matrix
 
           def learn_from_multiple_tasks(self, task_data: Dict[int, List[Tuple[np.ndarray, np.ndarray, np.ndarray]]],
@@ -578,30 +578,30 @@ implementations:
               self.w_shared = np.random.normal(0, 0.1, (self.n_dims, self.n_basis))
               for task_id in range(self.n_tasks):
                   self.w_task[task_id] = np.random.normal(0, 0.01, (self.n_dims, self.n_basis))
-              
+
               # Learning loop
               for iteration in range(max_iterations):
                   # Update transfer matrices
                   self.update_transfer_matrices(task_data)
-                  
+
                   # Update shared parameters
                   self.update_shared_parameters(task_data)
-                  
+
                   # Update task-specific parameters with transfer
                   for task_id in range(self.n_tasks):
                       if task_id in task_data:
                           self.update_task_parameters_with_transfer(task_id, task_data[task_id])
-                  
+
                   # Compute total loss
                   shared_loss = self.compute_shared_loss(task_data)
-                  task_loss = sum(self.compute_task_specific_loss(task_id, demos) 
+                  task_loss = sum(self.compute_task_specific_loss(task_id, demos)
                                 for task_id, demos in task_data.items())
-                  transfer_loss = sum(self.compute_transfer_loss(task_id) 
+                  transfer_loss = sum(self.compute_transfer_loss(task_id)
                                     for task_id in range(self.n_tasks))
                   shared_reg, task_reg = self.compute_regularization_loss()
-                  
+
                   total_loss = shared_loss + task_loss + self.transfer_strength * transfer_loss + shared_reg + task_reg
-                  
+
                   # Store learning history
                   self.learning_history.append({
                       'iteration': iteration,
@@ -612,7 +612,7 @@ implementations:
                       'task_reg': task_reg,
                       'total_loss': total_loss
                   })
-                  
+
                   # Check convergence
                   if iteration > 0:
                       loss_change = abs(total_loss - self.learning_history[-2]['total_loss'])
@@ -629,22 +629,22 @@ implementations:
               """
               # Compute gradient of task-specific loss
               grad_task = np.zeros((self.n_dims, self.n_basis))
-              
+
               for y_demo, dy_demo, ddy_demo in task_data:
                   T = len(y_demo)
                   y_0 = y_demo[0]
                   g = y_demo[-1]
-                  
+
                   # Generate canonical system trajectory
                   x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-                  
+
                   # Compute gradient
                   for t in range(T):
                       for d in range(self.n_dims):
                           psi = np.exp(-self.h * (x[t] - self.c)**2)
                           error = y_demo[t, d] - self.predict_trajectory(task_id, y_0, g, x)[t, d]
                           grad_task[d] += -2 * error * psi * x[t] / (np.sum(psi) + 1e-10)
-              
+
               # Add transfer learning gradient
               transfer_grad = np.zeros((self.n_dims, self.n_basis))
               for other_task_id in range(self.n_tasks):
@@ -653,7 +653,7 @@ implementations:
                       if similarity > 0:
                           weight_diff = self.w_task[task_id] - self.w_task[other_task_id]
                           transfer_grad += similarity * weight_diff
-              
+
               # Update task-specific parameters
               learning_rate = 0.01
               self.w_task[task_id] += learning_rate * (grad_task + self.transfer_strength * transfer_grad)
@@ -675,12 +675,12 @@ complexity:
       time: "O(T × K × N)"
       space: "O(K × N)"
       notes: "Time complexity scales with trajectory length, basis functions, and number of tasks"
-    
+
     - approach: "Transfer Learning"
       time: "O(T × K × N + N²)"
       space: "O(K × N + N²)"
       notes: "Additional complexity for transfer learning mechanisms"
-    
+
     - approach: "Task Similarity Computation"
       time: "O(N²)"
       space: "O(N²)"

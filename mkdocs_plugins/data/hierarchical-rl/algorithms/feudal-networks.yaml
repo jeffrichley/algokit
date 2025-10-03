@@ -230,7 +230,7 @@ complexity:
       time: "O(batch_size × (manager_params + worker_params))"
       space: "O(batch_size × (state_size + goal_size))"
       notes: "Two-network architecture requires coordination and careful training"
-    
+
     - approach: "FuN with Experience Replay"
       time: "O(batch_size × (manager_params + worker_params))"
       space: "O(batch_size × (state_size + goal_size) + buffer_size)"

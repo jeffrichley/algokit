@@ -147,7 +147,7 @@ implementations:
               try:
                   # Solve Riccati equations
                   self.X = solve_continuous_are(
-                      self.A.T, 
+                      self.A.T,
                       self.C1.T,
                       self.B1 @ self.B1.T / (self.gamma**2) - self.B2 @ self.B2.T,
                       self.C1.T @ self.C1
@@ -180,7 +180,7 @@ implementations:
               """Compute controller state-space matrices."""
               # This is a simplified implementation
               # Real implementation would be more complex
-              
+
               # Controller state matrix
               self.Ac = self.A - self.B2 @ self.Dc @ self.C2 - self.Bc @ self.C2
 
@@ -261,10 +261,10 @@ implementations:
               """
               # This is a simplified implementation
               # Real implementation would involve more complex synthesis
-              
+
               # Mixed sensitivity problem setup
               # ||W1*S, W2*T, W3*KS||_∞ < 1
-              
+
               # Simplified controller design
               controller = self._solve_mixed_sensitivity()
               return controller

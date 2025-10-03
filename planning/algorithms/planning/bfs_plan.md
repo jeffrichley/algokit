@@ -107,7 +107,7 @@ Implementation plan for Breadth-First Search algorithm as part of the Algokit pa
 
 **Current Status**: ⚠️ **PARTIALLY COMPLETE** - Code structure implemented but not tested
 - ✅ **4.1**: Shared scene infrastructure complete
-- ⚠️ **4.2**: Event animation helper methods created but untested  
+- ⚠️ **4.2**: Event animation helper methods created but untested
 - ⚠️ **4.3**: BFS scene class structure created but untested
 - ❌ **4.4**: Visualization testing not started
 
@@ -343,7 +343,7 @@ Implementation plan for Breadth-First Search algorithm as part of the Algokit pa
 
 ### ✅ **COMPLETED PHASES**
 - **Phase 1**: Foundation & Core Infrastructure (100% complete)
-- **Phase 2**: BFS Algorithm Implementation (100% complete)  
+- **Phase 2**: BFS Algorithm Implementation (100% complete)
 - **Phase 3**: Comprehensive Testing (100% complete)
 
 ### ⚠️ **IN PROGRESS**

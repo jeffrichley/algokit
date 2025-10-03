@@ -28,7 +28,7 @@ uv run --group docs python scripts/validate_yaml.py validate
 # Validate only family files
 uv run --group docs python scripts/validate_yaml.py validate --families
 
-# Validate only algorithm files  
+# Validate only algorithm files
 uv run --group docs python scripts/validate_yaml.py validate --algorithms
 
 # Validate a specific file
@@ -123,7 +123,7 @@ references: [object]          # Bibliography entries
 tags: [object]                # Categorization tags
 template_options: object      # Display preferences
 
-# Algorithm file structure  
+# Algorithm file structure
 slug: string                  # Algorithm identifier
 name: string                  # Display name
 family_id: string             # Parent family ID

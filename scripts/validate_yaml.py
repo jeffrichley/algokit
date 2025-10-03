@@ -34,11 +34,11 @@ app = typer.Typer(
 
 class AlgoKitYAMLValidator:
     """YAML validator for AlgoKit project files with Rich output."""
-    
+
     def __init__(self):
         self.family_schema = self._create_family_schema()
         self.algorithm_schema = self._create_algorithm_schema()
-    
+
     def _create_family_schema(self) -> Dict[str, Any]:
         """Create schema for family.yaml files."""
         return {
@@ -48,7 +48,7 @@ class AlgoKitYAMLValidator:
             'slug': {'type': 'string', 'required': True},
             'summary': {'type': 'string', 'required': True},
             'description': {'type': 'string', 'required': True},
-            
+
             # Key characteristics
             'key_characteristics': {
                 'type': 'list',
@@ -61,7 +61,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Common applications
             'common_applications': {
                 'type': 'list',
@@ -73,7 +73,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Concepts
             'concepts': {
                 'type': 'list',
@@ -86,7 +86,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Algorithm management
             'algorithms': {
                 'type': 'dict',
@@ -103,7 +103,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Related families
             'related_families': {
                 'type': 'list',
@@ -116,7 +116,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Complexity information
             'complexity': {
                 'type': 'dict',
@@ -126,7 +126,7 @@ class AlgoKitYAMLValidator:
                     'notes': {'type': 'string'}
                 }
             },
-            
+
             # Domain sections
             'domain_sections': {
                 'type': 'list',
@@ -138,7 +138,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # References
             'references': {
                 'type': 'list',
@@ -149,13 +149,13 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Tags
             'tags': {
                 'type': 'list',
                 'schema': {'type': 'string'}
             },
-            
+
             # Template options
             'template_options': {
                 'type': 'dict',
@@ -168,7 +168,7 @@ class AlgoKitYAMLValidator:
                     'custom_sections': {'type': 'boolean'}
                 }
             },
-            
+
             # Metadata
             'meta': {
                 'type': 'dict',
@@ -179,7 +179,7 @@ class AlgoKitYAMLValidator:
                 }
             }
         }
-    
+
     def _create_algorithm_schema(self) -> Dict[str, Any]:
         """Create schema for algorithm.yaml files."""
         return {
@@ -189,7 +189,7 @@ class AlgoKitYAMLValidator:
             'family_id': {'type': 'string', 'required': True},
             'summary': {'type': 'string', 'required': True},
             'description': {'type': 'string', 'required': True},
-            
+
             # Algorithm-specific fields
             'complexity': {
                 'type': 'dict',
@@ -208,7 +208,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Implementation details
             'implementations': {
                 'type': 'list',
@@ -231,7 +231,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Problem formulation
             'formulation': {
                 'type': 'dict',
@@ -251,7 +251,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Properties and characteristics
             'properties': {
                 'type': 'list',
@@ -264,7 +264,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Applications
             'applications': {
                 'type': 'list',
@@ -276,13 +276,13 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Educational value
             'educational_value': {
                 'type': 'list',
                 'schema': {'type': 'string'}
             },
-            
+
             # Status
             'status': {
                 'type': 'dict',
@@ -303,7 +303,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # References
             'references': {
                 'type': 'list',
@@ -328,7 +328,7 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Related algorithms
             'related_algorithms': {
                 'type': 'list',
@@ -341,11 +341,11 @@ class AlgoKitYAMLValidator:
                     }
                 }
             },
-            
+
             # Tags
             'tags': {'type': 'list', 'schema': {'type': 'string'}}
         }
-    
+
     def validate_yaml_syntax(self, file_path: str) -> tuple[bool, Optional[str]]:
         """Validate basic YAML syntax."""
         try:
@@ -356,7 +356,7 @@ class AlgoKitYAMLValidator:
             return False, str(e)
         except Exception as e:
             return False, str(e)
-    
+
     def validate_family_yaml(self, file_path: str, verbose: bool = False) -> tuple[bool, Optional[Dict]]:
         """Validate a family.yaml file."""
         try:
@@ -364,21 +364,21 @@ class AlgoKitYAMLValidator:
             syntax_ok, syntax_error = self.validate_yaml_syntax(file_path)
             if not syntax_ok:
                 return False, {"syntax_error": syntax_error}
-            
+
             # Load and validate against schema
             with open(file_path, 'r') as f:
                 data = yaml.safe_load(f)
-            
+
             validator = Validator(self.family_schema, allow_unknown=True)
-            
+
             if validator.validate(data):
                 return True, validator.document
             else:
                 return False, {"validation_errors": validator.errors}
-                
+
         except Exception as e:
             return False, {"error": str(e)}
-    
+
     def validate_algorithm_yaml(self, file_path: str, verbose: bool = False) -> tuple[bool, Optional[Dict]]:
         """Validate an algorithm.yaml file."""
         try:
@@ -386,42 +386,42 @@ class AlgoKitYAMLValidator:
             syntax_ok, syntax_error = self.validate_yaml_syntax(file_path)
             if not syntax_ok:
                 return False, {"syntax_error": syntax_error}
-            
+
             # Load and validate against schema
             with open(file_path, 'r') as f:
                 data = yaml.safe_load(f)
-            
+
             validator = Validator(self.algorithm_schema, allow_unknown=True)
-            
+
             if validator.validate(data):
                 return True, validator.document
             else:
                 return False, {"validation_errors": validator.errors}
-                
+
         except Exception as e:
             return False, {"error": str(e)}
-    
+
     def find_family_files(self) -> List[Path]:
         """Find all family.yaml files."""
         data_dir = Path("mkdocs_plugins/data")
         if not data_dir.exists():
             return []
-        
+
         family_files = []
         for family_dir in data_dir.iterdir():
             if family_dir.is_dir():
                 family_file = family_dir / "family.yaml"
                 if family_file.exists():
                     family_files.append(family_file)
-        
+
         return family_files
-    
+
     def find_algorithm_files(self) -> List[Path]:
         """Find all algorithm.yaml files."""
         data_dir = Path("mkdocs_plugins/data")
         if not data_dir.exists():
             return []
-        
+
         algorithm_files = []
         for family_dir in data_dir.iterdir():
             if family_dir.is_dir():
@@ -429,36 +429,36 @@ class AlgoKitYAMLValidator:
                 if algorithms_dir.exists():
                     for algorithm_file in algorithms_dir.glob("*.yaml"):
                         algorithm_files.append(algorithm_file)
-        
+
         return algorithm_files
 
 
 def display_validation_result(file_path: str, is_valid: bool, data: Optional[Dict], file_type: str = "family") -> None:
     """Display validation result with Rich formatting."""
     file_name = Path(file_path).name
-    
+
     if is_valid:
         # Success display
         console.print(f"✅ [green]{file_name}[/green] is valid!")
-        
+
         if data and file_type == "family":
             # Create info table
             table = Table(show_header=False, box=box.ROUNDED, padding=(0, 1))
             table.add_column("Field", style="cyan", width=20)
             table.add_column("Value", style="white")
-            
+
             table.add_row("📊 Family", data.get('name', 'Unknown'))
             table.add_row("🆔 ID", data.get('id', 'Unknown'))
             table.add_row("🔧 Characteristics", str(len(data.get('key_characteristics', []))))
             table.add_row("🧮 Algorithms", "All" if not data.get('algorithms', {}).get('include') else str(len(data.get('algorithms', {}).get('include', []))))
             table.add_row("🏷️ Tags", str(len(data.get('tags', []))))
-            
+
             console.print(table)
-    
+
     else:
         # Error display
         console.print(f"❌ [red]{file_name}[/red] validation failed!")
-        
+
         if data:
             if "syntax_error" in data:
                 console.print(f"   [red]YAML Syntax Error:[/red] {data['syntax_error']}")
@@ -474,17 +474,17 @@ def display_summary_table(results: List[tuple], file_type: str) -> None:
     """Display a summary table of validation results."""
     if not results:
         return
-    
+
     table = Table(title=f"{file_type.title()} Files Validation Summary", box=box.ROUNDED)
     table.add_column("File", style="cyan")
     table.add_column("Status", justify="center")
     table.add_column("Details", style="white")
-    
+
     for file_path, is_valid, data in results:
         file_name = Path(file_path).name
         status = "✅ Valid" if is_valid else "❌ Invalid"
         status_style = "green" if is_valid else "red"
-        
+
         if is_valid and data and file_type == "family":
             details = f"{data.get('name', 'Unknown')} ({data.get('id', 'Unknown')})"
         elif not is_valid and data:
@@ -496,9 +496,9 @@ def display_summary_table(results: List[tuple], file_type: str) -> None:
                 details = "Unknown error"
         else:
             details = ""
-        
+
         table.add_row(file_name, f"[{status_style}]{status}[/{status_style}]", details)
-    
+
     console.print(table)
 
 
@@ -512,33 +512,33 @@ def validate(
 ) -> None:
     """
     🔍 Validate AlgoKit YAML files against their schemas.
-    
+
     This command validates YAML files in the AlgoKit project to ensure they
     conform to the expected schema structure.
     """
     validator = AlgoKitYAMLValidator()
-    
+
     # Display header
     console.print(Panel.fit(
         "[bold blue]AlgoKit YAML Validator[/bold blue]\n"
         "🔍 Validating YAML files against AlgoKit schemas",
         border_style="blue"
     ))
-    
+
     if file:
         # Validate specific file
         file_path = Path(file)
         if not file_path.exists():
             console.print(f"❌ [red]File {file} not found[/red]")
             raise typer.Exit(1)
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
             task = progress.add_task("Validating file...", total=None)
-            
+
             if file_path.name == "family.yaml":
                 is_valid, data = validator.validate_family_yaml(str(file_path), verbose)
                 display_validation_result(str(file_path), is_valid, data, "family")
@@ -548,76 +548,76 @@ def validate(
             else:
                 console.print(f"❌ [red]Unknown file type: {file}[/red]")
                 raise typer.Exit(1)
-            
+
             progress.update(task, completed=True)
-        
+
         raise typer.Exit(0 if is_valid else 1)
-    
+
     else:
         # Validate all files
         family_results = []
         algorithm_results = []
-        
+
         # Validate family files
         if not algorithms:
             family_files = validator.find_family_files()
             if family_files:
                 console.print("\n[bold cyan]📁 Validating family files...[/bold cyan]")
-                
+
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=console,
                 ) as progress:
                     task = progress.add_task("Validating family files...", total=len(family_files))
-                    
+
                     for family_file in family_files:
                         is_valid, data = validator.validate_family_yaml(str(family_file), verbose)
                         family_results.append((str(family_file), is_valid, data))
-                        
+
                         if verbose:
                             display_validation_result(str(family_file), is_valid, data, "family")
                             console.print()  # Add spacing
-                        
+
                         progress.advance(task)
-        
+
         # Validate algorithm files
         if not families:
             algorithm_files = validator.find_algorithm_files()
             if algorithm_files:
                 console.print("\n[bold cyan]🔧 Validating algorithm files...[/bold cyan]")
-                
+
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=console,
                 ) as progress:
                     task = progress.add_task("Validating algorithm files...", total=len(algorithm_files))
-                    
+
                     for algorithm_file in algorithm_files:
                         is_valid, data = validator.validate_algorithm_yaml(str(algorithm_file), verbose)
                         algorithm_results.append((str(algorithm_file), is_valid, data))
-                        
+
                         if verbose:
                             display_validation_result(str(algorithm_file), is_valid, data, "algorithm")
                             console.print()  # Add spacing
-                        
+
                         progress.advance(task)
-        
+
         # Display summary
         if summary:
             console.print("\n" + "="*60)
-            
+
             if family_results:
                 display_summary_table(family_results, "family")
-            
+
             if algorithm_results:
                 display_summary_table(algorithm_results, "algorithm")
-        
+
         # Final result
         all_family_valid = all(result[1] for result in family_results) if family_results else True
         all_algorithm_valid = all(result[1] for result in algorithm_results) if algorithm_results else True
-        
+
         console.print("\n" + "="*60)
         if all_family_valid and all_algorithm_valid:
             console.print("🎉 [bold green]All validations passed![/bold green]")

@@ -35,13 +35,13 @@ formulation:
 
     The RL-DMP objective is:
     max_w J(w) = E[Σ_{t=0}^T γ^t R(s_t, a_t, s_{t+1})]
-    
+
     Where the policy gradient is:
     ∇_w J(w) = E[Σ_{t=0}^T ∇_w log π(a_t|s_t, w) A_t]
-    
+
     And the DMP parameters are updated as:
     w_{t+1} = w_t + α ∇_w J(w_t)
-    
+
     Where A_t is the advantage function.
 
   key_properties:
@@ -89,7 +89,7 @@ implementations:
           DMP with policy gradient methods for reinforcement learning.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
                        gamma: float = 0.99, exploration_noise: float = 0.1):
               """
@@ -113,15 +113,15 @@ implementations:
               self.learning_rate = learning_rate
               self.gamma = gamma
               self.exploration_noise = exploration_noise
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # DMP parameters (policy parameters)
               self.w = np.random.normal(0, 0.1, (n_dims, n_basis))
               self.w_old = self.w.copy()
-              
+
               # Learning history
               self.episode_rewards = []
               self.episode_losses = []
@@ -140,19 +140,19 @@ implementations:
               """
               # Compute canonical system value
               x = np.exp(-self.alpha_x * t)
-              
+
               # Compute basis functions
               psi = np.exp(-self.h * (x - self.c)**2)
               psi_sum = np.sum(psi) + 1e-10
-              
+
               # Compute mean action (forcing function)
               mean_action = np.zeros(self.n_dims)
               for d in range(self.n_dims):
                   mean_action[d] = (np.sum(psi * self.w[d]) * x) / psi_sum
-              
+
               # Compute variance (exploration noise)
               variance = np.ones(self.n_dims) * self.exploration_noise
-              
+
               return mean_action, variance
 
           def sample_action(self, state: np.ndarray, t: float) -> np.ndarray:
@@ -190,31 +190,31 @@ implementations:
               for reward in reversed(rewards):
                   G = reward + self.gamma * G
                   returns.insert(0, G)
-              
+
               # Compute baseline (mean return)
               baseline = np.mean(returns)
-              
+
               # Compute policy gradient
               grad = np.zeros((self.n_dims, self.n_basis))
-              
+
               for i, (state, action, return_val, t) in enumerate(zip(states, actions, returns, times)):
                   # Compute advantage
                   advantage = return_val - baseline
-                  
+
                   # Compute canonical system value
                   x = np.exp(-self.alpha_x * t)
-                  
+
                   # Compute basis functions
                   psi = np.exp(-self.h * (x - self.c)**2)
                   psi_sum = np.sum(psi) + 1e-10
-                  
+
                   # Compute policy gradient
                   for d in range(self.n_dims):
                       for j in range(self.n_basis):
                           # Gradient of log probability
                           log_prob_grad = (action[d] - self.compute_policy(state, t)[0][d]) * psi[j] * x / (psi_sum * self.exploration_noise)
                           grad[d, j] += advantage * log_prob_grad
-              
+
               return grad
 
           def update_policy(self, states: List[np.ndarray], actions: List[np.ndarray],
@@ -230,19 +230,19 @@ implementations:
               """
               # Store old parameters
               self.w_old = self.w.copy()
-              
+
               # Compute policy gradient
               grad = self.compute_policy_gradient(states, actions, rewards, times)
-              
+
               # Update parameters
               self.w += self.learning_rate * grad
-              
+
               # Store learning history
               episode_reward = sum(rewards)
               self.episode_rewards.append(episode_reward)
               self.parameter_history.append(self.w.copy())
 
-          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray,
                             ddy_demo: np.ndarray, dt: float) -> None:
               """
               Learn initial DMP parameters from demonstration.
@@ -256,28 +256,28 @@ implementations:
               T = len(y_demo)
               y_0 = y_demo[0]
               g = y_demo[-1]
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn weights
               for d in range(self.n_dims):
-                  f_target = (ddy_demo[:, d] - 
+                  f_target = (ddy_demo[:, d] -
                              self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w[d, i] = numerator / denominator
-              
+
               # Store initial parameters
               self.w_old = self.w.copy()
 
           def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
-                                reward_function: Callable, tau: float = 1.0, 
+                                reward_function: Callable, tau: float = 1.0,
                                 dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
               """
               Generate trajectory using current policy.
@@ -295,50 +295,50 @@ implementations:
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Storage for episode
               states = []
               actions = []
               rewards = []
               times = []
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def rl_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Sample action from policy
                   action = self.sample_action(y, t)
-                  
+
                   # Store episode data
                   states.append(y.copy())
                   actions.append(action.copy())
                   times.append(t)
-                  
+
                   # Compute reward
                   reward = reward_function(y, dy, action, t)
                   rewards.append(reward)
-                  
+
                   # Transformation system
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + action
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(rl_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               total_reward = sum(rewards)
-              
+
               return y_traj, dy_traj, ddy_traj, total_reward
 
           def train_episode(self, y_0: np.ndarray, g: np.ndarray, reward_function: Callable,
@@ -359,23 +359,23 @@ implementations:
               # Generate trajectory
               y_traj, dy_traj, ddy_traj, total_reward = self.generate_trajectory(
                   y_0, g, reward_function, tau, dt)
-              
+
               # Update policy
               states = []
               actions = []
               rewards = []
               times = []
-              
+
               for i, t in enumerate(np.arange(0, 1.0, dt / tau)):
                   states.append(y_traj[i])
                   actions.append(ddy_traj[i])
                   times.append(t)
-                  
+
                   reward = reward_function(y_traj[i], dy_traj[i], ddy_traj[i], t)
                   rewards.append(reward)
-              
+
               self.update_policy(states, actions, rewards, times)
-              
+
               return total_reward
 
           def train(self, y_0: np.ndarray, g: np.ndarray, reward_function: Callable,
@@ -395,21 +395,21 @@ implementations:
                   List of episode rewards
               """
               episode_rewards = []
-              
+
               for episode in range(n_episodes):
                   # Train one episode
                   reward = self.train_episode(y_0, g, reward_function, tau, dt)
                   episode_rewards.append(reward)
-                  
+
                   # Decay exploration noise
                   self.exploration_noise *= 0.995
                   self.exploration_noise = max(self.exploration_noise, 0.01)
-                  
+
                   # Print progress
                   if episode % 10 == 0:
                       avg_reward = np.mean(episode_rewards[-10:])
                       print(f"Episode {episode}, Average Reward: {avg_reward:.4f}")
-              
+
               return episode_rewards
 
           def visualize_learning(self, title: str = "RL-DMP Learning") -> None:
@@ -422,39 +422,39 @@ implementations:
               if not self.episode_rewards:
                   print("No learning history available")
                   return
-              
+
               fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
-              
+
               # Plot episode rewards
               episodes = range(len(self.episode_rewards))
               ax1.plot(episodes, self.episode_rewards, 'b-', alpha=0.3, label='Episode Rewards')
-              
+
               # Plot moving average
               window_size = min(50, len(self.episode_rewards) // 10)
               if window_size > 1:
                   moving_avg = np.convolve(self.episode_rewards, np.ones(window_size)/window_size, mode='valid')
                   ax1.plot(range(window_size-1, len(self.episode_rewards)), moving_avg, 'r-', linewidth=2, label='Moving Average')
-              
+
               ax1.set_xlabel('Episode')
               ax1.set_ylabel('Reward')
               ax1.set_title('Learning Progress')
               ax1.legend()
               ax1.grid(True)
-              
+
               # Plot parameter changes
               if len(self.parameter_history) > 1:
                   param_changes = []
                   for i in range(1, len(self.parameter_history)):
                       change = np.sum(np.abs(self.parameter_history[i] - self.parameter_history[i-1]))
                       param_changes.append(change)
-                  
+
                   ax2.plot(range(1, len(self.parameter_history)), param_changes, 'g-', label='Parameter Change')
                   ax2.set_xlabel('Episode')
                   ax2.set_ylabel('Parameter Change')
                   ax2.set_title('Parameter Evolution')
                   ax2.legend()
                   ax2.grid(True)
-              
+
               plt.suptitle(title)
               plt.tight_layout()
               plt.show()
@@ -481,9 +481,9 @@ implementations:
           DMP with actor-critic methods for value function estimation.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, learning_rate: float = 0.01,
-                       gamma: float = 0.99, exploration_noise: float = 0.1, 
+                       gamma: float = 0.99, exploration_noise: float = 0.1,
                        value_learning_rate: float = 0.01):
               """
               Initialize actor-critic DMP.
@@ -501,10 +501,10 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, learning_rate, gamma, exploration_noise)
               self.value_learning_rate = value_learning_rate
-              
+
               # Value function parameters
               self.value_weights = np.random.normal(0, 0.1, (n_dims, n_basis))
-              
+
               # Learning history
               self.value_losses = []
 
@@ -521,19 +521,19 @@ implementations:
               """
               # Compute canonical system value
               x = np.exp(-self.alpha_x * t)
-              
+
               # Compute basis functions
               psi = np.exp(-self.h * (x - self.c)**2)
               psi_sum = np.sum(psi) + 1e-10
-              
+
               # Compute value
               value = 0.0
               for d in range(self.n_dims):
                   value += (np.sum(psi * self.value_weights[d]) * x) / psi_sum
-              
+
               return value
 
-          def update_value_function(self, states: List[np.ndarray], rewards: List[float], 
+          def update_value_function(self, states: List[np.ndarray], rewards: List[float],
                                   times: List[float]) -> None:
               """
               Update value function using TD learning.
@@ -549,30 +549,30 @@ implementations:
               for reward in reversed(rewards):
                   G = reward + self.gamma * G
                   returns.insert(0, G)
-              
+
               # Update value function
               for i, (state, return_val, t) in enumerate(zip(states, returns, times)):
                   # Compute current value estimate
                   current_value = self.compute_value(state, t)
-                  
+
                   # Compute TD error
                   if i < len(states) - 1:
                       next_value = self.compute_value(states[i+1], times[i+1])
                       td_error = rewards[i] + self.gamma * next_value - current_value
                   else:
                       td_error = rewards[i] - current_value
-                  
+
                   # Update value function weights
                   x = np.exp(-self.alpha_x * t)
                   psi = np.exp(-self.h * (x - self.c)**2)
                   psi_sum = np.sum(psi) + 1e-10
-                  
+
                   for d in range(self.n_dims):
                       for j in range(self.n_basis):
                           grad = psi[j] * x / psi_sum
                           self.value_weights[d, j] += self.value_learning_rate * td_error * grad
 
-          def compute_advantage(self, states: List[np.ndarray], rewards: List[float], 
+          def compute_advantage(self, states: List[np.ndarray], rewards: List[float],
                               times: List[float]) -> List[float]:
               """
               Compute advantage estimates using value function.
@@ -586,20 +586,20 @@ implementations:
                   List of advantage estimates
               """
               advantages = []
-              
+
               for i, (state, reward, t) in enumerate(zip(states, rewards, times)):
                   # Compute current value estimate
                   current_value = self.compute_value(state, t)
-                  
+
                   # Compute next value estimate
                   if i < len(states) - 1:
                       next_value = self.compute_value(states[i+1], times[i+1])
                       advantage = reward + self.gamma * next_value - current_value
                   else:
                       advantage = reward - current_value
-                  
+
                   advantages.append(advantage)
-              
+
               return advantages
 
           def update_policy(self, states: List[np.ndarray], actions: List[np.ndarray],
@@ -615,34 +615,34 @@ implementations:
               """
               # Store old parameters
               self.w_old = self.w.copy()
-              
+
               # Update value function
               self.update_value_function(states, rewards, times)
-              
+
               # Compute advantages
               advantages = self.compute_advantage(states, rewards, times)
-              
+
               # Compute policy gradient
               grad = np.zeros((self.n_dims, self.n_basis))
-              
+
               for i, (state, action, advantage, t) in enumerate(zip(states, actions, advantages, times)):
                   # Compute canonical system value
                   x = np.exp(-self.alpha_x * t)
-                  
+
                   # Compute basis functions
                   psi = np.exp(-self.h * (x - self.c)**2)
                   psi_sum = np.sum(psi) + 1e-10
-                  
+
                   # Compute policy gradient
                   for d in range(self.n_dims):
                       for j in range(self.n_basis):
                           # Gradient of log probability
                           log_prob_grad = (action[d] - self.compute_policy(state, t)[0][d]) * psi[j] * x / (psi_sum * self.exploration_noise)
                           grad[d, j] += advantage * log_prob_grad
-              
+
               # Update parameters
               self.w += self.learning_rate * grad
-              
+
               # Store learning history
               episode_reward = sum(rewards)
               self.episode_rewards.append(episode_reward)
@@ -665,12 +665,12 @@ complexity:
       time: "O(T × K × E)"
       space: "O(K + E)"
       notes: "Time complexity scales with trajectory length, basis functions, and episodes"
-    
+
     - approach: "Actor-Critic DMP"
       time: "O(T × K × E + T × V)"
       space: "O(K + V)"
       notes: "Additional complexity for value function estimation"
-    
+
     - approach: "Policy Gradient Computation"
       time: "O(T × K)"
       space: "O(K)"

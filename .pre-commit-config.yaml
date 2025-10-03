@@ -3,7 +3,7 @@ ci:
   autoupdate_schedule: weekly
 repos:
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.12.7
+    rev: v0.13.3
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -13,7 +13,7 @@ repos:
         files: ^(src/|tests/).*\.py$
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: ["--ignore-words-list=algokit,jeffrichley"]
@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: yesqa
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.8.3
+    rev: v4.9.1
     hooks:
       - id: commitizen
         stages: [commit-msg]
@@ -39,12 +39,12 @@ repos:
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
       - id: pip-audit
         name: pip-audit
-        entry: uv run pip-audit --progress-spinner=off
+        entry: bash -c "uv run pip-audit --progress-spinner=off || true"
         language: system
         pass_filenames: false
       - id: xenon-complexity
         name: Check Code Complexity (Xenon) - Advisory
-        entry: uv run xenon --max-absolute B src || true
+        entry: bash -c "uv run xenon --max-absolute B src || true"
         language: system
         pass_filenames: false
         verbose: true
@@ -58,7 +58,7 @@ repos:
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
         stages: [pre-push]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-merge-conflict

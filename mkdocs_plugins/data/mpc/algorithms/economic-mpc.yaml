@@ -20,18 +20,18 @@ description: |
 formulation:
   control_law: |
     For system: x(k+1) = f(x(k), u(k), d(k)), y(k) = h(x(k), u(k))
-    
+
     The Economic MPC formulation is:
-    
+
     min_{U_k} J_econ(x(k), U_k) = Σ_{i=0}^{N_p-1} L_econ(x(k+i|k), u(k+i), d(k+i))
-    
+
     Subject to:
     - x(k+i+1|k) = f(x(k+i|k), u(k+i), d(k+i))
     - y(k+i|k) = h(x(k+i|k), u(k+i))
     - g(x(k+i|k), u(k+i)) ≤ 0
     - u_min ≤ u(k+i) ≤ u_max
     - x_min ≤ x(k+i|k) ≤ x_max
-    
+
     Where:
     - L_econ(·) is the economic stage cost function
     - Economic objectives: profit, cost, energy, resource utilization
@@ -39,16 +39,16 @@ formulation:
 
   discrete_time_form: |
     Economic stage cost examples:
-    
+
     1. Profit maximization:
     L_econ(x,u,d) = -[p^T y - c^T u - c_f^T x]
-    
+
     2. Energy minimization:
     L_econ(x,u,d) = c_energy^T u
-    
+
     3. Resource utilization:
     L_econ(x,u,d) = -w^T y (maximize output)
-    
+
     Where:
     - p: product prices
     - c: input costs
@@ -186,13 +186,13 @@ implementations:
               """
               if self.economic_cost is not None:
                   return self.economic_cost(x, u, y)
-              
+
               # Default economic cost: profit maximization
               revenue = np.dot(self.product_prices, y)
               input_cost = np.dot(self.input_costs, u)
               inventory_cost = np.dot(self.inventory_costs, x)
               energy_cost = np.dot(self.energy_costs, u)
-              
+
               # Negative for minimization (maximize profit)
               return -(revenue - input_cost - inventory_cost - energy_cost)
 
@@ -223,21 +223,21 @@ implementations:
               """
               X = np.zeros((self.Np, self.nx))
               Y = np.zeros((self.Np, self.ny))
-              
+
               x = x0.copy()
               for i in range(self.Np):
                   if i < self.Nc:
                       u = U[i]
                   else:
                       u = U[-1]  # Hold last control action
-                  
+
                   # Predict next state
                   x = self.f(x, u, np.zeros(self.nx))  # Assume no disturbance
                   X[i] = x
-                  
+
                   # Predict output
                   Y[i] = self.h(x, u)
-              
+
               return X, Y
 
           def _economic_objective(self, U_flat: np.ndarray, x0: np.ndarray) -> float:
@@ -253,23 +253,23 @@ implementations:
               """
               U = U_flat.reshape(self.Nc, self.nu)
               X, Y = self._predict_trajectory(x0, U)
-              
+
               total_cost = 0.0
-              
+
               for i in range(self.Np):
                   if i < self.Nc:
                       u = U[i]
                   else:
                       u = U[-1]
-                  
+
                   # Economic stage cost
                   economic_cost = self._economic_stage_cost(X[i], u, Y[i])
                   total_cost += economic_cost
-                  
+
                   # Stability term
                   stability_cost = self._stability_term(X[i], u)
                   total_cost += stability_cost
-              
+
               return total_cost
 
           def _constraints(self, U_flat: np.ndarray, x0: np.ndarray) -> List[dict]:
@@ -285,9 +285,9 @@ implementations:
               """
               U = U_flat.reshape(self.Nc, self.nu)
               X, Y = self._predict_trajectory(x0, U)
-              
+
               constraints = []
-              
+
               # Inequality constraints
               if self.g is not None:
                   for i in range(self.Np):
@@ -295,14 +295,14 @@ implementations:
                           u = U[i]
                       else:
                           u = U[-1]
-                      
+
                       g_val = self.g(X[i], u)
                       if g_val.size > 0:
                           constraints.append({
                               'type': 'ineq',
                               'fun': lambda x, i=i, u=u: -self.g(X[i], u)
                           })
-              
+
               return constraints
 
           def solve_economic_mpc(self, x0: np.ndarray,
@@ -324,7 +324,7 @@ implementations:
 
               # Initial guess
               U0 = np.zeros(self.Nc * self.nu)
-              
+
               # Bounds
               bounds = []
               if u_min is not None and u_max is not None:
@@ -362,7 +362,7 @@ implementations:
               """
               # Solve economic MPC problem
               U_opt = self.solve_economic_mpc(x, u_min, u_max)
-              
+
               # Return first control action
               return U_opt[0]
     advantages:

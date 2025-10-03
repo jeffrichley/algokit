@@ -36,7 +36,7 @@ formulation:
     The spatially coupled bimanual DMPs are:
     τẏ_L = α_y(β_y(g_L - y_L) - ẏ_L) + f_L(x_L) + k_couple * C_L(y_R, ẏ_R)
     τẏ_R = α_y(β_y(g_R - y_R) - ẏ_R) + f_R(x_R) + k_couple * C_R(y_L, ẏ_L)
-    
+
     Where the coupling functions ensure spatial coordination:
     C_L(y_R, ẏ_R) = k_spatial * (y_R - y_L) + k_velocity * (ẏ_R - ẏ_L)
     C_R(y_L, ẏ_L) = k_spatial * (y_L - y_R) + k_velocity * (ẏ_L - ẏ_R)
@@ -86,7 +86,7 @@ implementations:
           Spatially coupled bimanual DMP for coordinated dual-arm movements.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, k_couple: float = 1.0,
                        k_spatial: float = 1.0, k_velocity: float = 1.0):
               """
@@ -110,15 +110,15 @@ implementations:
               self.k_couple = k_couple
               self.k_spatial = k_spatial
               self.k_velocity = k_velocity
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # DMP weights for both arms
               self.w_L = np.zeros((n_dims, n_basis))  # Left arm weights
               self.w_R = np.zeros((n_dims, n_basis))  # Right arm weights
-              
+
               # Coupling parameters
               self.coupling_active = True
               self.adaptive_coupling = False
@@ -141,8 +141,8 @@ implementations:
               """
               self.adaptive_coupling = adaptive
 
-          def compute_coupling_force(self, y_L: np.ndarray, y_R: np.ndarray, 
-                                   dy_L: np.ndarray, dy_R: np.ndarray, 
+          def compute_coupling_force(self, y_L: np.ndarray, y_R: np.ndarray,
+                                   dy_L: np.ndarray, dy_R: np.ndarray,
                                    t: float) -> Tuple[np.ndarray, np.ndarray]:
               """
               Compute coupling forces for both arms.
@@ -159,31 +159,31 @@ implementations:
               """
               if not self.coupling_active:
                   return np.zeros(self.n_dims), np.zeros(self.n_dims)
-              
+
               # Adaptive coupling strength
               if self.adaptive_coupling:
                   # Coupling strength decreases over time
                   k_couple_t = self.k_couple * np.exp(-t)
               else:
                   k_couple_t = self.k_couple
-              
+
               # Spatial coupling
               spatial_coupling_L = self.k_spatial * (y_R - y_L)
               spatial_coupling_R = self.k_spatial * (y_L - y_R)
-              
+
               # Velocity coupling
               velocity_coupling_L = self.k_velocity * (dy_R - dy_L)
               velocity_coupling_R = self.k_velocity * (dy_L - dy_R)
-              
+
               # Total coupling forces
               coupling_L = k_couple_t * (spatial_coupling_L + velocity_coupling_L)
               coupling_R = k_couple_t * (spatial_coupling_R + velocity_coupling_R)
-              
+
               return coupling_L, coupling_R
 
           def learn_from_demo(self, y_L_demo: np.ndarray, y_R_demo: np.ndarray,
                             dy_L_demo: np.ndarray, dy_R_demo: np.ndarray,
-                            ddy_L_demo: np.ndarray, ddy_R_demo: np.ndarray, 
+                            ddy_L_demo: np.ndarray, ddy_R_demo: np.ndarray,
                             dt: float) -> None:
               """
               Learn DMP weights from bimanual demonstration.
@@ -202,33 +202,33 @@ implementations:
               y_R_0 = y_R_demo[0]
               g_L = y_L_demo[-1]
               g_R = y_R_demo[-1]
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn weights for left arm
               for d in range(self.n_dims):
-                  f_target = (ddy_L_demo[:, d] - 
+                  f_target = (ddy_L_demo[:, d] -
                              self.alpha_y * (self.beta_y * (g_L[d] - y_L_demo[:, d]) - dy_L_demo[:, d]))
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_L[d, i] = numerator / denominator
-              
+
               # Learn weights for right arm
               for d in range(self.n_dims):
-                  f_target = (ddy_R_demo[:, d] - 
+                  f_target = (ddy_R_demo[:, d] -
                              self.alpha_y * (self.beta_y * (g_R[d] - y_R_demo[:, d]) - dy_R_demo[:, d]))
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_R[d, i] = numerator / denominator
 
@@ -251,11 +251,11 @@ implementations:
               """
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
-              
+
               # Initial state [y_L, dy_L, x_L, y_R, dy_R, x_R]
               y0 = np.concatenate([y_L_0, np.zeros(self.n_dims), [1.0],
                                  y_R_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def bimanual_dmp_dynamics(state, t):
                   # Extract states
                   y_L = state[:self.n_dims]
@@ -264,40 +264,40 @@ implementations:
                   y_R = state[2*self.n_dims+1:3*self.n_dims+1]
                   dy_R = state[3*self.n_dims+1:4*self.n_dims+1]
                   x_R = state[4*self.n_dims+1]
-                  
+
                   # Canonical systems
                   dx_L = -self.alpha_x * x_L
                   dx_R = -self.alpha_x * x_R
-                  
+
                   # Forcing functions
                   f_L = np.zeros(self.n_dims)
                   f_R = np.zeros(self.n_dims)
-                  
+
                   for d in range(self.n_dims):
                       psi_L = np.exp(-self.h * (x_L - self.c)**2)
                       psi_R = np.exp(-self.h * (x_R - self.c)**2)
-                      
+
                       f_L[d] = (np.sum(psi_L * self.w_L[d]) * x_L) / (np.sum(psi_L) + 1e-10)
                       f_R[d] = (np.sum(psi_R * self.w_R[d]) * x_R) / (np.sum(psi_R) + 1e-10)
-                  
+
                   # Coupling forces
                   coupling_L, coupling_R = self.compute_coupling_force(y_L, y_R, dy_L, dy_R, t)
-                  
+
                   # Transformation systems with coupling
                   ddy_L = self.alpha_y * (self.beta_y * (g_L - y_L) - dy_L) + f_L + coupling_L
                   ddy_R = self.alpha_y * (self.beta_y * (g_R - y_R) - dy_R) + f_R + coupling_R
-                  
+
                   return np.concatenate([dy_L, ddy_L, [dx_L], dy_R, ddy_R, [dx_R]])
-              
+
               # Integrate
               sol = odeint(bimanual_dmp_dynamics, y0, t_span)
-              
+
               # Extract trajectories
               y_L_traj = sol[:, :self.n_dims]
               dy_L_traj = sol[:, self.n_dims:2*self.n_dims]
               y_R_traj = sol[:, 2*self.n_dims+1:3*self.n_dims+1]
               dy_R_traj = sol[:, 3*self.n_dims+1:4*self.n_dims+1]
-              
+
               return y_L_traj, y_R_traj, dy_L_traj, dy_R_traj
 
           def visualize_trajectory(self, y_L_traj: np.ndarray, y_R_traj: np.ndarray,
@@ -312,22 +312,22 @@ implementations:
               """
               if self.n_dims == 2:
                   plt.figure(figsize=(12, 8))
-                  
+
                   # Plot left arm trajectory
                   plt.plot(y_L_traj[:, 0], y_L_traj[:, 1], 'b-', linewidth=2, label='Left Arm')
                   plt.plot(y_L_traj[0, 0], y_L_traj[0, 1], 'bo', markersize=8, label='Left Start')
                   plt.plot(y_L_traj[-1, 0], y_L_traj[-1, 1], 'bs', markersize=8, label='Left Goal')
-                  
+
                   # Plot right arm trajectory
                   plt.plot(y_R_traj[:, 0], y_R_traj[:, 1], 'r-', linewidth=2, label='Right Arm')
                   plt.plot(y_R_traj[0, 0], y_R_traj[0, 1], 'ro', markersize=8, label='Right Start')
                   plt.plot(y_R_traj[-1, 0], y_R_traj[-1, 1], 'rs', markersize=8, label='Right Goal')
-                  
+
                   # Plot coupling connections
                   for i in range(0, len(y_L_traj), max(1, len(y_L_traj)//20)):
-                      plt.plot([y_L_traj[i, 0], y_R_traj[i, 0]], 
+                      plt.plot([y_L_traj[i, 0], y_R_traj[i, 0]],
                               [y_L_traj[i, 1], y_R_traj[i, 1]], 'g--', alpha=0.3)
-                  
+
                   plt.xlabel('X Position')
                   plt.ylabel('Y Position')
                   plt.title(title)
@@ -360,7 +360,7 @@ implementations:
           Bimanual DMP with hand-eye coordination for precise manipulation.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, k_couple: float = 1.0,
                        k_spatial: float = 1.0, k_velocity: float = 1.0, k_visual: float = 1.0):
               """
@@ -379,7 +379,7 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, k_couple, k_spatial, k_velocity)
               self.k_visual = k_visual
-              
+
               # Visual feedback parameters
               self.visual_feedback_active = True
               self.target_position = None
@@ -407,15 +407,15 @@ implementations:
               """
               if not self.visual_feedback_active or self.target_position is None:
                   return np.zeros(self.n_dims), np.zeros(self.n_dims)
-              
+
               # Compute visual errors
               error_L = self.target_position - y_L
               error_R = self.target_position - y_R
-              
+
               # Visual feedback forces
               visual_L = self.k_visual * error_L
               visual_R = self.k_visual * error_R
-              
+
               return visual_L, visual_R
 
           def generate_trajectory(self, y_L_0: np.ndarray, y_R_0: np.ndarray,
@@ -437,11 +437,11 @@ implementations:
               """
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
-              
+
               # Initial state [y_L, dy_L, x_L, y_R, dy_R, x_R]
               y0 = np.concatenate([y_L_0, np.zeros(self.n_dims), [1.0],
                                  y_R_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def hand_eye_dmp_dynamics(state, t):
                   # Extract states
                   y_L = state[:self.n_dims]
@@ -450,43 +450,43 @@ implementations:
                   y_R = state[2*self.n_dims+1:3*self.n_dims+1]
                   dy_R = state[3*self.n_dims+1:4*self.n_dims+1]
                   x_R = state[4*self.n_dims+1]
-                  
+
                   # Canonical systems
                   dx_L = -self.alpha_x * x_L
                   dx_R = -self.alpha_x * x_R
-                  
+
                   # Forcing functions
                   f_L = np.zeros(self.n_dims)
                   f_R = np.zeros(self.n_dims)
-                  
+
                   for d in range(self.n_dims):
                       psi_L = np.exp(-self.h * (x_L - self.c)**2)
                       psi_R = np.exp(-self.h * (x_R - self.c)**2)
-                      
+
                       f_L[d] = (np.sum(psi_L * self.w_L[d]) * x_L) / (np.sum(psi_L) + 1e-10)
                       f_R[d] = (np.sum(psi_R * self.w_R[d]) * x_R) / (np.sum(psi_R) + 1e-10)
-                  
+
                   # Coupling forces
                   coupling_L, coupling_R = self.compute_coupling_force(y_L, y_R, dy_L, dy_R, t)
-                  
+
                   # Visual feedback forces
                   visual_L, visual_R = self.compute_visual_feedback(y_L, y_R)
-                  
+
                   # Transformation systems with coupling and visual feedback
                   ddy_L = self.alpha_y * (self.beta_y * (g_L - y_L) - dy_L) + f_L + coupling_L + visual_L
                   ddy_R = self.alpha_y * (self.beta_y * (g_R - y_R) - dy_R) + f_R + coupling_R + visual_R
-                  
+
                   return np.concatenate([dy_L, ddy_L, [dx_L], dy_R, ddy_R, [dx_R]])
-              
+
               # Integrate
               sol = odeint(hand_eye_dmp_dynamics, y0, t_span)
-              
+
               # Extract trajectories
               y_L_traj = sol[:, :self.n_dims]
               dy_L_traj = sol[:, self.n_dims:2*self.n_dims]
               y_R_traj = sol[:, 2*self.n_dims+1:3*self.n_dims+1]
               dy_R_traj = sol[:, 3*self.n_dims+1:4*self.n_dims+1]
-              
+
               return y_L_traj, y_R_traj, dy_L_traj, dy_R_traj
 
     advantages:
@@ -506,12 +506,12 @@ complexity:
       time: "O(T × K × 2)"
       space: "O(K × 2)"
       notes: "Time complexity scales with trajectory length, basis functions, and two arms"
-    
+
     - approach: "Hand-Eye Coordination DMP"
       time: "O(T × K × 2 + T × V)"
       space: "O(K × 2 + V)"
       notes: "Additional complexity for visual feedback processing"
-    
+
     - approach: "Coupling Computation"
       time: "O(T)"
       space: "O(1)"

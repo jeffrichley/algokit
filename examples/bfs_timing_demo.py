@@ -16,36 +16,36 @@ def main():
     """Demonstrate timing configuration usage."""
     print("🎬 BFS Timing Configuration Demo")
     print("=" * 50)
-    
+
     # Load timing configuration
     config = get_timing_config()
     config.print_current_settings()
     print()
-    
+
     # Show available modes
     print("Available timing modes:")
     for mode in config.get_available_modes():
         print(f"  - {mode}")
     print()
-    
+
     # Create BFS scene
     scene = BreadthFirstSearchScene()
     print(f"Scene created with mode: {scene.current_mode}")
     print(f"Max events: {scene.max_events_displayed}")
     print()
-    
+
     # Demonstrate different timing modes
     print("Timing examples for different modes:")
     animation = "title_write"
     wait = "initial_setup"
-    
+
     for mode in config.get_available_modes():
         scene.set_timing_mode(mode)
         anim_time = scene.get_animation_time(animation)
         wait_time = scene.get_wait_time(wait)
         print(f"  {mode}: {animation} = {anim_time:.2f}s, {wait} = {wait_time:.2f}s")
     print()
-    
+
     # Show how to modify configuration
     print("To modify timings, edit:")
     print(f"  {config.config_file}")

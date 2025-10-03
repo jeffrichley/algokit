@@ -164,7 +164,7 @@ implementations:
               """Build generalized plant with uncertainty structure."""
               # This is a simplified implementation
               # Real implementation would be more complex
-              
+
               n = self.A.shape[0]
               m = self.B.shape[1]
               p = self.C.shape[0]
@@ -185,7 +185,7 @@ implementations:
               """Perform μ-synthesis to find robust controller."""
               # This is a simplified implementation
               # Real μ-synthesis is much more complex
-              
+
               # Iterative μ-synthesis algorithm
               max_iterations = 10
               tolerance = 1e-3
@@ -193,11 +193,11 @@ implementations:
               for iteration in range(max_iterations):
                   # D-K iteration (simplified)
                   controller = self._dk_iteration(P)
-                  
+
                   if controller is not None:
                       # Check μ upper bound
                       mu_bound = self._compute_mu_upper_bound(P, controller)
-                      
+
                       if mu_bound < 1.0 + tolerance:
                           return controller
 
@@ -207,7 +207,7 @@ implementations:
               """Perform D-K iteration step."""
               # Simplified D-K iteration
               # Real implementation would be more complex
-              
+
               # This is a placeholder implementation
               n = self.A.shape[0]
               m = self.B.shape[1]
@@ -225,7 +225,7 @@ implementations:
               """Compute μ upper bound for robustness analysis."""
               # Simplified μ upper bound computation
               # Real implementation would be more complex
-              
+
               # This is a placeholder
               return 0.8  # Placeholder value
 
@@ -309,7 +309,7 @@ implementations:
               """Design robust controller using LMI approach."""
               # Simplified LMI-based design
               # Real implementation would solve LMIs
-              
+
               # This is a placeholder implementation
               return True
 
@@ -317,7 +317,7 @@ implementations:
               """Solve LMI constraints for robust control."""
               # Simplified LMI solution
               # Real implementation would use LMI solvers
-              
+
               n = self.A.shape[0]
               return np.eye(n)  # Placeholder solution
     advantages:

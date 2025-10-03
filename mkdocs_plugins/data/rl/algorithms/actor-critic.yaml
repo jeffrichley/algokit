@@ -199,7 +199,7 @@ implementations:
               # Initialize actor and critic networks
               self.actor = ActorNetwork(state_dim, action_dim)
               self.critic = CriticNetwork(state_dim)
-              
+
               # Initialize optimizers
               self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
               self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
@@ -307,7 +307,7 @@ implementations:
               self.n_steps = n_steps
 
           def update_n_step(self, states: List[np.ndarray], actions: List[np.ndarray],
-                           rewards: List[float], next_states: List[np.ndarray], 
+                           rewards: List[float], next_states: List[np.ndarray],
                            dones: List[bool]) -> None:
               """
               Update using n-step returns.
@@ -379,7 +379,7 @@ complexity:
       time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
       space: "O(policy_parameters + value_parameters)"
       notes: "Time complexity includes both actor and critic network operations. Space complexity includes parameters for both networks"
-    
+
     - approach: "A2C"
       time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
       space: "O(policy_parameters + value_parameters + n_steps × batch_size)"

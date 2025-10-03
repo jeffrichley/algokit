@@ -134,12 +134,12 @@ implementations:
               # Update low-level Q-function
               if self.current_subgoal is not None:
                   current_q = self.low_q_table[state, self.current_subgoal, action]
-                  
+
                   if done:
                       max_next_q = 0
                   else:
                       max_next_q = np.max(self.low_q_table[next_state, self.current_subgoal])
-                  
+
                   target = reward + self.gamma * max_next_q
                   self.low_q_table[state, self.current_subgoal, action] = (
                       current_q + self.alpha * (target - current_q)
@@ -153,12 +153,12 @@ implementations:
                   # Update meta Q-function
                   if self.current_subgoal is not None:
                       current_meta_q = self.meta_q_table[state, self.current_subgoal]
-                      
+
                       if done:
                           max_next_meta_q = 0
                       else:
                           max_next_meta_q = np.max(self.meta_q_table[next_state])
-                      
+
                       # Meta reward is the cumulative reward from low-level actions
                       meta_reward = self.get_meta_reward(state, self.current_subgoal)
                       target = meta_reward + self.gamma * max_next_meta_q
@@ -187,7 +187,7 @@ implementations:
               """Get the current hierarchical policy."""
               meta_policy = np.argmax(self.meta_q_table, axis=1)
               low_policy = np.argmax(self.low_q_table, axis=2)
-              
+
               return {
                   "meta_policy": meta_policy,
                   "low_policy": low_policy
@@ -210,7 +210,7 @@ complexity:
       time: "O(|S| × |G| × |A| × episodes)"
       space: "O(|S| × |G| × |A|)"
       notes: "Time complexity depends on episodes and state-subgoal-action space sizes. Space grows cubically with state, subgoal, and action spaces"
-    
+
     - approach: "Convergence Analysis"
       time: "O(1/√t)"
       space: "O(|S| × |G| × |A|)"

@@ -88,7 +88,7 @@ implementations:
           Constrained Dynamic Movement Primitive with safety constraints.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0):
               """
               Initialize constrained DMP.
@@ -105,17 +105,17 @@ implementations:
               self.alpha_y = alpha_y
               self.beta_y = beta_y
               self.alpha_x = alpha_x
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # Original DMP weights
               self.w_original = np.zeros((n_dims, n_basis))
-              
+
               # Constrained DMP weights
               self.w_constrained = np.zeros((n_dims, n_basis))
-              
+
               # Constraints
               self.constraints = []
               self.penalty_weight = 1.0
@@ -146,7 +146,7 @@ implementations:
                   violations.extend(np.maximum(0, y - y_max))
                   violations.extend(np.maximum(0, y_min - y))
                   return np.array(violations)
-              
+
               self.add_constraint(joint_limit_constraint, "joint")
 
           def add_velocity_limits(self, dy_min: np.ndarray, dy_max: np.ndarray) -> None:
@@ -162,7 +162,7 @@ implementations:
                   violations.extend(np.maximum(0, dy - dy_max))
                   violations.extend(np.maximum(0, dy_min - dy))
                   return np.array(violations)
-              
+
               self.add_constraint(velocity_limit_constraint, "operational")
 
           def add_acceleration_limits(self, ddy_min: np.ndarray, ddy_max: np.ndarray) -> None:
@@ -178,10 +178,10 @@ implementations:
                   violations.extend(np.maximum(0, ddy - ddy_max))
                   violations.extend(np.maximum(0, ddy_min - ddy))
                   return np.array(violations)
-              
+
               self.add_constraint(acceleration_limit_constraint, "operational")
 
-          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray,
                             ddy_demo: np.ndarray, dt: float) -> None:
               """
               Learn original DMP weights from demonstration.
@@ -195,24 +195,24 @@ implementations:
               T = len(y_demo)
               y_0 = y_demo[0]
               g = y_demo[-1]
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn original weights
               for d in range(self.n_dims):
-                  f_target = (ddy_demo[:, d] - 
+                  f_target = (ddy_demo[:, d] -
                              self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_original[d, i] = numerator / denominator
 
-          def constraint_violation(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray, 
+          def constraint_violation(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray,
                                  t: np.ndarray) -> float:
               """
               Compute total constraint violation for given weights.
@@ -228,19 +228,19 @@ implementations:
               """
               # Reshape weights
               w_reshaped = w.reshape(self.n_dims, self.n_basis)
-              
+
               # Generate trajectory
               y, dy, ddy = self._generate_trajectory_from_weights(w_reshaped, y_0, g, t)
-              
+
               # Compute constraint violations
               total_violation = 0.0
               for constraint in self.constraints:
                   violations = constraint['func'](y, dy, ddy)
                   total_violation += np.sum(np.maximum(0, violations)**2)
-              
+
               return total_violation
 
-          def _generate_trajectory_from_weights(self, w: np.ndarray, y_0: np.ndarray, 
+          def _generate_trajectory_from_weights(self, w: np.ndarray, y_0: np.ndarray,
                                               g: np.ndarray, t: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate trajectory from given weights.
@@ -256,33 +256,33 @@ implementations:
               """
               T = len(t)
               x = np.exp(-self.alpha_x * t)
-              
+
               y = np.zeros((T, self.n_dims))
               dy = np.zeros((T, self.n_dims))
               ddy = np.zeros((T, self.n_dims))
-              
+
               for d in range(self.n_dims):
                   # Forcing function
                   f = np.zeros(T)
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       f += w[d, i] * psi * x
-                  
+
                   # Integration
                   y[0, d] = y_0[d]
                   dy[0, d] = 0.0
-                  
+
                   for i in range(1, T):
                       dt = t[i] - t[i-1]
                       ddy[i-1, d] = self.alpha_y * (self.beta_y * (g[d] - y[i-1, d]) - dy[i-1, d]) + f[i-1]
                       dy[i, d] = dy[i-1, d] + ddy[i-1, d] * dt
                       y[i, d] = y[i-1, d] + dy[i, d] * dt
-                  
+
                   ddy[-1, d] = self.alpha_y * (self.beta_y * (g[d] - y[-1, d]) - dy[-1, d]) + f[-1]
-              
+
               return y, dy, ddy
 
-          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray, 
+          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray,
                                  t: np.ndarray, max_iter: int = 100) -> None:
               """
               Optimize DMP weights to satisfy constraints.
@@ -295,28 +295,28 @@ implementations:
               """
               # Initial weights
               w0 = self.w_original.flatten()
-              
+
               # Objective function
               def objective(w):
                   # Deviation from original
                   deviation = np.sum((w - w0)**2)
-                  
+
                   # Constraint violation
                   violation = self.constraint_violation(w, y_0, g, t)
-                  
+
                   return deviation + self.penalty_weight * violation
-              
+
               # Optimize
-              result = minimize(objective, w0, method='L-BFGS-B', 
+              result = minimize(objective, w0, method='L-BFGS-B',
                               options={'maxiter': max_iter})
-              
+
               if result.success:
                   self.w_constrained = result.x.reshape(self.n_dims, self.n_basis)
               else:
                   warnings.warn("Constraint optimization failed, using original weights")
                   self.w_constrained = self.w_original.copy()
 
-          def generate_constrained_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+          def generate_constrained_trajectory(self, y_0: np.ndarray, g: np.ndarray,
                                             tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate constrained trajectory.
@@ -332,10 +332,10 @@ implementations:
               """
               # Time points
               t = np.arange(0, 1.0, dt / tau)
-              
+
               # Optimize constraints
               self.optimize_constraints(y_0, g, t)
-              
+
               # Generate trajectory
               return self._generate_trajectory_from_weights(self.w_constrained, y_0, g, t)
 
@@ -361,7 +361,7 @@ implementations:
           Constrained DMP using barrier methods for constraint handling.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, barrier_weight: float = 1.0):
               """
               Initialize barrier method CDMP.
@@ -378,7 +378,7 @@ implementations:
               self.barrier_weight = barrier_weight
               self.barrier_decay = 0.1
 
-          def barrier_function(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray, 
+          def barrier_function(self, w: np.ndarray, y_0: np.ndarray, g: np.ndarray,
                              t: np.ndarray) -> float:
               """
               Compute barrier function value.
@@ -394,10 +394,10 @@ implementations:
               """
               # Reshape weights
               w_reshaped = w.reshape(self.n_dims, self.n_basis)
-              
+
               # Generate trajectory
               y, dy, ddy = self._generate_trajectory_from_weights(w_reshaped, y_0, g, t)
-              
+
               # Compute barrier function
               barrier_value = 0.0
               for constraint in self.constraints:
@@ -409,10 +409,10 @@ implementations:
                       else:
                           # Large penalty for constraint violations
                           barrier_value += 1e6
-              
+
               return barrier_value
 
-          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray, 
+          def optimize_constraints(self, y_0: np.ndarray, g: np.ndarray,
                                  t: np.ndarray, max_iter: int = 100) -> None:
               """
               Optimize DMP weights using barrier method.
@@ -426,29 +426,29 @@ implementations:
               # Initial weights
               w0 = self.w_original.flatten()
               barrier_weight = self.barrier_weight
-              
+
               # Barrier method iterations
               for iteration in range(max_iter):
                   # Objective function with barrier
                   def objective(w):
                       # Deviation from original
                       deviation = np.sum((w - w0)**2)
-                      
+
                       # Barrier function
                       barrier = self.barrier_function(w, y_0, g, t)
-                      
+
                       return deviation + barrier_weight * barrier
-                  
+
                   # Optimize
                   result = minimize(objective, w0, method='L-BFGS-B')
-                  
+
                   if result.success:
                       w0 = result.x
                       # Decay barrier weight
                       barrier_weight *= self.barrier_decay
                   else:
                       break
-              
+
               self.w_constrained = w0.reshape(self.n_dims, self.n_basis)
 
     advantages:
@@ -468,12 +468,12 @@ complexity:
       time: "O(T × K × C)"
       space: "O(K + C)"
       notes: "Time complexity scales with trajectory length, basis functions, and constraints"
-    
+
     - approach: "Barrier Method CDMP"
       time: "O(T × K × C × log(1/ε))"
       space: "O(K + C)"
       notes: "Higher complexity due to barrier method iterations"
-    
+
     - approach: "Constraint Evaluation"
       time: "O(T × C)"
       space: "O(C)"

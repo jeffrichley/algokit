@@ -72,7 +72,7 @@ implementations:
       - "Exponential time complexity"
       - "Redundant computation of same subproblems"
     use_cases: ["Educational purposes", "Small input sizes"]
-    
+
   - name: "Memoized (Top-Down)"
     description: "Recursive approach with memoization to avoid redundant calculations"
     complexity:
@@ -86,7 +86,7 @@ implementations:
       - "Recursion stack overhead"
       - "May cause stack overflow for large inputs"
     use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
-    
+
   - name: "Tabulated (Bottom-Up)"
     description: "Iterative approach building solution from base cases"
     complexity:
@@ -100,7 +100,7 @@ implementations:
       - "Computes all subproblems"
       - "Less intuitive than recursive approach"
     use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
-    
+
   - name: "Space-Optimized"
     description: "Uses only two rows of DP table instead of full 2D table"
     complexity:

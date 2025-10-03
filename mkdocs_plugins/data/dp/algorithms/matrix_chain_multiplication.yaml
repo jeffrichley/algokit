@@ -15,10 +15,10 @@ summary: "Find optimal parenthesization for matrix chain multiplication to minim
 description: |
   Matrix Chain Multiplication is a classic dynamic programming problem that finds the optimal
   way to parenthesize a sequence of matrices to minimize the number of scalar multiplications.
-  
+
   Given a sequence of matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
   find the optimal parenthesization that minimizes the total number of scalar multiplications.
-  
+
   This problem has applications in computer graphics, scientific computing, and optimization
   of linear algebra operations.
 
@@ -26,12 +26,12 @@ description: |
 formulation: |
   Given matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
   find the optimal parenthesization to minimize scalar multiplications.
-  
+
   **Cost of multiplying matrices A[i]×A[i+1]×...×A[j]:**
   ```
   Cost = p[i-1] × p[k] × p[j]  (where k is the split point)
   ```
-  
+
   **Recurrence Relation:**
   ```
   M[i,j] = {
@@ -84,7 +84,7 @@ implementations:
       - "Exponential time complexity"
       - "Redundant computation of same subproblems"
     use_cases: ["Educational purposes", "Very small input sizes"]
-    
+
   - name: "Memoized (Top-Down)"
     description: "Recursive approach with memoization to avoid redundant calculations"
     complexity:
@@ -98,7 +98,7 @@ implementations:
       - "Recursion stack overhead"
       - "May cause stack overflow for large inputs"
     use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
-    
+
   - name: "Tabulated (Bottom-Up)"
     description: "Iterative approach building solution from base cases"
     complexity:
@@ -112,7 +112,7 @@ implementations:
       - "Computes all subproblems"
       - "Less intuitive than recursive approach"
     use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
-    
+
   - name: "Value Only"
     description: "Computes only the minimum cost without tracking optimal parenthesization"
     complexity:
@@ -125,7 +125,7 @@ implementations:
       - "Cannot reconstruct optimal parenthesization"
       - "Limited usefulness"
     use_cases: ["When only cost is needed", "Performance-critical applications"]
-    
+
   - name: "With Expression"
     description: "Tracks and returns the optimal parenthesization expression"
     complexity:

@@ -314,7 +314,7 @@ complexity:
       time: "O(batch_size × (meta_params + low_params))"
       space: "O(batch_size × (state_size + subgoal_size))"
       notes: "Two-network architecture requires coordination and careful training"
-    
+
     - approach: "Hierarchical Policy Gradient with Value Functions"
       time: "O(batch_size × (meta_params + low_params + value_params))"
       space: "O(batch_size × (state_size + subgoal_size))"

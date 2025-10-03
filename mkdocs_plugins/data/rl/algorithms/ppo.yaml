@@ -105,18 +105,18 @@ implementations:
                   hidden_dim: Hidden layer dimension
               """
               super(PPONetwork, self).__init__()
-              
+
               # Shared layers
               self.shared_fc1 = nn.Linear(state_dim, hidden_dim)
               self.shared_fc2 = nn.Linear(hidden_dim, hidden_dim)
-              
+
               # Actor head
               self.actor_mean = nn.Linear(hidden_dim, action_dim)
               self.actor_log_std = nn.Linear(hidden_dim, action_dim)
-              
+
               # Critic head
               self.critic = nn.Linear(hidden_dim, 1)
-              
+
               self.relu = nn.ReLU()
 
           def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -131,11 +131,11 @@ implementations:
               """
               x = self.relu(self.shared_fc1(x))
               x = self.relu(self.shared_fc2(x))
-              
+
               mean = self.actor_mean(x)
               log_std = self.actor_log_std(x)
               value = self.critic(x)
-              
+
               return mean, log_std, value
 
           def get_action(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -162,7 +162,7 @@ implementations:
 
           def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.0003,
                        gamma: float = 0.99, lambda_param: float = 0.95, clip_ratio: float = 0.2,
-                       value_coef: float = 0.5, entropy_coef: float = 0.01, 
+                       value_coef: float = 0.5, entropy_coef: float = 0.01,
                        max_grad_norm: float = 0.5, n_epochs: int = 4):
               """
               Initialize PPO agent.
@@ -209,7 +209,7 @@ implementations:
               return action.numpy().flatten(), log_prob.item(), value.item()
 
           def update(self, states: List[np.ndarray], actions: List[np.ndarray],
-                    rewards: List[float], old_log_probs: List[float], 
+                    rewards: List[float], old_log_probs: List[float],
                     values: List[float], dones: List[bool]) -> None:
               """
               Update policy using PPO algorithm.
@@ -248,24 +248,24 @@ implementations:
               for _ in range(self.n_epochs):
                   # Get current policy outputs
                   _, new_log_probs, new_values = self.network.get_action(states)
-                  
+
                   # Calculate probability ratio
                   ratio = torch.exp(new_log_probs - old_log_probs)
-                  
+
                   # Calculate clipped surrogate objective
                   surr1 = ratio * advantages
                   surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * advantages
                   actor_loss = -torch.min(surr1, surr2).mean()
-                  
+
                   # Calculate value function loss
                   value_loss = nn.MSELoss()(new_values.squeeze(), returns)
-                  
+
                   # Calculate entropy bonus
                   entropy = -new_log_probs.mean()
-                  
+
                   # Total loss
                   total_loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy
-                  
+
                   # Update network
                   self.optimizer.zero_grad()
                   total_loss.backward()
@@ -296,7 +296,7 @@ implementations:
 
           def __init__(self, state_dim: int, action_dim: int, learning_rate: float = 0.0003,
                        gamma: float = 0.99, lambda_param: float = 0.95, clip_ratio: float = 0.2,
-                       value_coef: float = 0.5, entropy_coef: float = 0.01, 
+                       value_coef: float = 0.5, entropy_coef: float = 0.01,
                        max_grad_norm: float = 0.5, n_epochs: int = 4):
               """
               Initialize PPO-GAE agent.
@@ -316,7 +316,7 @@ implementations:
               super().__init__(state_dim, action_dim, learning_rate, gamma, lambda_param,
                              clip_ratio, value_coef, entropy_coef, max_grad_norm, n_epochs)
 
-          def calculate_gae(self, rewards: torch.Tensor, values: torch.Tensor, 
+          def calculate_gae(self, rewards: torch.Tensor, values: torch.Tensor,
                            dones: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
               """
               Calculate Generalized Advantage Estimation.
@@ -331,20 +331,20 @@ implementations:
               """
               advantages = []
               advantage = 0
-              
+
               for i in reversed(range(len(rewards))):
                   if dones[i]:
                       advantage = 0
                   advantage = rewards[i] + self.gamma * values[i + 1] * (1 - dones[i]) - values[i] + self.gamma * self.lambda_param * advantage
                   advantages.insert(0, advantage)
-              
+
               advantages = torch.FloatTensor(advantages)
               returns = advantages + values[:-1]
-              
+
               return advantages, returns
 
           def update(self, states: List[np.ndarray], actions: List[np.ndarray],
-                    rewards: List[float], old_log_probs: List[float], 
+                    rewards: List[float], old_log_probs: List[float],
                     values: List[float], dones: List[bool]) -> None:
               """
               Update policy using PPO with GAE.
@@ -374,24 +374,24 @@ implementations:
               for _ in range(self.n_epochs):
                   # Get current policy outputs
                   _, new_log_probs, new_values = self.network.get_action(states)
-                  
+
                   # Calculate probability ratio
                   ratio = torch.exp(new_log_probs - old_log_probs)
-                  
+
                   # Calculate clipped surrogate objective
                   surr1 = ratio * advantages
                   surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * advantages
                   actor_loss = -torch.min(surr1, surr2).mean()
-                  
+
                   # Calculate value function loss
                   value_loss = nn.MSELoss()(new_values.squeeze(), returns)
-                  
+
                   # Calculate entropy bonus
                   entropy = -new_log_probs.mean()
-                  
+
                   # Total loss
                   total_loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy
-                  
+
                   # Update network
                   self.optimizer.zero_grad()
                   total_loss.backward()
@@ -415,7 +415,7 @@ complexity:
       time: "O(episodes × steps_per_episode × n_epochs × (policy_forward_pass + value_forward_pass))"
       space: "O(policy_parameters + value_parameters)"
       notes: "Time complexity includes multiple epochs per update. Space complexity includes parameters for both actor and critic"
-    
+
     - approach: "PPO with GAE"
       time: "O(episodes × steps_per_episode × n_epochs × (policy_forward_pass + value_forward_pass))"
       space: "O(policy_parameters + value_parameters)"

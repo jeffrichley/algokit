@@ -276,7 +276,7 @@ implementations:
               # Update low-level critic
               current_values = self.low_critic(states, F.one_hot(subgoals, self.subgoal_size).float()).squeeze()
               next_values = self.low_critic(next_states, F.one_hot(subgoals, self.subgoal_size).float()).squeeze()
-              
+
               target_values = rewards + self.gamma * next_values * ~dones
               critic_loss = F.mse_loss(current_values, target_values.detach())
 
@@ -316,7 +316,7 @@ implementations:
               # Update meta-critic
               current_values = self.meta_critic(states).squeeze()
               next_values = self.meta_critic(next_states).squeeze()
-              
+
               target_values = rewards + self.gamma * next_values * ~dones
               critic_loss = F.mse_loss(current_values, target_values.detach())
 
@@ -353,7 +353,7 @@ complexity:
       time: "O(batch_size × (meta_actor_params + meta_critic_params + low_actor_params + low_critic_params))"
       space: "O(batch_size × (state_size + subgoal_size))"
       notes: "Four-network architecture requires careful coordination and training"
-    
+
     - approach: "HAC with Experience Replay"
       time: "O(batch_size × (meta_actor_params + meta_critic_params + low_actor_params + low_critic_params))"
       space: "O(batch_size × (state_size + subgoal_size) + buffer_size)"
