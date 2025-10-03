@@ -176,6 +176,9 @@ ignore_missing_imports = true # change to true *only for per-module overrides*
 follow_imports = "normal"
 show_error_codes = true
 
+# ✅ Disable specific error codes for problematic imports
+disable_error_code = ["import-untyped"]
+
 # ✅ Clean output formatting
 pretty = true
 color_output = true
