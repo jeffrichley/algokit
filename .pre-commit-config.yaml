@@ -39,16 +39,19 @@ repos:
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
       - id: pip-audit
         name: pip-audit
-        entry: bash -c "uv run pip-audit --progress-spinner=off || true"
+        entry: uv run pip-audit --progress-spinner=off
         language: system
         pass_filenames: false
+        always_run: true
+        stages: [manual]
       - id: xenon-complexity
         name: Check Code Complexity (Xenon) - Advisory
-        entry: bash -c "uv run xenon --max-absolute B src || true"
+        entry: uv run xenon --max-absolute B src
         language: system
         pass_filenames: false
         verbose: true
         always_run: true
+        stages: [manual]
       - id: pytest-fast
         name: Run fast tests (excludes slow tests)
         entry: uv run pytest tests -q -m "not slow"
