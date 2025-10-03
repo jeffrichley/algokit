@@ -30,6 +30,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.11.1 (2025-10-03)
+
+### Fix
+
+- use getattr for safe gymnasium registry access
+- resolve mypy yaml import issues
+- resolve pre-commit mypy issues
+- align CI workflow with local just quality setup
+- move decorators to viz-source and exclude from coverage
+- remove unused decorators.py to improve coverage
+- use --install-types to automatically install missing type stubs
+- update pre-commit mypy to use pyproject.toml and match local version
+- disable mypy in pre-commit, use GitHub Actions instead
+- create dedicated mypy.ini for pre-commit hooks
+- configure pre-commit mypy to use same config as local
+- ignore viz_tests and remove pydantic mypy plugin
+- simplify pre-commit configuration
+- remove uv run commands from pre-commit config for CI compatibility
+- make pre-commit configuration cross-platform compatible
+- resolve pre-commit CI failures
+
+### Refactor
+
+- remove agloviz visualization system and clean up codebase
+
 ## v0.11.0 (2025-10-02)
 
 ### Feat
