@@ -70,8 +70,8 @@ families:
       - "optimization"
       - "control-systems"
     status: "in-progress"
-    algorithms_count: 1
-    planned_count: 5
+    algorithms_count: 2
+    planned_count: 4
 
   control:
     name: "Control Systems"
@@ -619,7 +619,7 @@ algorithms:
       - "topological-sort"
       - "strongly-connected-components"
 
-  # Reinforcement Learning Family (Planned)
+  # Reinforcement Learning Family (In Progress)
   q-learning:
     name: "Q-Learning"
     family: "reinforcement-learning"
@@ -638,12 +638,12 @@ algorithms:
       - "value-based"
       - "markov-decision-process"
     implementation:
-      source_file: "src/algokit/reinforcement_learning/q_learning.py"
+      source_file: "src/algokit/algorithms/reinforcement_learning/q_learning.py"
       test_file: "tests/reinforcement_learning/test_q_learning.py"
       approaches:
         - "Standard Q-Learning"
-        - "Experience Replay Q-Learning"
-        - "Double Q-Learning"
+        - "Epsilon-Greedy Policy"
+        - "Q-Table Management"
     mathematical_formulation:
       update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_t + γ max_a' Q(s_{t+1}, a') - Q(s_t, a_t)]"
       parameters:
@@ -656,7 +656,50 @@ algorithms:
       - "Trading systems"
       - "Autonomous vehicles"
     related_algorithms:
+      - "sarsa"
       - "dqn"
+      - "actor-critic"
+
+  sarsa:
+    name: "SARSA (State-Action-Reward-State-Action)"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Model-free, on-policy reinforcement learning algorithm that learns while following the current policy"
+    overview: "SARSA (State-Action-Reward-State-Action) is a model-free, on-policy reinforcement learning algorithm that learns the action-value function while following the current policy. Unlike Q-Learning, SARSA updates Q-values based on the action actually taken in the next state, making it more conservative."
+    complexity:
+      time: "O(|S| × |A|)"
+      space: "O(|S| × |A|)"
+      notes: "|S| = number of states, |A| = number of actions"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "sarsa"
+      - "temporal-difference"
+      - "value-based"
+      - "on-policy"
+      - "markov-decision-process"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/sarsa.py"
+      test_file: "tests/reinforcement_learning/test_sarsa.py"
+      approaches:
+        - "Standard SARSA"
+        - "Epsilon-Greedy Policy"
+        - "On-Policy Learning"
+    mathematical_formulation:
+      update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_t + γ Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)]"
+      parameters:
+        - "α: learning rate"
+        - "γ: discount factor"
+        - "r_t: immediate reward"
+        - "a_{t+1}: next action from current policy"
+    applications:
+      - "Safe learning scenarios"
+      - "Online learning"
+      - "Robotics with safety constraints"
+      - "Trading with risk management"
+    related_algorithms:
+      - "q-learning"
+      - "expected-sarsa"
       - "actor-critic"
 
 # Cross-references and relationships
@@ -705,9 +748,9 @@ relationships:
 progress:
   overall:
     total_algorithms: 41
-    implemented: 9
-    planned: 32
-    percentage: 22.0
+    implemented: 10
+    planned: 31
+    percentage: 24.4
   by_family:
     dynamic-programming:
       total: 6
@@ -716,9 +759,9 @@ progress:
       percentage: 100.0
     reinforcement-learning:
       total: 6
-      implemented: 1
-      planned: 5
-      percentage: 16.7
+      implemented: 2
+      planned: 4
+      percentage: 33.3
     control:
       total: 5
       implemented: 0
