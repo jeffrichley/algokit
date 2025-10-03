@@ -28,13 +28,12 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
-# Disable mypy in pre-commit - use GitHub Actions instead
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.8.0
-#   hooks:
-#     - id: mypy
-#       args: [--config-file=mypy.ini]
-#       files: ^(src/algokit/|tests/).*\.py$
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        args: [--config-file=pyproject.toml, --ignore-missing-imports]
+        files: ^(src/algokit/|tests/).*\.py$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
