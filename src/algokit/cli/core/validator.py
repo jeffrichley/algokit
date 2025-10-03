@@ -686,7 +686,7 @@ class ParameterDefinitionValidator:
         """Initialize the list of supported environments."""
         try:
             # Get all registered environments from gymnasium
-            env_specs = gym.envs.registry.values()  # type: ignore[attr-defined]
+            env_specs = gym.envs.registry.values()
             self._supported_environments = {spec.id for spec in env_specs}
         except Exception:
             # Fallback to common environments if gymnasium is not available
