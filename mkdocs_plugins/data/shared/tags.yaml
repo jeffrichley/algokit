@@ -74,3 +74,38 @@ tags:
     name: "Real-time Control"
     description: "Control algorithms for real-time systems"
     color: "violet"
+
+  - id: "string"
+    name: "String Processing"
+    description: "Algorithms that work with strings and text"
+    color: "cyan"
+
+  - id: "distance"
+    name: "Distance Metrics"
+    description: "Algorithms for measuring similarity and distance"
+    color: "lime"
+
+  - id: "alignment"
+    name: "Sequence Alignment"
+    description: "Algorithms for aligning and comparing sequences"
+    color: "amber"
+
+  - id: "matrix"
+    name: "Matrix Operations"
+    description: "Algorithms involving matrix computations"
+    color: "emerald"
+
+  - id: "interval-dp"
+    name: "Interval DP"
+    description: "Dynamic programming on intervals"
+    color: "sky"
+
+  - id: "2d-dp"
+    name: "2D Dynamic Programming"
+    description: "Dynamic programming with two-dimensional state"
+    color: "slate"
+
+  - id: "nlp"
+    name: "Natural Language Processing"
+    description: "Algorithms for text and language processing"
+    color: "fuchsia"

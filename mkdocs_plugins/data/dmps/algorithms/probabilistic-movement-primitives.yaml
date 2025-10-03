@@ -33,14 +33,14 @@ formulation:
 
     Learn a probabilistic model:
     p(w) = N(w | μ_w, Σ_w)
-    
+
     Where:
     - μ_w = (1/N) Σ_{i=1}^N w^(i)
     - Σ_w = (1/N) Σ_{i=1}^N (w^(i) - μ_w)(w^(i) - μ_w)^T
-    
+
     The trajectory is generated as:
     y(t) = Ψ(t)^T w + ε(t)
-    
+
     Where ε(t) ~ N(0, Σ_y) is observation noise.
 
   key_properties:
@@ -100,18 +100,18 @@ implementations:
               self.n_dims = n_dims
               self.n_basis = n_basis
               self.basis_type = basis_type
-              
+
               # Basis function parameters
               if basis_type == "rbf":
                   self.c = np.linspace(0, 1, n_basis)
                   self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
               elif basis_type == "fourier":
                   self.frequencies = np.arange(1, n_basis + 1)
-              
+
               # Weight distribution parameters
               self.mu_w = np.zeros((n_dims, n_basis))
               self.Sigma_w = np.zeros((n_dims, n_basis, n_basis))
-              
+
               # Observation noise
               self.Sigma_y = np.eye(n_dims) * 0.01
 
@@ -127,14 +127,14 @@ implementations:
               """
               T = len(t)
               psi = np.zeros((T, self.n_basis))
-              
+
               if self.basis_type == "rbf":
                   for i in range(self.n_basis):
                       psi[:, i] = np.exp(-self.h[i] * (t - self.c[i])**2)
               elif self.basis_type == "fourier":
                   for i in range(self.n_basis):
                       psi[:, i] = np.sin(2 * np.pi * self.frequencies[i] * t)
-              
+
               return psi
 
           def learn_from_demos(self, demos: List[np.ndarray], dt: float = 0.01) -> None:
@@ -147,29 +147,29 @@ implementations:
               """
               n_demos = len(demos)
               weights = []
-              
+
               # Learn weights for each demonstration
               for demo in demos:
                   T = len(demo)
                   t = np.linspace(0, 1, T)
-                  
+
                   # Compute basis functions
                   psi = self.basis_functions(t)
-                  
+
                   # Learn weights using least squares
                   w = np.zeros((self.n_dims, self.n_basis))
                   for d in range(self.n_dims):
                       w[d] = np.linalg.lstsq(psi, demo[:, d], rcond=None)[0]
-                  
+
                   weights.append(w)
-              
+
               # Compute weight distribution
               weights = np.array(weights)  # [N, n_dims, n_basis]
-              
+
               for d in range(self.n_dims):
                   # Mean weights
                   self.mu_w[d] = np.mean(weights[:, d], axis=0)
-                  
+
                   # Covariance matrix
                   centered_weights = weights[:, d] - self.mu_w[d]
                   self.Sigma_w[d] = np.cov(centered_weights.T)
@@ -187,18 +187,18 @@ implementations:
               """
               psi = self.basis_functions(t)
               T = len(t)
-              
+
               y_mean = np.zeros((T, self.n_dims))
               y_std = np.zeros((T, self.n_dims))
-              
+
               for d in range(self.n_dims):
                   # Mean trajectory
                   y_mean[:, d] = psi @ self.mu_w[d]
-                  
+
                   # Variance trajectory
                   y_var = np.diag(psi @ self.Sigma_w[d] @ psi.T) + self.Sigma_y[d, d]
                   y_std[:, d] = np.sqrt(y_var)
-              
+
               if sample:
                   # Sample from distribution
                   y_sample = np.zeros((T, self.n_dims))
@@ -209,7 +209,7 @@ implementations:
               else:
                   return y_mean, y_std
 
-          def condition_on_viapoint(self, t_obs: float, y_obs: np.ndarray, 
+          def condition_on_viapoint(self, t_obs: float, y_obs: np.ndarray,
                                   Sigma_obs: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
               """
               Condition ProMP on observed via-point.
@@ -224,26 +224,26 @@ implementations:
               """
               if Sigma_obs is None:
                   Sigma_obs = self.Sigma_y
-              
+
               # Compute basis functions at observation time
               psi_obs = self.basis_functions(np.array([t_obs]))
-              
+
               # Condition each dimension
               mu_w_cond = np.zeros((self.n_dims, self.n_basis))
               Sigma_w_cond = np.zeros((self.n_dims, self.n_basis, self.n_basis))
-              
+
               for d in range(self.n_dims):
                   # Gaussian conditioning
                   Sigma_obs_d = Sigma_obs[d, d]
-                  
+
                   # Kalman filter update
                   S = psi_obs @ self.Sigma_w[d] @ psi_obs.T + Sigma_obs_d
                   K = self.Sigma_w[d] @ psi_obs.T / S
-                  
+
                   # Update mean and covariance
                   mu_w_cond[d] = self.mu_w[d] + K * (y_obs[d] - psi_obs @ self.mu_w[d])
                   Sigma_w_cond[d] = self.Sigma_w[d] - K @ psi_obs @ self.Sigma_w[d]
-              
+
               return mu_w_cond, Sigma_w_cond
 
     advantages:
@@ -278,15 +278,15 @@ implementations:
               """
               self.n_dims = n_dims
               self.n_basis = n_basis
-              
+
               # Basis function parameters
               self.c = np.linspace(0, 1, n_basis)
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # Joint weight distribution
               self.mu_w = np.zeros(n_dims * n_basis)
               self.Sigma_w = np.zeros((n_dims * n_basis, n_dims * n_basis))
-              
+
               # Observation noise
               self.Sigma_y = np.eye(n_dims) * 0.01
 
@@ -294,10 +294,10 @@ implementations:
               """Compute basis function values at time points."""
               T = len(t)
               psi = np.zeros((T, self.n_basis))
-              
+
               for i in range(self.n_basis):
                   psi[:, i] = np.exp(-self.h[i] * (t - self.c[i])**2)
-              
+
               return psi
 
           def learn_from_demos(self, demos: List[np.ndarray], dt: float = 0.01) -> None:
@@ -310,28 +310,28 @@ implementations:
               """
               n_demos = len(demos)
               weights = []
-              
+
               # Learn weights for each demonstration
               for demo in demos:
                   T = len(demo)
                   t = np.linspace(0, 1, T)
-                  
+
                   # Compute basis functions
                   psi = self.basis_functions(t)
-                  
+
                   # Learn weights for all dimensions jointly
                   w = np.zeros(n_dims * n_basis)
                   for d in range(self.n_dims):
                       w[d * n_basis:(d + 1) * n_basis] = np.linalg.lstsq(psi, demo[:, d], rcond=None)[0]
-                  
+
                   weights.append(w)
-              
+
               # Compute joint weight distribution
               weights = np.array(weights)  # [N, n_dims * n_basis]
-              
+
               # Mean weights
               self.mu_w = np.mean(weights, axis=0)
-              
+
               # Covariance matrix
               centered_weights = weights - self.mu_w
               self.Sigma_w = np.cov(centered_weights.T)
@@ -349,21 +349,21 @@ implementations:
               """
               psi = self.basis_functions(t)
               T = len(t)
-              
+
               # Construct full basis matrix
               Psi = np.zeros((T * self.n_dims, self.n_dims * self.n_basis))
               for d in range(self.n_dims):
                   Psi[d * T:(d + 1) * T, d * self.n_basis:(d + 1) * self.n_basis] = psi
-              
+
               # Mean trajectory
               y_mean = Psi @ self.mu_w
               y_mean = y_mean.reshape(T, self.n_dims)
-              
+
               # Variance trajectory
               y_var = np.diag(Psi @ self.Sigma_w @ Psi.T)
               y_var = y_var.reshape(T, self.n_dims)
               y_std = np.sqrt(y_var)
-              
+
               if sample:
                   # Sample from distribution
                   w_sample = multivariate_normal.rvs(self.mu_w, self.Sigma_w)
@@ -390,12 +390,12 @@ complexity:
       time: "O(N × T × K + K^3)"
       space: "O(K^2 + N × K)"
       notes: "Learning time scales with demonstrations, trajectory length, and basis functions"
-    
+
     - approach: "Correlated ProMP Learning"
       time: "O(N × T × K + K^3 × d^2)"
       space: "O(K^2 × d^2 + N × K × d)"
       notes: "Higher complexity due to cross-dimensional correlations"
-    
+
     - approach: "Via-point Conditioning"
       time: "O(K^3)"
       space: "O(K^2)"

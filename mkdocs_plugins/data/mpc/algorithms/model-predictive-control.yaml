@@ -20,16 +20,16 @@ description: |
 formulation:
   control_law: |
     At each time step k, solve:
-    
+
     min_{U_k} J(x(k), U_k) = Σ_{i=0}^{N_p-1} ||y(k+i|k) - r(k+i)||_Q² + Σ_{i=0}^{N_c-1} ||u(k+i)||_R²
-    
+
     Subject to:
     - x(k+i+1|k) = f(x(k+i|k), u(k+i), d(k+i))
     - y(k+i|k) = h(x(k+i|k), u(k+i))
     - g(x(k+i|k), u(k+i)) ≤ 0
     - u_min ≤ u(k+i) ≤ u_max
     - x_min ≤ x(k+i|k) ≤ x_max
-    
+
     Where:
     - U_k = [u(k), u(k+1), ..., u(k+N_c-1)] is the control sequence
     - N_p is the prediction horizon
@@ -39,7 +39,7 @@ formulation:
 
   discrete_time_form: |
     The receding horizon implementation:
-    
+
     1. Measure current state x(k)
     2. Solve optimization problem for U_k
     3. Apply first control action u(k) = U_k[0]
@@ -113,7 +113,7 @@ implementations:
               self.C = C
               self.Np = prediction_horizon
               self.Nc = min(control_horizon, prediction_horizon)
-              
+
               # State and input dimensions
               self.nx = A.shape[0]
               self.nu = B.shape[1]
@@ -162,7 +162,7 @@ implementations:
               # Build cost function matrices
               H = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ self.Gamma + \
                   np.kron(np.eye(self.Nc), self.R)
-              
+
               f = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ \
                   (self.Phi @ x0 - r.flatten())
 
@@ -202,7 +202,7 @@ implementations:
               """
               # Solve MPC problem
               U_opt = self.solve_mpc(x, r, u_min, u_max)
-              
+
               # Return first control action
               return U_opt[0]
     advantages:

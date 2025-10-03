@@ -36,7 +36,7 @@ formulation:
     The temporal DMP becomes:
     τ(t)ẏ = α_y(β_y(g - y) - ẏ) + f(φ_sync)
     τ(t)φ̇ = ω(t)
-    
+
     Where:
     - ω(t) is the adaptive frequency
     - τ(t) is the adaptive time constant
@@ -87,7 +87,7 @@ implementations:
           Temporal DMP for rhythmic movement generation with beat and tempo adaptation.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, omega_0: float = 2*np.pi, k_beat: float = 1.0,
                        k_tempo: float = 1.0, k_sync: float = 1.0):
               """
@@ -111,20 +111,20 @@ implementations:
               self.k_beat = k_beat
               self.k_tempo = k_tempo
               self.k_sync = k_sync
-              
+
               # Basis function parameters (uniformly distributed in [0, 2π])
               self.c = np.linspace(0, 2*np.pi, n_basis, endpoint=False)
               self.h = np.ones(n_basis) * n_basis / (2*np.pi)
-              
+
               # DMP weights
               self.w = np.zeros((n_dims, n_basis))
-              
+
               # Temporal parameters
               self.tau_0 = 1.0
               self.tempo_target = 1.0
               self.beat_times = []
               self.external_phase = 0.0
-              
+
               # Adaptation flags
               self.beat_adaptation = True
               self.tempo_adaptation = True
@@ -169,20 +169,20 @@ implementations:
               """
               if not self.beat_adaptation or len(self.beat_times) < 2:
                   return self.omega_0
-              
+
               # Find the most recent beat
               recent_beats = [bt for bt in self.beat_times if bt <= t]
               if len(recent_beats) < 2:
                   return self.omega_0
-              
+
               # Compute expected beat time
               beat_interval = recent_beats[-1] - recent_beats[-2]
               expected_beat_time = recent_beats[-1] + beat_interval
-              
+
               # Beat adaptation
               beat_error = t - expected_beat_time
               omega_adaptive = self.omega_0 + self.k_beat * beat_error
-              
+
               return omega_adaptive
 
           def compute_adaptive_tempo(self, t: float) -> float:
@@ -197,7 +197,7 @@ implementations:
               """
               if not self.tempo_adaptation:
                   return self.tau_0
-              
+
               # Compute current tempo
               if len(self.beat_times) >= 2:
                   recent_beats = [bt for bt in self.beat_times if bt <= t]
@@ -208,11 +208,11 @@ implementations:
                       current_tempo = 1.0
               else:
                   current_tempo = 1.0
-              
+
               # Tempo adaptation
               tempo_error = self.tempo_target - current_tempo
               tau_adaptive = self.tau_0 + self.k_tempo * tempo_error
-              
+
               return tau_adaptive
 
           def compute_synchronized_phase(self, phi: float) -> float:
@@ -227,14 +227,14 @@ implementations:
               """
               if not self.phase_synchronization:
                   return phi
-              
+
               # Phase synchronization
               phase_error = self.external_phase - phi
               phi_sync = phi + self.k_sync * phase_error
-              
+
               return phi_sync
 
-          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray,
                             ddy_demo: np.ndarray, dt: float, beat_times: Optional[List[float]] = None) -> None:
               """
               Learn temporal DMP weights from demonstration.
@@ -247,7 +247,7 @@ implementations:
                   beat_times: Optional beat times for the demonstration
               """
               T = len(y_demo)
-              
+
               # Generate phase trajectory
               if beat_times is not None:
                   # Use provided beat times
@@ -264,27 +264,27 @@ implementations:
               else:
                   # Generate uniform phase trajectory
                   phi = np.linspace(0, 2*np.pi, T, endpoint=False)
-              
+
               # Compute forcing function target
               f_target = np.zeros((T, self.n_dims))
               for t in range(T):
-                  f_target[t] = (ddy_demo[t] - 
+                  f_target[t] = (ddy_demo[t] -
                                self.alpha_y * (self.beta_y * (0 - y_demo[t]) - dy_demo[t]))
-              
+
               # Learn weights using locally weighted regression
               for d in range(self.n_dims):
                   for i in range(self.n_basis):
                       # Compute basis function values
                       psi = np.exp(-self.h[i] * (phi - self.c[i])**2)
-                      
+
                       # Locally weighted regression
                       numerator = np.sum(psi * np.sin(phi) * f_target[:, d])
                       denominator = np.sum(psi * np.sin(phi)**2)
-                      
+
                       if denominator > 1e-10:
                           self.w[d, i] = numerator / denominator
 
-          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
                                 duration: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate temporal trajectory from learned DMP.
@@ -301,42 +301,42 @@ implementations:
               # Integration time
               t_span = np.arange(0, duration, dt)
               T = len(t_span)
-              
+
               # Initial state [y, dy, phi]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [0.0]])
-              
+
               def temporal_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   phi = state[2*self.n_dims]
-                  
+
                   # Compute adaptive parameters
                   omega = self.compute_adaptive_frequency(t)
                   tau = self.compute_adaptive_tempo(t)
                   phi_sync = self.compute_synchronized_phase(phi)
-                  
+
                   # Canonical system
                   dphi = omega / tau
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (phi_sync - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * np.sin(phi_sync)) / (np.sum(psi) + 1e-10)
-                  
+
                   # Transformation system
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
-                  
+
                   return np.concatenate([dy, ddy, [dphi]])
-              
+
               # Integrate
               sol = odeint(temporal_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               phi_traj = sol[:, 2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj, phi_traj
 
           def visualize_trajectory(self, y_traj: np.ndarray, phi_traj: np.ndarray,
@@ -350,7 +350,7 @@ implementations:
                   title: Plot title
               """
               fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
-              
+
               # Plot trajectory
               if self.n_dims == 2:
                   ax1.plot(y_traj[:, 0], y_traj[:, 1], 'b-', linewidth=2, label='Trajectory')
@@ -370,7 +370,7 @@ implementations:
                   ax1.set_title('Trajectory')
                   ax1.legend()
                   ax1.grid(True)
-              
+
               # Plot phase
               ax2.plot(phi_traj, 'g-', linewidth=2, label='Phase')
               ax2.set_xlabel('Time')
@@ -378,7 +378,7 @@ implementations:
               ax2.set_title('Phase Trajectory')
               ax2.legend()
               ax2.grid(True)
-              
+
               plt.suptitle(title)
               plt.tight_layout()
               plt.show()
@@ -405,7 +405,7 @@ implementations:
           Temporal DMP that synchronizes with external metronomes.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, omega_0: float = 2*np.pi, k_beat: float = 1.0,
                        k_tempo: float = 1.0, k_sync: float = 1.0, k_metronome: float = 1.0):
               """
@@ -424,7 +424,7 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, omega_0, k_beat, k_tempo, k_sync)
               self.k_metronome = k_metronome
-              
+
               # Metronome parameters
               self.metronome_times = []
               self.metronome_active = False
@@ -452,12 +452,12 @@ implementations:
               """
               if not self.metronome_active or len(self.metronome_times) == 0:
                   return 0.0
-              
+
               # Find the most recent metronome beat
               recent_beats = [mt for mt in self.metronome_times if mt <= t]
               if len(recent_beats) == 0:
                   return 0.0
-              
+
               # Compute phase based on metronome
               if len(recent_beats) >= 2:
                   beat_interval = recent_beats[-1] - recent_beats[-2]
@@ -465,7 +465,7 @@ implementations:
                   metronome_phase = 2 * np.pi * phase_in_beat
               else:
                   metronome_phase = 0.0
-              
+
               return metronome_phase
 
           def compute_synchronized_phase(self, phi: float, t: float) -> float:
@@ -481,17 +481,17 @@ implementations:
               """
               if not self.phase_synchronization:
                   return phi
-              
+
               # Get metronome phase
               metronome_phase = self.compute_metronome_phase(t)
-              
+
               # Phase synchronization with metronome
               phase_error = metronome_phase - phi
               phi_sync = phi + self.k_metronome * phase_error
-              
+
               return phi_sync
 
-          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
                                 duration: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate metronome-synchronized trajectory.
@@ -508,42 +508,42 @@ implementations:
               # Integration time
               t_span = np.arange(0, duration, dt)
               T = len(t_span)
-              
+
               # Initial state [y, dy, phi]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [0.0]])
-              
+
               def metronome_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   phi = state[2*self.n_dims]
-                  
+
                   # Compute adaptive parameters
                   omega = self.compute_adaptive_frequency(t)
                   tau = self.compute_adaptive_tempo(t)
                   phi_sync = self.compute_synchronized_phase(phi, t)
-                  
+
                   # Canonical system
                   dphi = omega / tau
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (phi_sync - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * np.sin(phi_sync)) / (np.sum(psi) + 1e-10)
-                  
+
                   # Transformation system
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f
-                  
+
                   return np.concatenate([dy, ddy, [dphi]])
-              
+
               # Integrate
               sol = odeint(metronome_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               phi_traj = sol[:, 2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj, phi_traj
 
     advantages:
@@ -563,12 +563,12 @@ complexity:
       time: "O(T × K)"
       space: "O(K)"
       notes: "Time complexity scales with trajectory length and basis functions"
-    
+
     - approach: "Metronome Synchronized DMP"
       time: "O(T × K + T × M)"
       space: "O(K + M)"
       notes: "Additional complexity for metronome processing"
-    
+
     - approach: "Beat Adaptation"
       time: "O(T)"
       space: "O(B)"

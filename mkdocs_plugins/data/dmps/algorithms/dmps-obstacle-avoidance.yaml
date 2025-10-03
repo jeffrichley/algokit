@@ -35,10 +35,10 @@ formulation:
 
     The obstacle-avoiding DMP becomes:
     τẏ = α_y(β_y(g - y) - ẏ) + f(x) + f_rep(y, ẏ)
-    
+
     Where the repulsive force is:
     f_rep(y, ẏ) = Σ_{i=1}^M k_rep * (1/d_i - 1/d_safe) * (1/d_i²) * (y - o_i)/||y - o_i||
-    
+
     And d_i = ||y - o_i|| - r_i is the distance to obstacle i.
 
   key_properties:
@@ -86,8 +86,8 @@ implementations:
           DMP with obstacle avoidance using repulsive forces.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
-                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0,
                        d_safe: float = 0.5):
               """
               Initialize obstacle-avoiding DMP.
@@ -108,14 +108,14 @@ implementations:
               self.alpha_x = alpha_x
               self.k_rep = k_rep
               self.d_safe = d_safe
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # DMP weights
               self.w = np.zeros((n_dims, n_basis))
-              
+
               # Obstacles
               self.obstacles = []
               self.obstacle_radii = []
@@ -159,27 +159,27 @@ implementations:
                   Repulsive force vector
               """
               f_rep = np.zeros(self.n_dims)
-              
+
               for i, (obstacle_pos, radius) in enumerate(zip(self.obstacles, self.obstacle_radii)):
                   # Distance to obstacle surface
                   d = np.linalg.norm(y - obstacle_pos) - radius
-                  
+
                   if d < self.d_safe:
                       # Direction from obstacle to robot
                       direction = (y - obstacle_pos) / (np.linalg.norm(y - obstacle_pos) + 1e-10)
-                      
+
                       # Repulsive force magnitude
                       if d > 0:
                           force_magnitude = self.k_rep * (1/d - 1/self.d_safe) * (1/d**2)
                       else:
                           # Very large force when inside obstacle
                           force_magnitude = self.k_rep * 1000
-                      
+
                       f_rep += force_magnitude * direction
-              
+
               return f_rep
 
-          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray, 
+          def learn_from_demo(self, y_demo: np.ndarray, dy_demo: np.ndarray,
                             ddy_demo: np.ndarray, dt: float) -> None:
               """
               Learn DMP weights from demonstration.
@@ -193,24 +193,24 @@ implementations:
               T = len(y_demo)
               y_0 = y_demo[0]
               g = y_demo[-1]
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn weights
               for d in range(self.n_dims):
-                  f_target = (ddy_demo[:, d] - 
+                  f_target = (ddy_demo[:, d] -
                              self.alpha_y * (self.beta_y * (g[d] - y_demo[:, d]) - dy_demo[:, d]))
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w[d, i] = numerator / denominator
 
-          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
                                 tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate obstacle-avoiding trajectory.
@@ -226,42 +226,42 @@ implementations:
               """
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def obstacle_avoiding_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Repulsive force
                   f_rep = self.compute_repulsive_force(y, dy)
-                  
+
                   # Transformation system with obstacle avoidance
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f + f_rep
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(obstacle_avoiding_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
-          def visualize_trajectory(self, y_traj: np.ndarray, obstacles: List[np.ndarray], 
+          def visualize_trajectory(self, y_traj: np.ndarray, obstacles: List[np.ndarray],
                                  radii: List[float], title: str = "Obstacle-Avoiding Trajectory") -> None:
               """
               Visualize the generated trajectory with obstacles.
@@ -274,17 +274,17 @@ implementations:
               """
               if self.n_dims == 2:
                   plt.figure(figsize=(10, 8))
-                  
+
                   # Plot trajectory
                   plt.plot(y_traj[:, 0], y_traj[:, 1], 'b-', linewidth=2, label='Trajectory')
                   plt.plot(y_traj[0, 0], y_traj[0, 1], 'go', markersize=10, label='Start')
                   plt.plot(y_traj[-1, 0], y_traj[-1, 1], 'ro', markersize=10, label='Goal')
-                  
+
                   # Plot obstacles
                   for i, (obs, radius) in enumerate(zip(obstacles, radii)):
                       circle = plt.Circle(obs, radius, color='red', alpha=0.3, label=f'Obstacle {i+1}' if i == 0 else "")
                       plt.gca().add_patch(circle)
-                  
+
                   plt.xlabel('X Position')
                   plt.ylabel('Y Position')
                   plt.title(title)
@@ -317,8 +317,8 @@ implementations:
           DMP using potential fields for obstacle avoidance.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
-                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
+                       beta_y: float = 6.25, alpha_x: float = 1.0, k_rep: float = 1.0,
                        d_safe: float = 0.5, k_att: float = 1.0):
               """
               Initialize potential field DMP.
@@ -349,14 +349,14 @@ implementations:
               # Attractive potential to goal
               U_att = 0.5 * self.k_att * np.linalg.norm(y - self.goal)**2
               grad_att = self.k_att * (y - self.goal)
-              
+
               # Repulsive potential from obstacles
               U_rep = 0.0
               grad_rep = np.zeros(self.n_dims)
-              
+
               for i, (obstacle_pos, radius) in enumerate(zip(self.obstacles, self.obstacle_radii)):
                   d = np.linalg.norm(y - obstacle_pos) - radius
-                  
+
                   if d < self.d_safe:
                       if d > 0:
                           U_rep += 0.5 * self.k_rep * (1/d - 1/self.d_safe)**2
@@ -364,13 +364,13 @@ implementations:
                       else:
                           U_rep += 0.5 * self.k_rep * 1000
                           grad_rep += self.k_rep * 1000 * (y - obstacle_pos) / (np.linalg.norm(y - obstacle_pos) + 1e-10)
-              
+
               total_potential = U_att + U_rep
               total_gradient = grad_att + grad_rep
-              
+
               return total_potential, total_gradient
 
-          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray, 
+          def generate_trajectory(self, y_0: np.ndarray, g: np.ndarray,
                                 tau: float = 1.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate trajectory using potential field DMP.
@@ -385,42 +385,42 @@ implementations:
                   Tuple of (position, velocity, acceleration) trajectories
               """
               self.goal = g
-              
+
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def potential_field_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Potential field force
                   _, grad_potential = self.compute_potential_field(y)
-                  
+
                   # Transformation system with potential field
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f - grad_potential
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(potential_field_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
     advantages:
@@ -440,12 +440,12 @@ complexity:
       time: "O(T × M)"
       space: "O(M)"
       notes: "Time complexity scales with trajectory length and number of obstacles"
-    
+
     - approach: "Potential Field DMP"
       time: "O(T × M)"
       space: "O(M)"
       notes: "Similar complexity but with potential field computation"
-    
+
     - approach: "Obstacle Detection"
       time: "O(M)"
       space: "O(M)"

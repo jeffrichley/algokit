@@ -209,7 +209,7 @@ implementations:
               self.buffer.append((state, self.current_option, action, reward, next_state, done))
 
               # Check if option should be terminated
-              if (self.current_option is not None and 
+              if (self.current_option is not None and
                   (self.should_terminate(next_state, self.current_option) or done)):
                   # Select new option
                   if not done:
@@ -265,7 +265,7 @@ implementations:
 
               # Update termination function
               termination_probs = self.termination(states, F.one_hot(options, self.option_size).float())
-              
+
               # Termination loss (simplified)
               termination_loss = F.mse_loss(termination_probs, torch.zeros_like(termination_probs))
 
@@ -290,7 +290,7 @@ complexity:
       time: "O(batch_size × (option_policy_params + option_selection_params + termination_params))"
       space: "O(batch_size × (state_size + option_size))"
       notes: "Three-network architecture requires careful coordination and training"
-    
+
     - approach: "Option-Critic with Value Functions"
       time: "O(batch_size × (option_policy_params + option_selection_params + termination_params + value_params))"
       space: "O(batch_size × (state_size + option_size))"

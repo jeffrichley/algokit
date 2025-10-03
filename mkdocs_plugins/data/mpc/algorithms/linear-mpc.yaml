@@ -20,15 +20,15 @@ description: |
 formulation:
   control_law: |
     For linear system: x(k+1) = Ax(k) + Bu(k), y(k) = Cx(k)
-    
+
     The QP formulation is:
-    
+
     min_{U_k} (1/2) U_k^T H U_k + f^T U_k
-    
+
     Subject to:
     - G U_k ≤ w
     - A_eq U_k = b_eq
-    
+
     Where:
     - H = Γ^T Q̄ Γ + R̄ is the Hessian matrix
     - f = Γ^T Q̄ (Φ x(k) - R_k) is the gradient
@@ -38,9 +38,9 @@ formulation:
 
   discrete_time_form: |
     State prediction over horizon N_p:
-    
+
     X_k = Φ x(k) + Γ U_k
-    
+
     Where:
     - X_k = [x(k+1|k), x(k+2|k), ..., x(k+N_p|k)]^T
     - U_k = [u(k), u(k+1), ..., u(k+N_c-1)]^T
@@ -115,7 +115,7 @@ implementations:
               self.D = D
               self.Np = prediction_horizon
               self.Nc = min(control_horizon, prediction_horizon)
-              
+
               # State and input dimensions
               self.nx = A.shape[0]
               self.nu = B.shape[1]
@@ -164,7 +164,7 @@ implementations:
               # Build QP matrices
               H = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ self.Gamma + \
                   np.kron(np.eye(self.Nc), self.R)
-              
+
               f = self.Gamma.T @ np.kron(np.eye(self.Np), self.Q) @ \
                   (self.Phi @ x0 - r.flatten())
 
@@ -201,7 +201,7 @@ implementations:
               """
               # Solve QP problem
               U_opt = self.solve_qp(x, r, u_min, u_max)
-              
+
               # Return first control action
               return U_opt[0]
     advantages:

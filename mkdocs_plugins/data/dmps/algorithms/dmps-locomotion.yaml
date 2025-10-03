@@ -36,7 +36,7 @@ formulation:
     The locomotion DMP becomes:
     τθ̈ = α_y(β_y(θ_ref - θ) - θ̇) + f(φ) + f_terrain(θ, h) + f_balance(θ, θ̇, θ̈)
     τφ̇ = ω_gait
-    
+
     Where:
     - f(φ) is the rhythmic forcing function for gait
     - f_terrain(θ, h) adapts to terrain height
@@ -113,24 +113,24 @@ implementations:
               self.alpha_x = alpha_x
               self.gait_frequency = gait_frequency
               self.phase_offset = phase_offset
-              
+
               # Basis function parameters (for gait phase)
               self.c = np.linspace(0, 2*np.pi, n_basis, endpoint=False)
               self.h = np.ones(n_basis) * n_basis / (2*np.pi)
-              
+
               # DMP weights for each joint
               self.w = np.zeros((self.n_dims, n_basis))
-              
+
               # Gait parameters
               self.gait_phases = np.zeros(n_legs)
               self.leg_phases = np.linspace(0, 2*np.pi, n_legs, endpoint=False)
-              
+
               # Walking parameters
               self.step_length = 0.3
               self.step_height = 0.1
               self.stance_phase_ratio = 0.6
 
-          def set_gait_parameters(self, step_length: float, step_height: float, 
+          def set_gait_parameters(self, step_length: float, step_height: float,
                                 stance_phase_ratio: float) -> None:
               """
               Set walking parameters.
@@ -157,13 +157,13 @@ implementations:
               """
               # Base phase
               base_phase = self.gait_frequency * t * 2 * np.pi
-              
+
               # Leg-specific phase offset
               leg_phase = base_phase + self.leg_phases[leg_id]
-              
+
               # Normalize to [0, 2π]
               leg_phase = leg_phase % (2 * np.pi)
-              
+
               return leg_phase
 
           def is_swing_phase(self, phase: float) -> bool:
@@ -192,13 +192,13 @@ implementations:
               if self.is_swing_phase(phase):
                   # Swing phase - foot moves forward and up
                   swing_phase = (phase - 2 * np.pi * self.stance_phase_ratio) / (2 * np.pi * (1 - self.stance_phase_ratio))
-                  
+
                   # Forward movement
                   x = self.step_length * swing_phase
-                  
+
                   # Vertical movement (parabolic)
                   z = self.step_height * np.sin(np.pi * swing_phase)
-                  
+
                   # Lateral movement (minimal)
                   y = 0.0
               else:
@@ -206,7 +206,7 @@ implementations:
                   x = 0.0
                   y = 0.0
                   z = 0.0
-              
+
               return x, y, z
 
           def learn_from_demo(self, joint_angles_demo: np.ndarray, dt: float) -> None:
@@ -218,25 +218,25 @@ implementations:
                   dt: Time step
               """
               T = len(joint_angles_demo)
-              
+
               # Generate gait phases
               phases = np.zeros((T, self.n_legs))
               for t in range(T):
                   for leg_id in range(self.n_legs):
                       phases[t, leg_id] = self.compute_gait_phase(t * dt, leg_id)
-              
+
               # Learn weights for each joint
               for joint_id in range(self.n_dims):
                   leg_id = joint_id // self.n_joints_per_leg
                   joint_in_leg = joint_id % self.n_joints_per_leg
-                  
+
                   # Compute target forcing function
                   f_target = np.zeros(T)
                   for t in range(T):
                       # Compute desired joint angle from foot trajectory
                       phase = phases[t, leg_id]
                       foot_x, foot_y, foot_z = self.compute_foot_trajectory(phase, leg_id)
-                      
+
                       # Simple inverse kinematics (simplified)
                       if joint_in_leg == 0:  # Hip joint
                           f_target[t] = foot_x * 0.5
@@ -244,19 +244,19 @@ implementations:
                           f_target[t] = foot_z * 0.3
                       else:  # Ankle joint
                           f_target[t] = foot_z * 0.2
-                      
+
                       # Add error from demonstration
                       f_target[t] += joint_angles_demo[t, joint_id] - f_target[t]
-                  
+
                   # Learn weights using locally weighted regression
                   for i in range(self.n_basis):
                       # Use average phase across legs
                       avg_phase = np.mean(phases[:, leg_id])
                       psi = np.exp(-self.h[i] * (avg_phase - self.c[i])**2)
-                      
+
                       numerator = np.sum(psi * np.sin(avg_phase) * f_target)
                       denominator = np.sum(psi * np.sin(avg_phase)**2)
-                      
+
                       if denominator > 1e-10:
                           self.w[joint_id, i] = numerator / denominator
 
@@ -274,45 +274,45 @@ implementations:
               # Time points
               t_span = np.arange(0, duration, dt)
               T = len(t_span)
-              
+
               # Storage
               joint_angles = np.zeros((T, self.n_dims))
               joint_velocities = np.zeros((T, self.n_dims))
               joint_accelerations = np.zeros((T, self.n_dims))
-              
+
               # Initial conditions
               joint_angles[0] = np.zeros(self.n_dims)
               joint_velocities[0] = np.zeros(self.n_dims)
-              
+
               # Generate walking pattern
               for t in range(1, T):
                   # Update gait phases
                   for leg_id in range(self.n_legs):
                       self.gait_phases[leg_id] = self.compute_gait_phase(t_span[t], leg_id)
-                  
+
                   # Update joint angles
                   for joint_id in range(self.n_dims):
                       leg_id = joint_id // self.n_joints_per_leg
                       phase = self.gait_phases[leg_id]
-                      
+
                       # Compute forcing function
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (phase - self.c[i])**2)
                           f += self.w[joint_id, i] * psi * np.sin(phase)
-                      
+
                       # DMP dynamics
-                      joint_accelerations[t-1, joint_id] = (self.alpha_y * 
-                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) - 
+                      joint_accelerations[t-1, joint_id] = (self.alpha_y *
+                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) -
                                                            joint_velocities[t-1, joint_id]) + f)
-                      
+
                       # Integration
                       joint_velocities[t, joint_id] = joint_velocities[t-1, joint_id] + joint_accelerations[t-1, joint_id] * dt
                       joint_angles[t, joint_id] = joint_angles[t-1, joint_id] + joint_velocities[t, joint_id] * dt
-                  
+
                   # Compute accelerations
                   joint_accelerations[t] = (joint_velocities[t] - joint_velocities[t-1]) / dt
-              
+
               return joint_angles, joint_velocities, joint_accelerations
 
           def visualize_walking_pattern(self, joint_angles: np.ndarray, dt: float = 0.01) -> None:
@@ -325,24 +325,24 @@ implementations:
               """
               T = joint_angles.shape[0]
               t_span = np.arange(0, T * dt, dt)
-              
+
               fig, axes = plt.subplots(self.n_legs, self.n_joints_per_leg, figsize=(15, 10))
               if self.n_legs == 1:
                   axes = axes.reshape(1, -1)
               if self.n_joints_per_leg == 1:
                   axes = axes.reshape(-1, 1)
-              
+
               for leg_id in range(self.n_legs):
                   for joint_id in range(self.n_joints_per_leg):
                       joint_idx = leg_id * self.n_joints_per_leg + joint_id
                       ax = axes[leg_id, joint_id]
-                      
+
                       ax.plot(t_span, joint_angles[:, joint_idx], 'b-', linewidth=2)
                       ax.set_xlabel('Time (s)')
                       ax.set_ylabel('Joint Angle (rad)')
                       ax.set_title(f'Leg {leg_id+1}, Joint {joint_id+1}')
                       ax.grid(True)
-              
+
               plt.suptitle('Walking Pattern - Joint Angles')
               plt.tight_layout()
               plt.show()
@@ -389,12 +389,12 @@ implementations:
               """
               super().__init__(n_legs, n_joints_per_leg, n_basis, alpha_y, beta_y, alpha_x, gait_frequency, phase_offset)
               self.terrain_adaptation_gain = terrain_adaptation_gain
-              
+
               # Terrain information
               self.terrain_height = None
               self.terrain_gradient = None
               self.obstacles = []
-              
+
               # Terrain adaptation parameters
               self.terrain_weights = np.zeros((self.n_dims, n_basis))
 
@@ -432,14 +432,14 @@ implementations:
               """
               if self.terrain_height is None:
                   return 0.0
-              
+
               # Simple interpolation (in practice, use more sophisticated methods)
               x_idx = int(x * 10) % self.terrain_height.shape[0]
               y_idx = int(y * 10) % self.terrain_height.shape[1]
-              
+
               return self.terrain_height[x_idx, y_idx]
 
-          def compute_terrain_adaptation(self, leg_id: int, phase: float, 
+          def compute_terrain_adaptation(self, leg_id: int, phase: float,
                                        current_position: np.ndarray) -> np.ndarray:
               """
               Compute terrain adaptation for a leg.
@@ -456,30 +456,30 @@ implementations:
                   # Stance phase - adapt to terrain
                   x, y, z = current_position
                   terrain_height = self.compute_terrain_height(x, y)
-                  
+
                   # Compute desired foot height
                   desired_height = terrain_height
-                  
+
                   # Compute adaptation force
                   height_error = desired_height - z
                   adaptation_force = self.terrain_adaptation_gain * height_error
-                  
+
                   return np.array([0.0, 0.0, adaptation_force])
               else:
                   # Swing phase - avoid obstacles
                   x, y, z = current_position
-                  
+
                   # Check for obstacles
                   for obstacle in self.obstacles:
                       obs_x, obs_y = obstacle['position']
                       obs_radius = obstacle['radius']
-                      
+
                       distance = np.sqrt((x - obs_x)**2 + (y - obs_y)**2)
                       if distance < obs_radius:
                           # Avoid obstacle
                           avoidance_force = (obs_radius - distance) / obs_radius
                           return np.array([avoidance_force, 0.0, 0.0])
-                  
+
                   return np.zeros(3)
 
           def generate_terrain_adaptive_pattern(self, duration: float = 10.0, dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -496,53 +496,53 @@ implementations:
               # Time points
               t_span = np.arange(0, duration, dt)
               T = len(t_span)
-              
+
               # Storage
               joint_angles = np.zeros((T, self.n_dims))
               joint_velocities = np.zeros((T, self.n_dims))
               joint_accelerations = np.zeros((T, self.n_dims))
-              
+
               # Initial conditions
               joint_angles[0] = np.zeros(self.n_dims)
               joint_velocities[0] = np.zeros(self.n_dims)
-              
+
               # Generate walking pattern
               for t in range(1, T):
                   # Update gait phases
                   for leg_id in range(self.n_legs):
                       self.gait_phases[leg_id] = self.compute_gait_phase(t_span[t], leg_id)
-                  
+
                   # Update joint angles
                   for joint_id in range(self.n_dims):
                       leg_id = joint_id // self.n_joints_per_leg
                       phase = self.gait_phases[leg_id]
-                      
+
                       # Compute forcing function
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (phase - self.c[i])**2)
                           f += self.w[joint_id, i] * psi * np.sin(phase)
-                      
+
                       # Compute terrain adaptation
                       current_position = np.array([0.0, 0.0, 0.0])  # Simplified
                       terrain_adaptation = self.compute_terrain_adaptation(leg_id, phase, current_position)
-                      
+
                       # Add terrain adaptation to forcing function
                       if joint_id % self.n_joints_per_leg == 2:  # Ankle joint
                           f += terrain_adaptation[2] * 0.1
-                      
+
                       # DMP dynamics
-                      joint_accelerations[t-1, joint_id] = (self.alpha_y * 
-                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) - 
+                      joint_accelerations[t-1, joint_id] = (self.alpha_y *
+                                                          (self.beta_y * (0 - joint_angles[t-1, joint_id]) -
                                                            joint_velocities[t-1, joint_id]) + f)
-                      
+
                       # Integration
                       joint_velocities[t, joint_id] = joint_velocities[t-1, joint_id] + joint_accelerations[t-1, joint_id] * dt
                       joint_angles[t, joint_id] = joint_angles[t-1, joint_id] + joint_velocities[t, joint_id] * dt
-                  
+
                   # Compute accelerations
                   joint_accelerations[t] = (joint_velocities[t] - joint_velocities[t-1]) / dt
-              
+
               return joint_angles, joint_velocities, joint_accelerations
 
     advantages:
@@ -562,12 +562,12 @@ complexity:
       time: "O(T × K × L)"
       space: "O(K × L)"
       notes: "Time complexity scales with trajectory length, basis functions, and number of legs"
-    
+
     - approach: "Terrain-Adaptive DMP"
       time: "O(T × K × L + T × T_terrain)"
       space: "O(K × L + T_terrain)"
       notes: "Additional complexity for terrain processing"
-    
+
     - approach: "Gait Coordination"
       time: "O(T × L)"
       space: "O(L)"

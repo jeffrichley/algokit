@@ -209,7 +209,7 @@ class DataDiscovery:
 
         # First, filter out hidden algorithms
         algorithms = [
-            algo for algo in algorithms 
+            algo for algo in algorithms
             if not algo.get("hidden", False)
         ]
 

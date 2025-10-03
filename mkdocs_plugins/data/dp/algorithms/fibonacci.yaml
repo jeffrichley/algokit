@@ -7,7 +7,6 @@ name: Fibonacci Sequence
 family_id: dp
 
 # Brief one-sentence summary for cards and navigation
-hidden: true  # Hidden by default
 summary: "Classic sequence where each number is the sum of the two preceding ones, demonstrating recursion, memoization, and dynamic programming."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
@@ -221,9 +220,9 @@ status:
 
   # Source code locations
   source_files:
-    - path: "src/algokit/dynamic_programming/fibonacci.py"
+    - path: "src/algokit/algorithms/dynamic_programming/fibonacci.py"
       description: "Main implementation with all variants"
-    - path: "tests/unit/dynamic_programming/test_fibonacci.py"
+    - path: "tests/dynamic_programming/test_fibonacci.py"
       description: "Comprehensive test suite"
 
 # References and resources - structured format for template rendering
@@ -295,4 +294,3 @@ related_algorithms:
   - slug: "knapsack"
     relationship: "same_family"
     description: "More complex DP problem with constraints"
-

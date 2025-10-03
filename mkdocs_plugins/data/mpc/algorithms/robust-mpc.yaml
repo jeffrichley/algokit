@@ -21,18 +21,18 @@ formulation:
   control_law: |
     For uncertain system: x(k+1) = A(θ)x(k) + B(θ)u(k) + Ed(k)
     where θ ∈ Θ represents model uncertainty and d(k) ∈ D represents disturbances.
-    
+
     The robust MPC formulation is:
-    
+
     min_{U_k} max_{θ∈Θ, d∈D} J(x(k), U_k, θ, d)
-    
+
     Subject to:
     - x(k+i+1|k) = A(θ)x(k+i|k) + B(θ)u(k+i) + Ed(k+i)
     - y(k+i|k) = Cx(k+i|k) + Du(k+i)
     - g(x(k+i|k), u(k+i)) ≤ 0, ∀θ ∈ Θ, ∀d ∈ D
     - u_min ≤ u(k+i) ≤ u_max
     - x_min ≤ x(k+i|k) ≤ x_max, ∀θ ∈ Θ, ∀d ∈ D
-    
+
     Where:
     - Θ is the uncertainty set
     - D is the disturbance set
@@ -40,12 +40,12 @@ formulation:
 
   discrete_time_form: |
     Tube-based Robust MPC approach:
-    
+
     1. Design nominal controller for nominal system
     2. Compute robust positively invariant (RPI) set
     3. Ensure state remains within tube around nominal trajectory
     4. Handle disturbances and uncertainty within tube
-    
+
     Tube constraint: x(k) ∈ {x_nom(k)} ⊕ S
     where S is the RPI set and ⊕ denotes Minkowski sum.
 
@@ -120,7 +120,7 @@ implementations:
               self.C = C
               self.Np = prediction_horizon
               self.Nc = min(control_horizon, prediction_horizon)
-              
+
               # State and input dimensions
               self.nx = A_nom.shape[0]
               self.nu = B_nom.shape[1]
@@ -149,7 +149,7 @@ implementations:
               # In practice, this would use more sophisticated methods
               max_disturbance = np.max(np.abs(self.disturbance_set), axis=1)
               rpi_radius = max_disturbance * 2.0  # Conservative estimate
-              
+
               # Create hypercube RPI set
               rpi_vertices = []
               for i in range(2**self.nx):
@@ -160,7 +160,7 @@ implementations:
                       else:
                           vertex[j] = -rpi_radius[j]
                   rpi_vertices.append(vertex)
-              
+
               return np.array(rpi_vertices)
 
           def _robust_constraints(self, x0: np.ndarray, U: np.ndarray) -> List[dict]:
@@ -175,11 +175,11 @@ implementations:
                   List of constraint dictionaries
               """
               constraints = []
-              
+
               for A, B in self.uncertainty_set:
                   # Predict trajectory for this uncertainty realization
                   X = self._predict_trajectory(x0, U, A, B)
-                  
+
                   # Add constraints for this realization
                   for i in range(self.Np):
                       # State constraints
@@ -192,10 +192,10 @@ implementations:
                               'type': 'ineq',
                               'fun': lambda x, i=i, j=j: X[i, j] + 1.0  # x ≥ -1
                           })
-              
+
               return constraints
 
-          def _predict_trajectory(self, x0: np.ndarray, U: np.ndarray, 
+          def _predict_trajectory(self, x0: np.ndarray, U: np.ndarray,
                                 A: np.ndarray, B: np.ndarray) -> np.ndarray:
               """
               Predict state trajectory for given system matrices.
@@ -211,16 +211,16 @@ implementations:
               """
               X = np.zeros((self.Np, self.nx))
               x = x0.copy()
-              
+
               for i in range(self.Np):
                   if i < self.Nc:
                       u = U[i]
                   else:
                       u = U[-1]  # Hold last control action
-                  
+
                   x = A @ x + B @ u
                   X[i] = x
-              
+
               return X
 
           def _robust_objective(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
@@ -236,24 +236,24 @@ implementations:
                   Worst-case objective value
               """
               U = U_flat.reshape(self.Nc, self.nu)
-              
+
               worst_case_cost = -np.inf
-              
+
               for A, B in self.uncertainty_set:
                   X = self._predict_trajectory(x0, U, A, B)
-                  
+
                   # Compute cost for this realization
                   cost = 0.0
                   for i in range(self.Np):
                       y = self.C @ X[i]
                       error = y - r[i]
                       cost += error.T @ self.Q @ error
-                  
+
                   for i in range(self.Nc):
                       cost += U[i].T @ self.R @ U[i]
-                  
+
                   worst_case_cost = max(worst_case_cost, cost)
-              
+
               return worst_case_cost
 
           def solve_robust_mpc(self, x0: np.ndarray, r: np.ndarray,
@@ -273,7 +273,7 @@ implementations:
               """
               # Initial guess
               U0 = np.zeros(self.Nc * self.nu)
-              
+
               # Bounds
               bounds = []
               if u_min is not None and u_max is not None:
@@ -312,7 +312,7 @@ implementations:
               """
               # Solve robust MPC problem
               U_opt = self.solve_robust_mpc(x, r, u_min, u_max)
-              
+
               # Return first control action
               return U_opt[0]
     advantages:

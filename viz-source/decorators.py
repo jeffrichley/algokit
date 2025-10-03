@@ -11,14 +11,20 @@ from typing import Any, TypeVar
 
 import networkx as nx
 
-from algokit.viz.adapters import EventType, SearchEvent, SimpleTracker
+try:
+    from algokit.viz.adapters import EventType, SearchEvent, SimpleTracker
+except ImportError:
+    # Visualization dependencies not available
+    EventType = None
+    SearchEvent = None
+    SimpleTracker = None
 
 Node = TypeVar("Node")
 
 
 def with_event_tracking[Node](
     func: Callable[[nx.Graph, Node, Node], list[Node] | None],
-) -> Callable[[nx.Graph, Node, Node], tuple[list[Node] | None, list[SearchEvent]]]:
+) -> Callable[[nx.Graph, Node, Node], tuple[list[Node] | None, list[Any]]]:
     """Decorator to add event tracking to BFS algorithm.
 
     This decorator wraps the pure BFS algorithm to collect events for
@@ -41,7 +47,12 @@ def with_event_tracking[Node](
     @wraps(func)
     def wrapper(
         graph: nx.Graph, start: Node, goal: Node
-    ) -> tuple[list[Node] | None, list[SearchEvent]]:
+    ) -> tuple[list[Node] | None, list[Any]]:
+        # Check if visualization dependencies are available
+        if SimpleTracker is None or SearchEvent is None:
+            # Fall back to basic function without event tracking
+            result = func(graph, start, goal)
+            return result, []
         # Validate inputs (same as pure function)
         if start not in graph:
             raise ValueError(f"Start node {start} not found in graph")

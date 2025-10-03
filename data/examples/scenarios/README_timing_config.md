@@ -31,7 +31,7 @@ Edit `bfs_timing_config.yaml`:
 base_timings:
   title_write: 0.5        # Faster title (was 1.8)
   confetti_effects: 0.5   # Faster celebration (was 2.0)
-  
+
 wait_times:
   final_study_pause: 1.0  # Shorter final pause (was 4.0)
 ```

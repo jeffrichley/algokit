@@ -253,7 +253,7 @@ class RLAlgorithmWrapper:
     def train(self, env: str, episodes: int, **kwargs) -> TrainingResults:
         # Standard RL training pipeline
         # Output: models/, logs/, videos/, metrics/
-    
+
     def replay(self, model_path: str, **kwargs) -> ReplayResults:
         # Model loading and replay
         # Output: replay_videos/, performance_logs/
@@ -265,7 +265,7 @@ class DMPAlgorithmWrapper:
     def train(self, trajectory: str, duration: float, **kwargs) -> DMPResults:
         # DMP training and parameter learning
         # Output: trajectories/, parameters/, plots/
-    
+
     def demo(self, movement_type: str, **kwargs) -> DemoResults:
         # Interactive movement demonstration
         # Output: demo_videos/, real_time_logs/
@@ -277,7 +277,7 @@ class ControlAlgorithmWrapper:
     def train(self, system: str, reference: str, **kwargs) -> ControlResults:
         # Control system design and tuning
         # Output: controllers/, responses/, stability_analysis/
-    
+
     def test(self, test_scenario: str, **kwargs) -> TestResults:
         # Control system testing and validation
         # Output: test_results/, performance_metrics/
@@ -908,7 +908,7 @@ uv run python -m src.algokit.cli.main sarsa validate
   - [x] **Type Safety**: Full type hints and Pydantic validation
 - [x] **COMPLETED**: Individual SARSA CLI Commands
   - [x] Create `sarsa_train()` command
-  - [x] Create `sarsa_replay()` command  
+  - [x] Create `sarsa_replay()` command
   - [x] Create `sarsa_demo()` command
   - [x] Create `sarsa_info()` command
   - [x] Create `sarsa_validate()` command

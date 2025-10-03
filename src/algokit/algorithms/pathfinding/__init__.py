@@ -14,7 +14,6 @@ from algokit.algorithms.pathfinding.bfs import (
     bfs_path_length,
     bfs_shortest_path,
 )
-from algokit.algorithms.pathfinding.bfs_with_events import bfs_with_data_collection
 from algokit.algorithms.pathfinding.dfs import (
     dfs_all_reachable,
     dfs_connected_components,
@@ -43,7 +42,6 @@ __all__ = [
     "zero_heuristic",
     # BFS algorithms
     "bfs_shortest_path",
-    "bfs_with_data_collection",
     "bfs_path_length",
     "bfs_all_reachable",
     # DFS algorithms

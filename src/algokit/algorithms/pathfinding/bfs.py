@@ -5,11 +5,14 @@ The algorithm is clean, readable, and easy to understand for junior developers.
 """
 
 from collections import deque
+from typing import TypeVar
 
 import networkx as nx
 
+Node = TypeVar("Node")
 
-def bfs_shortest_path[Node](
+
+def bfs_shortest_path(
     graph: nx.Graph,
     start: Node,
     goal: Node,

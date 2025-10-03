@@ -162,7 +162,7 @@ def apply_algorithm_management(algorithms: list, family: dict) -> list:
         # First, filter out hidden algorithms
         if algo.get("hidden", False):
             continue
-            
+
         algo_slug = algo.get("slug", algo.get("name", "").lower().replace(" ", "-"))
 
         # Check include list (if not empty, only include specified algorithms)

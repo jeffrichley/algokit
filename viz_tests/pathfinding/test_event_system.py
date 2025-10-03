@@ -1,10 +1,16 @@
 """Tests for the event system used in pathfinding algorithms."""
 
 from collections import deque
+import sys
+from pathlib import Path
 
 import pytest
 
-from algokit.viz.adapters import (
+# Add viz-source to path so we can import from it
+viz_source_path = Path(__file__).parent.parent.parent / "viz-source"
+sys.path.insert(0, str(viz_source_path))
+
+from viz.adapters import (
     EventType,
     SimpleTracker,
     process_events_for_visualization,

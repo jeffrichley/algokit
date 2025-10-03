@@ -21,18 +21,18 @@ formulation:
   control_law: |
     For large-scale system with N subsystems:
     x_i(k+1) = A_i x_i(k) + B_i u_i(k) + Σ_{j∈N_i} A_{ij} x_j(k) + E_i d_i(k)
-    
+
     The Distributed MPC formulation for subsystem i is:
-    
+
     min_{U_i} J_i(x_i(k), U_i, U_{-i}) = Σ_{t=0}^{N_p-1} ||y_i(k+t|k) - r_i(k+t)||_{Q_i}² + ||u_i(k+t)||_{R_i}²
-    
+
     Subject to:
     - x_i(k+t+1|k) = A_i x_i(k+t|k) + B_i u_i(k+t) + Σ_{j∈N_i} A_{ij} x_j(k+t|k)
     - y_i(k+t|k) = C_i x_i(k+t|k) + D_i u_i(k+t)
     - g_i(x_i(k+t|k), u_i(k+t)) ≤ 0
     - u_{i,min} ≤ u_i(k+t) ≤ u_{i,max}
     - x_{i,min} ≤ x_i(k+t|k) ≤ x_{i,max}
-    
+
     Where:
     - U_i = [u_i(k), u_i(k+1), ..., u_i(k+N_c-1)] is local control sequence
     - U_{-i} represents control sequences of neighboring subsystems
@@ -40,13 +40,13 @@ formulation:
 
   discrete_time_form: |
     Distributed coordination algorithm:
-    
+
     1. Initialize: Each subsystem i solves local MPC problem
     2. Exchange information: Share predicted states/inputs with neighbors
     3. Update: Solve local MPC with updated neighbor information
     4. Check convergence: If not converged, go to step 2
     5. Apply control: Implement first control action
-    
+
     Coordination methods:
     - Consensus-based: Minimize disagreement between neighbors
     - Decomposition-based: Use Lagrangian multipliers for coupling
@@ -192,29 +192,29 @@ implementations:
               """
               X = np.zeros((self.Np, self.nx))
               Y = np.zeros((self.Np, self.ny))
-              
+
               x = x0.copy()
               for i in range(self.Np):
                   if i < self.Nc:
                       u = U[i]
                   else:
                       u = U[-1]  # Hold last control action
-                  
+
                   # Predict next state with coupling effects
                   x_next = self.A @ x + self.B @ u
-                  
+
                   # Add coupling effects from neighbors
                   for neighbor_id in self.neighbors:
                       if neighbor_id in self.neighbor_states:
                           if i < len(self.neighbor_states[neighbor_id]):
                               x_next += self.A_coupling[neighbor_id] @ self.neighbor_states[neighbor_id][i]
-                  
+
                   x = x_next
                   X[i] = x
-                  
+
                   # Predict output
                   Y[i] = self.C @ x
-              
+
               return X, Y
 
           def _consensus_term(self, U: np.ndarray) -> float:
@@ -228,16 +228,16 @@ implementations:
                   Consensus penalty term
               """
               consensus_cost = 0.0
-              
+
               for neighbor_id in self.neighbors:
                   if neighbor_id in self.neighbor_inputs:
                       neighbor_inputs = self.neighbor_inputs[neighbor_id]
                       min_len = min(len(U), len(neighbor_inputs))
-                      
+
                       for i in range(min_len):
                           diff = U[i] - neighbor_inputs[i]
                           consensus_cost += np.dot(diff, diff)
-              
+
               return self.consensus_weight * consensus_cost
 
           def _local_objective(self, U_flat: np.ndarray, x0: np.ndarray, r: np.ndarray) -> float:
@@ -254,21 +254,21 @@ implementations:
               """
               U = U_flat.reshape(self.Nc, self.nu)
               X, Y = self._predict_local_trajectory(x0, U)
-              
+
               # Tracking cost
               tracking_cost = 0.0
               for i in range(self.Np):
                   error = Y[i] - r[i]
                   tracking_cost += error.T @ self.Q @ error
-              
+
               # Control cost
               control_cost = 0.0
               for i in range(self.Nc):
                   control_cost += U[i].T @ self.R @ U[i]
-              
+
               # Consensus cost
               consensus_cost = self._consensus_term(U)
-              
+
               return tracking_cost + control_cost + consensus_cost
 
           def _constraints(self, U_flat: np.ndarray, x0: np.ndarray) -> List[dict]:
@@ -284,9 +284,9 @@ implementations:
               """
               U = U_flat.reshape(self.Nc, self.nu)
               X, Y = self._predict_local_trajectory(x0, U)
-              
+
               constraints = []
-              
+
               # Add local constraints here
               # For example, state and input bounds
               for i in range(self.Np):
@@ -299,7 +299,7 @@ implementations:
                           'type': 'ineq',
                           'fun': lambda x, i=i, j=j: X[i, j] + 1.0  # x ≥ -1
                       })
-              
+
               return constraints
 
           def solve_local_mpc(self, x0: np.ndarray, r: np.ndarray,
@@ -322,7 +322,7 @@ implementations:
 
               # Initial guess
               U0 = np.zeros(self.Nc * self.nu)
-              
+
               # Bounds
               bounds = []
               if u_min is not None and u_max is not None:
@@ -363,19 +363,19 @@ implementations:
               for iteration in range(self.max_iterations):
                   # Solve local MPC problem
                   U_opt = self.solve_local_mpc(x, r, u_min, u_max)
-                  
+
                   # Predict local trajectory
                   X_pred, Y_pred = self._predict_local_trajectory(x, U_opt)
-                  
+
                   # Store predictions for neighbors
                   self.local_state_prediction = X_pred
                   self.local_input_prediction = U_opt
-                  
+
                   # Check convergence (simplified)
                   if iteration > 0:
                       # In practice, would check convergence with neighbors
                       break
-              
+
               # Return first control action and predicted trajectory
               return U_opt[0], X_pred
 

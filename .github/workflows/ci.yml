@@ -45,6 +45,11 @@ jobs:
           # Run all tests but only measure coverage for algorithms
           uv run pytest tests -m "not slow" -c pytest-algorithms.ini --cov-report=xml:coverage-algorithms.xml
 
+      - name: Complexity check (advisory only)
+        run: |
+          echo "🔍 Checking code complexity (advisory - non-blocking)..."
+          uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
 
@@ -101,6 +106,23 @@ jobs:
           # Run all tests but only measure coverage for algorithms
           uv run pytest tests -c pytest-algorithms.ini --cov-report=xml:coverage-algorithms.xml --cov-report=html:htmlcov-algorithms
 
+      - name: Complexity check (advisory only)
+        run: |
+          echo "🔍 Checking code complexity (advisory - non-blocking)..."
+          uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
+
+      - name: Spell check
+        run: |
+          uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+
+      - name: Documentation build
+        run: |
+          uv run mkdocs build
+
+      - name: Link check
+        run: |
+          uv run python -m linkcheckmd docs
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
 
@@ -144,7 +166,7 @@ jobs:
       - name: Xenon complexity report
         run: |
           echo "🔍 Generating complexity report..."
-          uv run xenon --max-absolute B src || echo "⚠️  Complexity issues found"
+          uv run xenon --max-absolute B src || echo "⚠️  Complexity issues found (advisory only)"
 
   demo-smoke-test:
     if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'

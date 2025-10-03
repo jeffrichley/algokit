@@ -14,7 +14,7 @@ algokit render render bfs --quality low --timing cinematic
 
 ### After (Clean)
 ```bash
-# ✅ New clean structure  
+# ✅ New clean structure
 algokit render bfs --quality low --timing cinematic
 ```
 
@@ -40,7 +40,7 @@ algokit render bfs --output ./my_videos --quality high
 # Quick preset (low quality, development timing)
 algokit render bfs --preset quick
 
-# Demo preset (high quality, cinematic timing)  
+# Demo preset (high quality, cinematic timing)
 algokit render bfs --preset demo
 
 # Override preset settings with CLI flags
@@ -102,7 +102,7 @@ algokit render <algorithm> [OPTIONS]
 # List available scenarios
 algokit render scenarios
 
-# List available algorithms  
+# List available algorithms
 algokit render algorithms
 
 # Quick render shortcut
@@ -150,7 +150,7 @@ The timing tracker automatically works with all command variations:
 ```bash
 # All of these generate timing reports
 algokit render bfs --quality low --timing cinematic
-algokit render bfs --preset quick  
+algokit render bfs --preset quick
 algokit render quick bfs
 algokit render demo bfs
 ```
@@ -253,7 +253,7 @@ algokit render nonexistent_algorithm  # Should show clear error
 
 The refactor has **no performance impact** on rendering:
 - Same Manim execution path
-- Same timing tracker integration  
+- Same timing tracker integration
 - Same scenario loading system
 - Same output generation
 
@@ -295,7 +295,7 @@ algokit render --quality low bfs --timing cinematic
 # List available algorithms
 algokit render algorithms
 
-# List available scenarios  
+# List available scenarios
 algokit render scenarios
 
 # Check help for specific command

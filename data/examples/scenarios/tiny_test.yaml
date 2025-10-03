@@ -4,6 +4,6 @@ width: 3
 height: 3
 start: [0, 0]  # Upper left
 goal: [2, 2]   # Lower right
-obstacles: 
+obstacles:
   - [1, 1]     # Single obstacle in center
 text_below_grid_offset: 3.0

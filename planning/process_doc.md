@@ -91,7 +91,7 @@ This structure cleanly separates code, tests, visuals, and documentation by algo
 You can paste this into your coding agent every time you start a new algorithm.
 
 ```
-You are an expert AI coding assistant helping me build a complete demo for an algorithm. 
+You are an expert AI coding assistant helping me build a complete demo for an algorithm.
 Follow this checklist carefully and produce the deliverables in the correct folders.
 
 ### Checklist

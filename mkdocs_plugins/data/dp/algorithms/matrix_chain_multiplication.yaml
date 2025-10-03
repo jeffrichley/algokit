@@ -1,0 +1,232 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: matrix_chain_multiplication
+name: Matrix Chain Multiplication
+family_id: dp
+aliases: ["Matrix Chain Ordering", "Optimal Parenthesization"]
+order: 5
+
+# Brief one-sentence summary for cards and navigation
+summary: "Find optimal parenthesization for matrix chain multiplication to minimize operations using dynamic programming."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Matrix Chain Multiplication is a classic dynamic programming problem that finds the optimal
+  way to parenthesize a sequence of matrices to minimize the number of scalar multiplications.
+
+  Given a sequence of matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
+  find the optimal parenthesization that minimizes the total number of scalar multiplications.
+
+  This problem has applications in computer graphics, scientific computing, and optimization
+  of linear algebra operations.
+
+# Problem formulation
+formulation: |
+  Given matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
+  find the optimal parenthesization to minimize scalar multiplications.
+
+  **Cost of multiplying matrices A[i]×A[i+1]×...×A[j]:**
+  ```
+  Cost = p[i-1] × p[k] × p[j]  (where k is the split point)
+  ```
+
+  **Recurrence Relation:**
+  ```
+  M[i,j] = {
+    0,                                    if i = j
+    min(M[i,k] + M[k+1,j] + p[i-1]×p[k]×p[j]),  for k in [i, j-1]
+  }
+  ```
+
+# Key properties
+properties:
+  - name: "Optimal Substructure"
+    description: "Optimal solution contains optimal solutions to subproblems"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "Same subproblems solved multiple times in recursive approach"
+    importance: "fundamental"
+  - name: "Interval DP"
+    description: "Works on intervals of the sequence"
+    importance: "structural"
+  - name: "Associative Property"
+    description: "Matrix multiplication is associative but not commutative"
+    importance: "mathematical"
+
+# Mathematical properties
+mathematical_properties:
+  - name: "Time Complexity"
+    formula: "O(n³)"
+    description: "Where n is the number of matrices"
+  - name: "Space Complexity"
+    formula: "O(n²)"
+    description: "For DP table and split tracking"
+  - name: "Naive Complexity"
+    formula: "O(4ⁿ/√(πn³))"
+    description: "Catalan number of possible parenthesizations"
+  - name: "Cost Formula"
+    formula: "p[i-1] × p[k] × p[j]"
+    description: "Cost of multiplying matrices from i to j with split at k"
+
+# Implementation approaches
+implementations:
+  - name: "Recursive (Naive)"
+    description: "Direct recursive implementation trying all possible parenthesizations"
+    complexity:
+      time: "O(4ⁿ/√(πn³))"
+      space: "O(n)"
+    advantages:
+      - "Simple to understand"
+      - "Direct implementation of problem definition"
+    disadvantages:
+      - "Exponential time complexity"
+      - "Redundant computation of same subproblems"
+    use_cases: ["Educational purposes", "Very small input sizes"]
+
+  - name: "Memoized (Top-Down)"
+    description: "Recursive approach with memoization to avoid redundant calculations"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    advantages:
+      - "Natural recursive structure"
+      - "Only computes needed subproblems"
+      - "Easy to understand"
+    disadvantages:
+      - "Recursion stack overhead"
+      - "May cause stack overflow for large inputs"
+    use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
+
+  - name: "Tabulated (Bottom-Up)"
+    description: "Iterative approach building solution from base cases"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    advantages:
+      - "No recursion stack issues"
+      - "More predictable memory usage"
+      - "Better for large inputs"
+    disadvantages:
+      - "Computes all subproblems"
+      - "Less intuitive than recursive approach"
+    use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
+
+  - name: "Value Only"
+    description: "Computes only the minimum cost without tracking optimal parenthesization"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    advantages:
+      - "Simpler implementation"
+      - "Lower constant factors"
+    disadvantages:
+      - "Cannot reconstruct optimal parenthesization"
+      - "Limited usefulness"
+    use_cases: ["When only cost is needed", "Performance-critical applications"]
+
+  - name: "With Expression"
+    description: "Tracks and returns the optimal parenthesization expression"
+    complexity:
+      time: "O(n³)"
+      space: "O(n²)"
+    advantages:
+      - "Provides actual optimal parenthesization"
+      - "Useful for implementation guidance"
+    disadvantages:
+      - "Higher memory usage"
+      - "More complex implementation"
+    use_cases: ["When parenthesization is needed", "Code generation tools"]
+
+# Complexity analysis
+complexity:
+  time:
+    best: "O(n³)"
+    average: "O(n³)"
+    worst: "O(n³)"
+    notes: "Time complexity is consistent across all cases"
+  space:
+    best: "O(n²)"
+    average: "O(n²)"
+    worst: "O(n²)"
+    notes: "Space complexity is O(n²) for DP table and split tracking"
+
+# Applications and use cases
+applications:
+  - category: "Computer Graphics"
+    examples: ["3D transformations", "Matrix operations", "Rendering pipelines"]
+  - category: "Scientific Computing"
+    examples: ["Linear algebra operations", "Numerical analysis", "Simulation"]
+  - category: "Machine Learning"
+    examples: ["Neural network operations", "Matrix computations", "Optimization"]
+  - category: "Compiler Optimization"
+    examples: ["Expression optimization", "Code generation", "Performance tuning"]
+  - category: "Parallel Computing"
+    examples: ["Load balancing", "Task scheduling", "Resource allocation"]
+
+# Educational value
+educational_value:
+  learning_objectives:
+    - "Understand dynamic programming principles"
+    - "Learn interval DP techniques"
+    - "Practice with 2D DP problems"
+    - "Understand optimization problems"
+    - "Learn matrix operations"
+  difficulty: "intermediate"
+  prerequisites:
+    - "Basic understanding of recursion"
+    - "Familiarity with 2D arrays"
+    - "Understanding of time/space complexity"
+    - "Matrix multiplication concepts"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "high"
+  test_coverage: "high"
+  documentation_quality: "complete"
+
+  # Source code locations
+  source_files:
+    - "src/algokit/algorithms/dynamic_programming/matrix_chain_multiplication.py"
+    - "tests/dynamic_programming/test_matrix_chain_multiplication.py"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "fibonacci"
+    relationship: "prerequisite"
+    description: "Simpler DP problem to understand first"
+  - slug: "knapsack"
+    relationship: "similar"
+    description: "Both are optimization DP problems"
+  - slug: "longest_common_subsequence"
+    relationship: "similar"
+    description: "Both use 2D DP techniques"
+
+# References and resources
+references:
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "cormen2009"
+      - bib_key: "clrs_matrix_chain"
+  - category: "Online Resources"
+    items:
+      - bib_key: "geeksforgeeks_matrix_chain"
+
+# Tags for categorization and search
+tags:
+  - "dp"
+  - "optimization"
+  - "matrix"
+  - "interval-dp"
+  - "2d-dp"
+
+# Template and rendering options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true
+  show_related_algorithms: true
+  show_references: true

@@ -202,7 +202,7 @@ complexity:
       time: "O(|S| × |A| × episodes)"
       space: "O(|S| × |A|)"
       notes: "Time complexity depends on number of episodes and state-action space size. Space required for Q-table grows quadratically with state and action spaces"
-    
+
     - approach: "Convergence Analysis"
       time: "O(1/√t)"
       space: "O(|S| × |A|)"

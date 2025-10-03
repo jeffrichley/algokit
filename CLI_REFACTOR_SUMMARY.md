@@ -26,7 +26,7 @@ uv run algokit render bfs --quality low --timing cinematic
 # Quick preset (low quality, development timing)
 uv run algokit render bfs --preset quick
 
-# Demo preset (high quality, cinematic timing)  
+# Demo preset (high quality, cinematic timing)
 uv run algokit render bfs --preset demo
 
 # Override preset with custom timing
@@ -77,10 +77,10 @@ Total Timing Requests: 106
   - Wait Requests: 33
 
 🎭 ANIMATION TIMINGS
-path_dot_grow             25       0.400    0.400    10.000    
-path_line_create          25       0.300    0.300    7.500     
-layer_complete_pulse      5        0.800    0.800    4.000     
-tracer_movement           1        3.000    3.000    3.000     
+path_dot_grow             25       0.400    0.400    10.000
+path_line_create          25       0.300    0.300    7.500
+layer_complete_pulse      5        0.800    0.800    4.000
+tracer_movement           1        3.000    3.000    3.000
 
 ⏱️  ESTIMATED TOTAL SCENE TIME: 59.3 seconds (1.0 minutes)
 ```
@@ -89,7 +89,7 @@ tracer_movement           1        3.000    3.000    3.000
 
 ### Key Files Modified
 - ✅ `src/algokit/cli/render.py` - Complete refactor with registry system
-- ✅ `README.md` - Updated with new CLI examples  
+- ✅ `README.md` - Updated with new CLI examples
 - ✅ `RENDER_CLI_GUIDE.md` - Added refactor notice
 - ✅ `CLI_REFACTOR_GUIDE.md` - Comprehensive new guide
 - ✅ `CLI_REFACTOR_SUMMARY.md` - This summary
@@ -120,7 +120,7 @@ All test cases pass:
 - **🔍 Better Discovery**: Clear help text and algorithm listing
 - **🛡️ Error Prevention**: Intuitive command structure reduces mistakes
 
-### Developer Experience  
+### Developer Experience
 - **🔧 Easy Extension**: Adding algorithms requires only a decorator
 - **🧪 Better Testing**: Registry system is more testable
 - **📚 Clear Documentation**: Comprehensive guides for all use cases
@@ -135,7 +135,7 @@ All test cases pass:
 
 **Your original question**: *"why do i need to put render twice"*
 
-**Answer**: **You don't anymore!** 
+**Answer**: **You don't anymore!**
 
 The CLI has been completely refactored to eliminate this confusing requirement. You can now use the clean, intuitive command structure:
 

@@ -204,14 +204,14 @@ implementations:
               # Process each trajectory
               for trajectory in trajectories:
                   states, actions, rewards, log_probs = zip(*trajectory)
-                  
+
                   # Calculate returns
                   returns = []
                   G = 0
                   for reward in reversed(rewards):
                       G = reward + self.gamma * G
                       returns.insert(0, G)
-                  
+
                   all_states.extend(states)
                   all_actions.extend(actions)
                   all_log_probs.extend(log_probs)
@@ -230,7 +230,7 @@ implementations:
               if self.use_baseline:
                   baseline_values = self.baseline(states).squeeze()
                   advantages = returns - baseline_values
-                  
+
                   # Update baseline
                   baseline_loss = nn.MSELoss()(baseline_values, returns)
                   self.baseline_optimizer.zero_grad()
@@ -382,7 +382,7 @@ complexity:
       time: "O(episodes × steps_per_episode × policy_forward_pass)"
       space: "O(policy_parameters)"
       notes: "Time complexity dominated by policy network forward passes. Space complexity includes policy parameters only"
-    
+
     - approach: "Actor-Critic"
       time: "O(episodes × steps_per_episode × (policy_forward_pass + value_forward_pass))"
       space: "O(policy_parameters + value_parameters)"

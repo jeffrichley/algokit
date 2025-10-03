@@ -37,7 +37,7 @@ formulation:
     τp̈ = α_y(β_y(p_goal - p) - ṗ) + f_p(x) + f_force(p, O) + f_constraint(p, C)
     τR̈ = α_y(β_y(R_goal - R) - Ṙ) + f_R(x) + f_orientation(R, O)
     τg̈ = α_y(β_y(g_goal - g) - ġ) + f_g(x) + f_grasp(g, O)
-    
+
     Where:
     - f_p, f_R, f_g are the forcing functions for position, orientation, and grasp
     - f_force models object interaction forces
@@ -90,7 +90,7 @@ implementations:
           DMP for generating grasping movements with proper approach and grasp strategies.
           """
 
-          def __init__(self, n_dims: int = 6, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int = 6, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, n_fingers: int = 5):
               """
               Initialize grasping DMP.
@@ -109,29 +109,29 @@ implementations:
               self.beta_y = beta_y
               self.alpha_x = alpha_x
               self.n_fingers = n_fingers
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # DMP weights for end-effector
               self.w_position = np.zeros((3, n_basis))
               self.w_orientation = np.zeros((3, n_basis))
-              
+
               # DMP weights for fingers
               self.w_fingers = np.zeros((n_fingers, n_basis))
-              
+
               # Grasping parameters
               self.approach_distance = 0.1
               self.grasp_force = 10.0
               self.grasp_width = 0.05
-              
+
               # Object information
               self.object_position = np.zeros(3)
               self.object_orientation = np.eye(3)
               self.object_size = np.array([0.05, 0.05, 0.05])
 
-          def set_object_properties(self, position: np.ndarray, orientation: np.ndarray, 
+          def set_object_properties(self, position: np.ndarray, orientation: np.ndarray,
                                   size: np.ndarray) -> None:
               """
               Set object properties for grasping.
@@ -145,7 +145,7 @@ implementations:
               self.object_orientation = orientation.copy()
               self.object_size = size.copy()
 
-          def set_grasp_parameters(self, approach_distance: float, grasp_force: float, 
+          def set_grasp_parameters(self, approach_distance: float, grasp_force: float,
                                  grasp_width: float) -> None:
               """
               Set grasping parameters.
@@ -159,7 +159,7 @@ implementations:
               self.grasp_force = grasp_force
               self.grasp_width = grasp_width
 
-          def compute_approach_trajectory(self, start_position: np.ndarray, 
+          def compute_approach_trajectory(self, start_position: np.ndarray,
                                         start_orientation: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
               """
               Compute approach trajectory for grasping.
@@ -174,15 +174,15 @@ implementations:
               # Compute approach position (offset from object)
               approach_direction = self.object_position - start_position
               approach_direction = approach_direction / (np.linalg.norm(approach_direction) + 1e-10)
-              
+
               approach_position = self.object_position - approach_direction * self.approach_distance
-              
+
               # Compute approach orientation (aligned with object)
               approach_orientation = self.object_orientation.copy()
-              
+
               return approach_position, approach_orientation
 
-          def compute_grasp_trajectory(self, approach_position: np.ndarray, 
+          def compute_grasp_trajectory(self, approach_position: np.ndarray,
                                      approach_orientation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Compute grasp trajectory.
@@ -196,10 +196,10 @@ implementations:
               """
               # Grasp position (at object center)
               grasp_position = self.object_position.copy()
-              
+
               # Grasp orientation (aligned with object)
               grasp_orientation = self.object_orientation.copy()
-              
+
               # Finger positions (around object)
               finger_positions = np.zeros((self.n_fingers, 3))
               for i in range(self.n_fingers):
@@ -209,7 +209,7 @@ implementations:
                       self.grasp_width * np.sin(angle),
                       0.0
                   ])
-              
+
               return grasp_position, grasp_orientation, finger_positions
 
           def learn_from_demo(self, position_demo: np.ndarray, orientation_demo: np.ndarray,
@@ -224,46 +224,46 @@ implementations:
                   dt: Time step
               """
               T = len(position_demo)
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn position weights
               for d in range(3):
                   f_target = np.gradient(position_demo[:, d], dt)
                   f_target = np.gradient(f_target, dt)
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_position[d, i] = numerator / denominator
-              
+
               # Learn orientation weights (simplified)
               for d in range(3):
                   f_target = np.gradient(orientation_demo[:, d, d], dt)
                   f_target = np.gradient(f_target, dt)
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_orientation[d, i] = numerator / denominator
-              
+
               # Learn finger weights
               for finger_id in range(self.n_fingers):
                   f_target = np.gradient(finger_demo[:, finger_id], dt)
                   f_target = np.gradient(f_target, dt)
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w_fingers[finger_id, i] = numerator / denominator
 
@@ -284,62 +284,62 @@ implementations:
               # Compute approach and grasp targets
               approach_pos, approach_orient = self.compute_approach_trajectory(start_position, start_orientation)
               grasp_pos, grasp_orient, finger_positions = self.compute_grasp_trajectory(approach_pos, approach_orient)
-              
+
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Storage
               position_traj = np.zeros((T, 3))
               orientation_traj = np.zeros((T, 3, 3))
               finger_traj = np.zeros((T, self.n_fingers))
-              
+
               # Initial conditions
               position_traj[0] = start_position
               orientation_traj[0] = start_orientation
               finger_traj[0] = np.zeros(self.n_fingers)
-              
+
               # Generate trajectory
               for t in range(1, T):
                   x = np.exp(-self.alpha_x * t_span[t])
-                  
+
                   # Update position
                   for d in range(3):
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                           f += self.w_position[d, i] * psi * x
-                      
+
                       # DMP dynamics
                       ddy = self.alpha_y * (self.beta_y * (grasp_pos[d] - position_traj[t-1, d]) - 0) + f
                       position_traj[t, d] = position_traj[t-1, d] + ddy * dt**2
-                  
+
                   # Update orientation (simplified)
                   for d in range(3):
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                           f += self.w_orientation[d, i] * psi * x
-                      
+
                       # DMP dynamics
                       ddy = self.alpha_y * (self.beta_y * (grasp_orient[d, d] - orientation_traj[t-1, d, d]) - 0) + f
                       orientation_traj[t, d, d] = orientation_traj[t-1, d, d] + ddy * dt**2
-                  
+
                   # Update fingers
                   for finger_id in range(self.n_fingers):
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                           f += self.w_fingers[finger_id, i] * psi * x
-                      
+
                       # DMP dynamics
                       ddy = self.alpha_y * (self.beta_y * (self.grasp_force - finger_traj[t-1, finger_id]) - 0) + f
                       finger_traj[t, finger_id] = finger_traj[t-1, finger_id] + ddy * dt**2
-              
+
               return position_traj, orientation_traj, finger_traj
 
-          def visualize_grasping_trajectory(self, position_traj: np.ndarray, 
-                                          orientation_traj: np.ndarray, 
+          def visualize_grasping_trajectory(self, position_traj: np.ndarray,
+                                          orientation_traj: np.ndarray,
                                           finger_traj: np.ndarray) -> None:
               """
               Visualize the grasping trajectory.
@@ -350,7 +350,7 @@ implementations:
                   finger_traj: Finger trajectory
               """
               fig = plt.figure(figsize=(15, 10))
-              
+
               # 3D trajectory plot
               ax1 = fig.add_subplot(221, projection='3d')
               ax1.plot(position_traj[:, 0], position_traj[:, 1], position_traj[:, 2], 'b-', linewidth=2, label='End-effector')
@@ -360,7 +360,7 @@ implementations:
               ax1.set_zlabel('Z Position')
               ax1.set_title('3D Grasping Trajectory')
               ax1.legend()
-              
+
               # Position components
               ax2 = fig.add_subplot(222)
               t = np.arange(len(position_traj))
@@ -372,7 +372,7 @@ implementations:
               ax2.set_title('Position Components')
               ax2.legend()
               ax2.grid(True)
-              
+
               # Finger forces
               ax3 = fig.add_subplot(223)
               for finger_id in range(self.n_fingers):
@@ -382,7 +382,7 @@ implementations:
               ax3.set_title('Finger Forces')
               ax3.legend()
               ax3.grid(True)
-              
+
               # Orientation
               ax4 = fig.add_subplot(224)
               for d in range(3):
@@ -392,7 +392,7 @@ implementations:
               ax4.set_title('Orientation Components')
               ax4.legend()
               ax4.grid(True)
-              
+
               plt.tight_layout()
               plt.show()
 
@@ -418,7 +418,7 @@ implementations:
           DMP for assembly tasks with precise positioning and force control.
           """
 
-          def __init__(self, n_dims: int = 6, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int = 6, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, n_fingers: int = 5,
                        assembly_tolerance: float = 0.001):
               """
@@ -435,12 +435,12 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, n_fingers)
               self.assembly_tolerance = assembly_tolerance
-              
+
               # Assembly parameters
               self.assembly_force = 5.0
               self.insertion_depth = 0.02
               self.assembly_speed = 0.01
-              
+
               # Assembly sequence
               self.assembly_sequence = []
               self.current_step = 0
@@ -455,7 +455,7 @@ implementations:
               self.assembly_sequence = sequence
               self.current_step = 0
 
-          def set_assembly_parameters(self, assembly_force: float, insertion_depth: float, 
+          def set_assembly_parameters(self, assembly_force: float, insertion_depth: float,
                                     assembly_speed: float) -> None:
               """
               Set assembly parameters.
@@ -469,7 +469,7 @@ implementations:
               self.insertion_depth = insertion_depth
               self.assembly_speed = assembly_speed
 
-          def compute_assembly_trajectory(self, start_position: np.ndarray, 
+          def compute_assembly_trajectory(self, start_position: np.ndarray,
                                         start_orientation: np.ndarray,
                                         target_position: np.ndarray,
                                         target_orientation: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -487,10 +487,10 @@ implementations:
               """
               # Assembly position (with insertion depth)
               assembly_position = target_position + np.array([0, 0, self.insertion_depth])
-              
+
               # Assembly orientation (aligned with target)
               assembly_orientation = target_orientation.copy()
-              
+
               return assembly_position, assembly_orientation
 
           def generate_assembly_trajectory(self, start_position: np.ndarray, start_orientation: np.ndarray,
@@ -513,54 +513,54 @@ implementations:
               # Compute assembly targets
               assembly_pos, assembly_orient = self.compute_assembly_trajectory(
                   start_position, start_orientation, target_position, target_orientation)
-              
+
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Storage
               position_traj = np.zeros((T, 3))
               orientation_traj = np.zeros((T, 3, 3))
               force_traj = np.zeros((T, 3))
-              
+
               # Initial conditions
               position_traj[0] = start_position
               orientation_traj[0] = start_orientation
               force_traj[0] = np.zeros(3)
-              
+
               # Generate trajectory
               for t in range(1, T):
                   x = np.exp(-self.alpha_x * t_span[t])
-                  
+
                   # Update position
                   for d in range(3):
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                           f += self.w_position[d, i] * psi * x
-                      
+
                       # DMP dynamics
                       ddy = self.alpha_y * (self.beta_y * (assembly_pos[d] - position_traj[t-1, d]) - 0) + f
                       position_traj[t, d] = position_traj[t-1, d] + ddy * dt**2
-                  
+
                   # Update orientation
                   for d in range(3):
                       f = 0.0
                       for i in range(self.n_basis):
                           psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                           f += self.w_orientation[d, i] * psi * x
-                      
+
                       # DMP dynamics
                       ddy = self.alpha_y * (self.beta_y * (assembly_orient[d, d] - orientation_traj[t-1, d, d]) - 0) + f
                       orientation_traj[t, d, d] = orientation_traj[t-1, d, d] + ddy * dt**2
-                  
+
                   # Update force
                   for d in range(3):
                       if d == 2:  # Z-direction (insertion)
                           force_traj[t, d] = self.assembly_force
                       else:
                           force_traj[t, d] = 0.0
-              
+
               return position_traj, orientation_traj, force_traj
 
     advantages:
@@ -580,12 +580,12 @@ complexity:
       time: "O(T × K × G)"
       space: "O(K × G)"
       notes: "Time complexity scales with trajectory length, basis functions, and grasp complexity"
-    
+
     - approach: "Assembly DMP"
       time: "O(T × K × A)"
       space: "O(K × A)"
       notes: "Additional complexity for assembly coordination"
-    
+
     - approach: "Object Interaction"
       time: "O(T × O)"
       space: "O(O)"

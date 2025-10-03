@@ -2,11 +2,17 @@
 
 import networkx as nx
 import pytest
+import sys
+from pathlib import Path
+
+# Add viz-source to path so we can import from it
+viz_source_path = Path(__file__).parent.parent.parent / "viz-source"
+sys.path.insert(0, str(viz_source_path))
 
 from algokit.algorithms.pathfinding.bfs import bfs_shortest_path
-from algokit.algorithms.pathfinding.bfs_with_events import bfs_with_data_collection
+from bfs_with_events import bfs_with_data_collection
 from algokit.core.helpers import create_grid_graph
-from algokit.viz.adapters import EventType
+from viz.adapters import EventType
 
 
 class TestBFSEventStreams:

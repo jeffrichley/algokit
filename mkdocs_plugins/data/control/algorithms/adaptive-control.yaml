@@ -195,7 +195,7 @@ implementations:
               # Controller parameters
               self.controller_params = np.zeros(model_order)
 
-          def identify_system(self, input_history: List[float], 
+          def identify_system(self, input_history: List[float],
                             output_history: List[float]) -> None:
               """
               Identify system parameters using recursive least squares.
@@ -205,7 +205,7 @@ implementations:
 
               # Build regressor vector
               regressor = np.array(
-                  output_history[-self.model_order:] + 
+                  output_history[-self.model_order:] +
                   input_history[-self.model_order:]
               )
 
@@ -236,7 +236,7 @@ implementations:
               self.controller_params = np.array(desired_poles[:self.model_order])
 
           def compute_control(self, reference: float, output: float,
-                            input_history: List[float], 
+                            input_history: List[float],
                             output_history: List[float]) -> float:
               """
               Compute control input using self-tuning approach.

@@ -6,19 +6,19 @@ The timing tracker system provides comprehensive monitoring and analysis of all 
 
 ## Features
 
-✅ **Comprehensive Tracking**: Monitors all animation timings, wait times, and legacy timing requests  
-✅ **Detailed Statistics**: Count, base time, average time, and total time for each timing request  
-✅ **Multiple Report Formats**: Console output and detailed file reports  
-✅ **Mode Comparison**: Compare timing usage across cinematic, development, and quick_demo modes  
-✅ **Automatic Integration**: Seamlessly integrated into BreadthFirstSearchScene  
-✅ **Performance Analysis**: Identify timing bottlenecks and optimization opportunities  
+✅ **Comprehensive Tracking**: Monitors all animation timings, wait times, and legacy timing requests
+✅ **Detailed Statistics**: Count, base time, average time, and total time for each timing request
+✅ **Multiple Report Formats**: Console output and detailed file reports
+✅ **Mode Comparison**: Compare timing usage across cinematic, development, and quick_demo modes
+✅ **Automatic Integration**: Seamlessly integrated into BreadthFirstSearchScene
+✅ **Performance Analysis**: Identify timing bottlenecks and optimization opportunities
 
 ## How It Works
 
 The timing tracker intercepts all calls to timing methods in the BFS scene:
 
 - `get_animation_time(animation_name)` - Tracks animation timing requests
-- `get_wait_time(wait_name)` - Tracks wait timing requests  
+- `get_wait_time(wait_name)` - Tracks wait timing requests
 - `_get_timing(stage, base_time)` - Tracks legacy timing requests
 
 Each request is logged with the timing name, requested duration, and current timing mode.
@@ -38,28 +38,28 @@ Total Timing Requests: 106
 
 🎭 ANIMATION TIMINGS
 --------------------------------------------------
-Animation Name            Count    Base     Avg      Total     
+Animation Name            Count    Base     Avg      Total
 --------------------------------------------------
-path_dot_grow             25       0.400    0.400    10.000    
-path_line_create          25       0.300    0.300    7.500     
-layer_complete_pulse      5        0.800    0.800    4.000     
-tracer_movement           1        3.000    3.000    3.000     
-token_entrance            3        0.800    0.800    2.400     
-title_write               1        1.800    1.800    1.800     
+path_dot_grow             25       0.400    0.400    10.000
+path_line_create          25       0.300    0.300    7.500
+layer_complete_pulse      5        0.800    0.800    4.000
+tracer_movement           1        3.000    3.000    3.000
+token_entrance            3        0.800    0.800    2.400
+title_write               1        1.800    1.800    1.800
 --------------------------------------------------
-TOTAL ANIMATION TIME                                 39.300    
+TOTAL ANIMATION TIME                                 39.300
 
 ⏳ WAIT TIMINGS
 --------------------------------------------------
-Wait Name                 Count    Base     Avg      Total     
+Wait Name                 Count    Base     Avg      Total
 --------------------------------------------------
-dequeue_delay             25       0.300    0.300    7.500     
-layer_complete_wait       5        1.000    1.000    5.000     
-final_study_pause         1        4.000    4.000    4.000     
-initial_setup             1        3.000    3.000    3.000     
-celebration_pause         1        0.500    0.500    0.500     
+dequeue_delay             25       0.300    0.300    7.500
+layer_complete_wait       5        1.000    1.000    5.000
+final_study_pause         1        4.000    4.000    4.000
+initial_setup             1        3.000    3.000    3.000
+celebration_pause         1        0.500    0.500    0.500
 --------------------------------------------------
-TOTAL WAIT TIME                                      20.000    
+TOTAL WAIT TIME                                      20.000
 
 🏁 GRAND TOTALS
 ------------------------------
@@ -72,7 +72,7 @@ Average Time per Request: 0.559 seconds
 
 - **Count**: Number of times this timing was requested
 - **Base**: Base timing value from configuration (cinematic mode)
-- **Avg**: Average timing value across all requests  
+- **Avg**: Average timing value across all requests
 - **Total**: Sum of all timing requests (Count × Average)
 
 ## Usage Examples
@@ -146,19 +146,19 @@ for mode in modes:
     # Reset tracker
     from agloviz.core.timing_tracker import reset_timing_tracker
     reset_timing_tracker()
-    
+
     # Create scene with specific mode
     scene = BreadthFirstSearchScene(scenario=scenario)
     scene.set_timing_mode(mode)
-    
+
     # Simulate typical requests
     scene.get_animation_time("title_write")
     scene.get_wait_time("initial_setup")
     # ... more requests
-    
+
     # Get results
     tracker = get_timing_tracker()
-    total_time = sum(tracker.get_animation_stats(name)['total_time'] 
+    total_time = sum(tracker.get_animation_stats(name)['total_time']
                     for name in tracker.animation_requests.keys())
     results[mode] = total_time
 
@@ -176,7 +176,7 @@ Based on analysis of a typical BFS scene with 25 BFS events:
 
 **Most Frequently Requested Animations:**
 - `path_dot_grow`: 25 requests, 10.000s total
-- `path_line_create`: 25 requests, 7.500s total  
+- `path_line_create`: 25 requests, 7.500s total
 - `layer_complete_pulse`: 5 requests, 4.000s total
 
 **Most Time-Consuming Waits:**
@@ -234,7 +234,7 @@ The timing tracker works seamlessly with the CLI timing modes:
 ```bash
 # Run with timing tracking in different modes
 algokit render bfs --timing-mode cinematic    # Full timing analysis
-algokit render bfs --timing-mode development  # Fast mode analysis  
+algokit render bfs --timing-mode development  # Fast mode analysis
 algokit render bfs --timing-mode quick_demo   # Ultra-fast mode analysis
 ```
 
@@ -261,7 +261,7 @@ class TimingTracker:
 
 ```python
 def generate_timing_report(self, save_to_file: bool = True, print_to_console: bool = True) -> str
-def print_timing_summary(self) -> None  
+def print_timing_summary(self) -> None
 def get_timing_stats(self) -> dict[str, Any]
 ```
 
@@ -307,7 +307,7 @@ Enable debug output:
 # Print current timing configuration
 scene.timing_config.print_current_settings()
 
-# Print timing tracker summary  
+# Print timing tracker summary
 scene.print_timing_summary()
 
 # Check timing tracker state
@@ -320,7 +320,7 @@ print(f"Total requests: {tracker.total_animation_requests + tracker.total_wait_r
 The timing tracker provides powerful insights into BFS scene performance and timing usage. Use it to:
 
 - **Optimize animation sequences** for better performance
-- **Compare timing modes** for different use cases  
+- **Compare timing modes** for different use cases
 - **Identify bottlenecks** in scene construction
 - **Generate comprehensive reports** for analysis
 - **Monitor timing changes** during development

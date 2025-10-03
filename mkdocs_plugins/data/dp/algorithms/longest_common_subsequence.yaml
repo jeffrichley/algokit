@@ -1,0 +1,202 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: longest_common_subsequence
+name: Longest Common Subsequence (LCS)
+family_id: dp
+aliases: ["LCS"]
+order: 3
+
+# Brief one-sentence summary for cards and navigation
+summary: "Find the longest subsequence common to two sequences using dynamic programming."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  The Longest Common Subsequence (LCS) problem is a fundamental dynamic programming problem
+  that finds the longest subsequence present in both given sequences. A subsequence is a sequence
+  that appears in the same relative order, but not necessarily contiguous.
+
+  This algorithm has wide applications in bioinformatics (DNA sequence alignment), version control
+  systems (diff algorithms), and text processing (plagiarism detection).
+
+# Problem formulation
+formulation: |
+  Given two sequences X = [x₁, x₂, ..., xₘ] and Y = [y₁, y₂, ..., yₙ], find the longest
+  subsequence that appears in both sequences.
+
+  **Recurrence Relation:**
+  ```
+  LCS(i,j) = {
+    0,                           if i = 0 or j = 0
+    1 + LCS(i-1, j-1),          if xᵢ = yⱼ
+    max(LCS(i-1, j), LCS(i, j-1)), otherwise
+  }
+  ```
+
+# Key properties
+properties:
+  - name: "Optimal Substructure"
+    description: "LCS of prefixes is part of LCS of full sequences"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "Same subproblems solved multiple times in recursive approach"
+    importance: "fundamental"
+  - name: "Subsequence Property"
+    description: "Elements must appear in same relative order"
+    importance: "definitional"
+
+# Mathematical properties
+mathematical_properties:
+  - name: "Time Complexity"
+    formula: "O(m × n)"
+    description: "Where m and n are lengths of input sequences"
+  - name: "Space Complexity"
+    formula: "O(m × n)"
+    description: "For 2D DP table, can be optimized to O(min(m,n))"
+  - name: "Length Property"
+    formula: "0 ≤ LCS(X,Y) ≤ min(m,n)"
+    description: "LCS length is bounded by shorter sequence"
+
+# Implementation approaches
+implementations:
+  - name: "Recursive (Naive)"
+    description: "Direct recursive implementation of recurrence relation"
+    complexity:
+      time: "O(2^(m+n))"
+      space: "O(m+n)"
+    advantages:
+      - "Simple to understand and implement"
+      - "Direct translation of mathematical formulation"
+    disadvantages:
+      - "Exponential time complexity"
+      - "Redundant computation of same subproblems"
+    use_cases: ["Educational purposes", "Small input sizes"]
+
+  - name: "Memoized (Top-Down)"
+    description: "Recursive approach with memoization to avoid redundant calculations"
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+    advantages:
+      - "Natural recursive structure"
+      - "Only computes needed subproblems"
+      - "Easy to understand"
+    disadvantages:
+      - "Recursion stack overhead"
+      - "May cause stack overflow for large inputs"
+    use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
+
+  - name: "Tabulated (Bottom-Up)"
+    description: "Iterative approach building solution from base cases"
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+    advantages:
+      - "No recursion stack issues"
+      - "Better space optimization possible"
+      - "More predictable memory usage"
+    disadvantages:
+      - "Computes all subproblems"
+      - "Less intuitive than recursive approach"
+    use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
+
+  - name: "Space-Optimized"
+    description: "Uses only two rows of DP table instead of full 2D table"
+    complexity:
+      time: "O(m × n)"
+      space: "O(min(m,n))"
+    advantages:
+      - "Significant space savings"
+      - "Same time complexity as standard DP"
+    disadvantages:
+      - "Cannot reconstruct actual LCS sequence"
+      - "Slightly more complex implementation"
+    use_cases: ["When only LCS length is needed", "Memory-constrained systems"]
+
+# Complexity analysis
+complexity:
+  time:
+    best: "O(m × n)"
+    average: "O(m × n)"
+    worst: "O(m × n)"
+    notes: "Time complexity is consistent across all cases"
+  space:
+    best: "O(min(m,n))"
+    average: "O(m × n)"
+    worst: "O(m × n)"
+    notes: "Space can be optimized to O(min(m,n)) for length-only solutions"
+
+# Applications and use cases
+applications:
+  - category: "Bioinformatics"
+    examples: ["DNA sequence alignment", "Protein sequence comparison", "Phylogenetic analysis"]
+  - category: "Version Control"
+    examples: ["Git diff algorithms", "File comparison", "Merge conflict resolution"]
+  - category: "Text Processing"
+    examples: ["Plagiarism detection", "Document similarity", "Spell checking"]
+  - category: "Data Analysis"
+    examples: ["Time series analysis", "Pattern matching", "Anomaly detection"]
+
+# Educational value
+educational_value:
+  learning_objectives:
+    - "Understand dynamic programming principles"
+    - "Learn to identify optimal substructure"
+    - "Practice with 2D DP problems"
+    - "Understand space-time tradeoffs"
+  difficulty: "intermediate"
+  prerequisites:
+    - "Basic understanding of recursion"
+    - "Familiarity with 2D arrays"
+    - "Understanding of time/space complexity"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "high"
+  test_coverage: "high"
+  documentation_quality: "complete"
+
+  # Source code locations
+  source_files:
+    - "src/algokit/algorithms/dynamic_programming/longest_common_subsequence.py"
+    - "tests/dynamic_programming/test_longest_common_subsequence.py"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "edit_distance"
+    relationship: "similar"
+    description: "Both work with sequence alignment and have similar DP structure"
+  - slug: "longest_increasing_subsequence"
+    relationship: "variant"
+    description: "LIS is a special case of LCS with sorted sequence"
+  - slug: "fibonacci"
+    relationship: "prerequisite"
+    description: "Simpler DP problem to understand first"
+
+# References and resources
+references:
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "cormen2009"
+  - category: "Online Resources"
+    items:
+      - bib_key: "geeksforgeeks_lcs"
+
+# Tags for categorization and search
+tags:
+  - "dp"
+  - "sequence"
+  - "alignment"
+  - "bioinformatics"
+  - "2d-dp"
+
+# Template and rendering options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true
+  show_related_algorithms: true
+  show_references: true

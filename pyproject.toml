@@ -29,7 +29,6 @@ classifiers = [
 dependencies = [
   "autorom>=0.6.1",
   "gymnasium[atari,box2d,classic-control,mujoco,toy-text]>=1.2.0",
-  "manim>=0.19.0",
   "matplotlib>=3.7.0",
   "mkdocs-gen-files>=0.5.0",
   "mkdocs-git-revision-date-localized-plugin>=1.4.7",
@@ -44,6 +43,11 @@ dependencies = [
   "rich>=14.1.0",
   "seaborn>=0.12.0",
   "typer>=0.17.4",
+]
+
+[project.optional-dependencies]
+viz = [
+  "manim>=0.19.0",
 ]
 
 [project.scripts]
@@ -137,7 +141,6 @@ fail_under = 80
 show_missing = true
 
 [tool.mypy]
-plugins = ["pydantic.mypy"]
 files = ["src", "tests"]
 python_version = "3.12"
 mypy_path = ["stubs"]
@@ -172,6 +175,9 @@ implicit_reexport = false
 ignore_missing_imports = true # change to true *only for per-module overrides*
 follow_imports = "normal"
 show_error_codes = true
+
+# ✅ Disable specific error codes for problematic imports
+disable_error_code = ["import-untyped"]
 
 # ✅ Clean output formatting
 pretty = true
@@ -248,7 +254,8 @@ extend-select = [
 ]
 ignore = [
   "E501", # Line too long (handled by Ruff formatter)
-  "PLR2004" # Magic value used in comparison (mostly in tests where it's acceptable)
+  "PLR2004", # Magic value used in comparison (mostly in tests where it's acceptable)
+  "B905" # zip() without an explicit `strict=` parameter (portability concern)
 ]
 fixable = ["ALL"] # Enables autofix where possible
 unfixable = [] # Keep empty to allow all fixes

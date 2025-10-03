@@ -35,7 +35,7 @@ formulation:
 
     The HRI DMP becomes:
     τẏ = α_y(β_y(g - y) - ẏ) + f(x) + f_imitation(y_human) + f_collaboration(I_human, T_collab) + f_social(S, R)
-    
+
     Where:
     - f_imitation(y_human) adapts to human demonstrations
     - f_collaboration(I_human, T_collab) coordinates with human partners
@@ -87,7 +87,7 @@ implementations:
           DMP for imitation learning from human demonstrations.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0):
               """
               Initialize imitation learning DMP.
@@ -106,18 +106,18 @@ implementations:
               self.beta_y = beta_y
               self.alpha_x = alpha_x
               self.imitation_gain = imitation_gain
-              
+
               # Basis function parameters
               self.c = np.exp(-alpha_x * np.linspace(0, 1, n_basis))
               self.h = np.ones(n_basis) * n_basis / np.sum(self.c)
-              
+
               # DMP weights
               self.w = np.zeros((n_dims, n_basis))
-              
+
               # Human demonstration data
               self.human_demo = None
               self.human_demo_time = None
-              
+
               # Imitation parameters
               self.imitation_active = True
               self.adaptation_rate = 0.1
@@ -146,21 +146,21 @@ implementations:
               """
               if not self.imitation_active or self.human_demo is None:
                   return np.zeros(self.n_dims)
-              
+
               # Find closest time point in human demonstration
               time_diff = np.abs(self.human_demo_time - current_time)
               closest_idx = np.argmin(time_diff)
-              
+
               # Get human position at closest time
               human_position = self.human_demo[closest_idx]
-              
+
               # Compute imitation force
               position_error = human_position - current_position
               imitation_force = self.imitation_gain * position_error
-              
+
               return imitation_force
 
-          def learn_from_human_demo(self, human_demo: np.ndarray, demo_time: np.ndarray, 
+          def learn_from_human_demo(self, human_demo: np.ndarray, demo_time: np.ndarray,
                                   dt: float) -> None:
               """
               Learn DMP weights from human demonstration.
@@ -172,24 +172,24 @@ implementations:
               """
               # Set human demonstration
               self.set_human_demonstration(human_demo, demo_time)
-              
+
               T = len(human_demo)
               y_0 = human_demo[0]
               g = human_demo[-1]
-              
+
               # Generate canonical system trajectory
               x = np.exp(-self.alpha_x * np.linspace(0, 1, T))
-              
+
               # Learn weights
               for d in range(self.n_dims):
                   f_target = np.gradient(human_demo[:, d], dt)
                   f_target = np.gradient(f_target, dt)
-                  
+
                   for i in range(self.n_basis):
                       psi = np.exp(-self.h[i] * (x - self.c[i])**2)
                       numerator = np.sum(psi * x * f_target)
                       denominator = np.sum(psi * x**2)
-                      
+
                       if denominator > 1e-10:
                           self.w[d, i] = numerator / denominator
 
@@ -210,39 +210,39 @@ implementations:
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def imitation_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Imitation force
                   imitation_force = self.compute_imitation_force(y, t)
-                  
+
                   # Transformation system with imitation
                   ddy = self.alpha_y * (self.beta_y * (g - y) - dy) + f + imitation_force
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(imitation_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
           def visualize_imitation(self, robot_traj: np.ndarray, human_traj: np.ndarray,
@@ -256,7 +256,7 @@ implementations:
                   title: Plot title
               """
               fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-              
+
               # 3D trajectory comparison
               ax1 = fig.add_subplot(221, projection='3d')
               ax1.plot(robot_traj[:, 0], robot_traj[:, 1], robot_traj[:, 2], 'b-', linewidth=2, label='Robot')
@@ -266,7 +266,7 @@ implementations:
               ax1.set_zlabel('Z Position')
               ax1.set_title('3D Trajectory Comparison')
               ax1.legend()
-              
+
               # Position components
               ax2 = fig.add_subplot(222)
               t = np.arange(len(robot_traj))
@@ -278,7 +278,7 @@ implementations:
               ax2.set_title('Position Components')
               ax2.legend()
               ax2.grid(True)
-              
+
               # Imitation error
               ax3 = fig.add_subplot(223)
               imitation_error = np.linalg.norm(robot_traj - human_traj, axis=1)
@@ -287,7 +287,7 @@ implementations:
               ax3.set_ylabel('Imitation Error')
               ax3.set_title('Imitation Error Over Time')
               ax3.grid(True)
-              
+
               # Imitation gain
               ax4 = fig.add_subplot(224)
               ax4.plot(t, np.full_like(t, self.imitation_gain), 'm-', linewidth=2)
@@ -295,7 +295,7 @@ implementations:
               ax4.set_ylabel('Imitation Gain')
               ax4.set_title('Imitation Gain')
               ax4.grid(True)
-              
+
               plt.suptitle(title)
               plt.tight_layout()
               plt.show()
@@ -322,7 +322,7 @@ implementations:
           DMP for collaborative tasks with human partners.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0,
                        collaboration_gain: float = 1.0):
               """
@@ -339,13 +339,13 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, imitation_gain)
               self.collaboration_gain = collaboration_gain
-              
+
               # Collaboration parameters
               self.human_intention = None
               self.collaborative_task = None
               self.robot_role = "assistant"
               self.collaboration_active = True
-              
+
               # Task coordination
               self.task_phases = []
               self.current_phase = 0
@@ -371,7 +371,7 @@ implementations:
               """
               self.human_intention = intention
 
-          def compute_collaboration_force(self, current_position: np.ndarray, 
+          def compute_collaboration_force(self, current_position: np.ndarray,
                                         current_velocity: np.ndarray) -> np.ndarray:
               """
               Compute collaboration force based on human intention.
@@ -385,11 +385,11 @@ implementations:
               """
               if not self.collaboration_active or self.human_intention is None:
                   return np.zeros(self.n_dims)
-              
+
               # Get human intention
               human_position = self.human_intention.get("position", np.zeros(self.n_dims))
               human_velocity = self.human_intention.get("velocity", np.zeros(self.n_dims))
-              
+
               # Compute collaboration force based on robot role
               if self.robot_role == "assistant":
                   # Assist human by moving towards human goal
@@ -403,7 +403,7 @@ implementations:
                   collaboration_force = self.collaboration_gain * (human_velocity - current_velocity)
               else:
                   collaboration_force = np.zeros(self.n_dims)
-              
+
               return collaboration_force
 
           def update_task_phase(self, current_position: np.ndarray) -> None:
@@ -415,12 +415,12 @@ implementations:
               """
               if not self.task_phases:
                   return
-              
+
               # Check if current phase is complete
               if self.current_phase < len(self.task_phases):
                   phase_goal = self.task_phases[self.current_phase].get("goal", np.zeros(self.n_dims))
                   distance_to_goal = np.linalg.norm(current_position - phase_goal)
-                  
+
                   if distance_to_goal < self.phase_transition_threshold:
                       self.current_phase += 1
 
@@ -441,46 +441,46 @@ implementations:
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def collaborative_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Imitation force
                   imitation_force = self.compute_imitation_force(y, t)
-                  
+
                   # Collaboration force
                   collaboration_force = self.compute_collaboration_force(y, dy)
-                  
+
                   # Update task phase
                   self.update_task_phase(y)
-                  
+
                   # Transformation system with imitation and collaboration
-                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f + 
+                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f +
                         imitation_force + collaboration_force)
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(collaborative_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
     advantages:
@@ -505,7 +505,7 @@ implementations:
           DMP for social robot behaviors with appropriate interaction patterns.
           """
 
-          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0, 
+          def __init__(self, n_dims: int, n_basis: int = 50, alpha_y: float = 25.0,
                        beta_y: float = 6.25, alpha_x: float = 1.0, imitation_gain: float = 1.0,
                        collaboration_gain: float = 1.0, social_gain: float = 1.0):
               """
@@ -523,13 +523,13 @@ implementations:
               """
               super().__init__(n_dims, n_basis, alpha_y, beta_y, alpha_x, imitation_gain, collaboration_gain)
               self.social_gain = social_gain
-              
+
               # Social parameters
               self.social_context = None
               self.personal_space = 0.5
               self.social_norms = {}
               self.interaction_type = "neutral"
-              
+
               # Social behaviors
               self.social_behaviors = {
                   "greeting": self.greeting_behavior,
@@ -564,14 +564,14 @@ implementations:
               # Move towards human for greeting
               direction = human_position - current_position
               distance = np.linalg.norm(direction)
-              
+
               if distance > self.personal_space:
                   # Move closer for greeting
                   greeting_force = self.social_gain * direction / (distance + 1e-10)
               else:
                   # Maintain appropriate distance
                   greeting_force = np.zeros(self.n_dims)
-              
+
               return greeting_force
 
           def farewell_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
@@ -588,14 +588,14 @@ implementations:
               # Move away from human for farewell
               direction = current_position - human_position
               distance = np.linalg.norm(direction)
-              
+
               if distance < self.personal_space * 2:
                   # Move away for farewell
                   farewell_force = self.social_gain * direction / (distance + 1e-10)
               else:
                   # Maintain distance
                   farewell_force = np.zeros(self.n_dims)
-              
+
               return farewell_force
 
           def attention_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
@@ -612,13 +612,13 @@ implementations:
               # Orient towards human for attention
               direction = human_position - current_position
               distance = np.linalg.norm(direction)
-              
+
               if distance > 0:
                   # Orient towards human
                   attention_force = self.social_gain * direction / (distance + 1e-10)
               else:
                   attention_force = np.zeros(self.n_dims)
-              
+
               return attention_force
 
           def respect_behavior(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
@@ -635,13 +635,13 @@ implementations:
               # Maintain respectful distance
               direction = current_position - human_position
               distance = np.linalg.norm(direction)
-              
+
               if distance < self.personal_space:
                   # Move away to maintain respectful distance
                   respect_force = self.social_gain * direction / (distance + 1e-10)
               else:
                   respect_force = np.zeros(self.n_dims)
-              
+
               return respect_force
 
           def compute_social_force(self, current_position: np.ndarray, human_position: np.ndarray) -> np.ndarray:
@@ -661,7 +661,7 @@ implementations:
                   return np.zeros(self.n_dims)
 
           def generate_social_trajectory(self, y_0: np.ndarray, g: np.ndarray,
-                                       human_position: np.ndarray, tau: float = 1.0, 
+                                       human_position: np.ndarray, tau: float = 1.0,
                                        dt: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
               """
               Generate social trajectory.
@@ -679,46 +679,46 @@ implementations:
               # Integration time
               t_span = np.arange(0, 1.0, dt / tau)
               T = len(t_span)
-              
+
               # Initial state [y, dy, x]
               y0 = np.concatenate([y_0, np.zeros(self.n_dims), [1.0]])
-              
+
               def social_dmp_dynamics(state, t):
                   y = state[:self.n_dims]
                   dy = state[self.n_dims:2*self.n_dims]
                   x = state[2*self.n_dims]
-                  
+
                   # Canonical system
                   dx = -self.alpha_x * x
-                  
+
                   # Forcing function
                   f = np.zeros(self.n_dims)
                   for d in range(self.n_dims):
                       psi = np.exp(-self.h * (x - self.c)**2)
                       f[d] = (np.sum(psi * self.w[d]) * x) / (np.sum(psi) + 1e-10)
-                  
+
                   # Imitation force
                   imitation_force = self.compute_imitation_force(y, t)
-                  
+
                   # Collaboration force
                   collaboration_force = self.compute_collaboration_force(y, dy)
-                  
+
                   # Social force
                   social_force = self.compute_social_force(y, human_position)
-                  
+
                   # Transformation system with all forces
-                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f + 
+                  ddy = (self.alpha_y * (self.beta_y * (g - y) - dy) + f +
                         imitation_force + collaboration_force + social_force)
-                  
+
                   return np.concatenate([dy, ddy, [dx]])
-              
+
               # Integrate
               sol = odeint(social_dmp_dynamics, y0, t_span)
-              
+
               y_traj = sol[:, :self.n_dims]
               dy_traj = sol[:, self.n_dims:2*self.n_dims]
               ddy_traj = np.gradient(dy_traj, dt, axis=0)
-              
+
               return y_traj, dy_traj, ddy_traj
 
     advantages:
@@ -738,12 +738,12 @@ complexity:
       time: "O(T × K × H)"
       space: "O(K × H)"
       notes: "Time complexity scales with trajectory length, basis functions, and human data"
-    
+
     - approach: "Collaborative DMP"
       time: "O(T × K × C)"
       space: "O(K × C)"
       notes: "Additional complexity for collaboration coordination"
-    
+
     - approach: "Social DMP"
       time: "O(T × K × S)"
       space: "O(K × S)"

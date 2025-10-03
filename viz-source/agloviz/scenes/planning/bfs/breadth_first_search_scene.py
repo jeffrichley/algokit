@@ -16,6 +16,8 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 try:
+    from algokit.pathfinding.bfs_with_events import bfs_with_data_collection
+
     from agloviz.components.grid_overlay import GridOverlay
     from agloviz.components.hud_panel import HUDPanel
     from agloviz.components.legend_panel import create_bfs_legend
@@ -29,7 +31,6 @@ try:
         create_grid_graph,
         load_harbor_scenario,
     )
-    from algokit.pathfinding.bfs_with_events import bfs_with_data_collection
     from algokit.viz.adapters import (
         EventType,
         SearchEvent,

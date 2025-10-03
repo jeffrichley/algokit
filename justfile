@@ -28,7 +28,7 @@ test-pathfinding: install-dev
     uv run pytest tests/pathfinding/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-pathfinding --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
     @echo "Generated pathfinding coverage HTML at htmlcov-pathfinding/index.html"
 
-# Run dynamic programming algorithm tests with focused coverage  
+# Run dynamic programming algorithm tests with focused coverage
 test-dynamic-programming: install-dev
     uv run pytest tests/dynamic_programming/ --cov=src/algokit/algorithms --cov-report=html:htmlcov-dp --cov-report=term-missing --cov-fail-under=95 --cov-branch -v
     @echo "Generated dynamic programming coverage HTML at htmlcov-dp/index.html"
@@ -48,7 +48,7 @@ format: install-dev
 
 # Run type checking
 type-check: install-dev
-    uv run mypy src tests
+    uv run mypy --config-file=pyproject.toml --install-types --non-interactive src tests
 
 # Build documentation
 docs: install-docs
@@ -79,7 +79,7 @@ validate-yaml-verbose: install-docs
 quality: install-dev install-docs
     uv run ruff check src/ tests/ --fix
     uv run ruff format src/ tests/
-    PYTHONPATH= uv run mypy src tests
+    uv run mypy src tests
     uv run mkdocs build
     uv run python -m linkcheckmd docs
     uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley

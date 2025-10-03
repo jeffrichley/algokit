@@ -306,7 +306,7 @@ complexity:
       time: "O(batch_size × network_forward_pass)"
       space: "O(replay_buffer_size + network_parameters)"
       notes: "Time complexity dominated by neural network forward/backward passes. Space complexity includes replay buffer and network parameters"
-    
+
     - approach: "Training Complexity"
       time: "O(episodes × steps_per_episode × batch_size × network_ops)"
       space: "O(replay_buffer_size + 2 × network_parameters)"
