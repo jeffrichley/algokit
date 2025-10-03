@@ -32,21 +32,21 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy src tests
+        entry: mypy src tests
         language: system
         pass_filenames: false
         types: [python]
         exclude: ^(docs-old/|mkdocs_plugins/|macros\.py$|main\.py$)
       - id: pip-audit
         name: pip-audit
-        entry: uv run pip-audit --progress-spinner=off
+        entry: pip-audit --progress-spinner=off
         language: system
         pass_filenames: false
         always_run: true
         stages: [manual]
       - id: xenon-complexity
         name: Check Code Complexity (Xenon) - Advisory
-        entry: uv run xenon --max-absolute B src
+        entry: xenon --max-absolute B src
         language: system
         pass_filenames: false
         verbose: true
@@ -54,7 +54,7 @@ repos:
         stages: [manual]
       - id: pytest-fast
         name: Run fast tests (excludes slow tests)
-        entry: uv run pytest tests -q -m "not slow"
+        entry: pytest tests -q -m "not slow"
         language: system
         pass_filenames: false
         types: [python]
