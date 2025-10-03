@@ -141,7 +141,6 @@ fail_under = 80
 show_missing = true
 
 [tool.mypy]
-plugins = ["pydantic.mypy"]
 files = ["src", "tests"]
 python_version = "3.12"
 mypy_path = ["stubs"]
