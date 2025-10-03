@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.12.0 (2025-10-03)
+
+### Feat
+
+- Add comprehensive reinforcement learning algorithms (#7)
+
 ## v0.11.1 (2025-10-03)
 
 ### Fix
