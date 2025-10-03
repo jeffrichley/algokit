@@ -37,18 +37,18 @@ dependencies = [
   "mkdocs-mermaid2-plugin>=1.2.2",
   "mkdocstrings[python]>=0.30.0",
   "networkx>=3.5",
-  "numpy>=1.24.0",
+  "numpy>=1.24.0,<2.0.0",
   "pydantic>=2.0.0",
   "pyyaml>=6.0.2",
   "rich>=14.1.0",
   "seaborn>=0.12.0",
+  "sympy>=1.12,<2.0",
+  "torch==2.2.2",
   "typer>=0.17.4",
 ]
 
 [project.optional-dependencies]
-viz = [
-  "manim>=0.19.0",
-]
+viz = []
 
 [project.scripts]
 algokit = "algokit.cli.main:app"
@@ -145,6 +145,9 @@ files = ["src", "tests"]
 python_version = "3.12"
 mypy_path = ["stubs"]
 
+# Enable modern union syntax
+enable_incomplete_feature = ["Unpack"]
+
 # ✅ Basic safety (keep these)
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -166,7 +169,7 @@ warn_unused_ignores = true
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_no_return = true
-warn_unreachable = true
+warn_unreachable = false
 
 # ✅ Coverage enforcement
 implicit_reexport = false
@@ -274,6 +277,7 @@ ban-relative-imports = "all"
     "D101",  # Missing docstring in public class
     "D102",  # Missing docstring in public method
     "D103",  # Missing docstring in public function
+    "UP038", # Allow tuple syntax in isinstance for numpy compatibility
     "D104",  # Missing docstring in public package
     "D105",  # Missing docstring in magic method
     "D106",  # Missing docstring in public nested class

@@ -21,23 +21,21 @@ description: |
   matching, and natural language processing.
 
 # Problem formulation
-formulation: |
-  Given two strings s₁ and s₂, find the minimum number of operations to transform s₁ into s₂.
-  Operations allowed:
-  - **Insertion**: Add a character
-  - **Deletion**: Remove a character
-  - **Substitution**: Replace a character
-
-  **Recurrence Relation:**
-  ```
-  ED(i,j) = {
-    max(i,j),                    if min(i,j) = 0
-    ED(i-1,j-1),                if s₁[i-1] = s₂[j-1]
-    1 + min(ED(i-1,j),          # deletion
-            ED(i,j-1),          # insertion
-            ED(i-1,j-1))        # substitution
-  }
-  ```
+formulation:
+  problem_definition: |
+    Given two strings s₁ and s₂, find the minimum number of operations to transform s₁ into s₂.
+    Operations allowed:
+    - **Insertion**: Add a character
+    - **Deletion**: Remove a character
+    - **Substitution**: Replace a character
+  recurrence_relation: |
+    ED(i,j) = {
+      max(i,j),                    if min(i,j) = 0
+      ED(i-1,j-1),                if s₁[i-1] = s₂[j-1]
+      1 + min(ED(i-1,j),          # deletion
+              ED(i,j-1),          # insertion
+              ED(i-1,j-1))        # substitution
+    }
 
 # Key properties
 properties:
@@ -166,18 +164,12 @@ applications:
 
 # Educational value
 educational_value:
-  learning_objectives:
-    - "Understand dynamic programming principles"
-    - "Learn to identify optimal substructure"
-    - "Practice with 2D DP problems"
-    - "Understand space-time tradeoffs"
-    - "Learn string processing techniques"
-  difficulty: "intermediate"
-  prerequisites:
-    - "Basic understanding of recursion"
-    - "Familiarity with 2D arrays"
-    - "Understanding of time/space complexity"
-    - "String manipulation concepts"
+  - "Understand dynamic programming principles"
+  - "Learn to identify optimal substructure"
+  - "Practice with 2D DP problems"
+  - "Understand space-time tradeoffs"
+  - "Learn string processing techniques"
+  - "String manipulation concepts"
 
 # Implementation status and development info
 status:
@@ -188,8 +180,10 @@ status:
 
   # Source code locations
   source_files:
-    - "src/algokit/algorithms/dynamic_programming/edit_distance.py"
-    - "tests/dynamic_programming/test_edit_distance.py"
+    - path: "src/algokit/algorithms/dynamic_programming/edit_distance.py"
+      description: "Main implementation file"
+    - path: "tests/dynamic_programming/test_edit_distance.py"
+      description: "Test suite"
 
 # Related algorithms and cross-references
 related_algorithms:

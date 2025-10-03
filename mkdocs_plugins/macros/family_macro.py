@@ -47,6 +47,29 @@ def load_algorithm_data(family_id: str) -> list:
     return algorithms
 
 
+def load_all_algorithm_data(family_id: str) -> list:
+    """Load all algorithm data for a family (including hidden algorithms)."""
+    data_dir = Path(__file__).parent.parent / "data"
+    algorithms_dir = data_dir / family_id / "algorithms"
+
+    if not algorithms_dir.exists():
+        return []
+
+    algorithms = []
+    for algo_file in algorithms_dir.glob("*.yaml"):
+        with open(algo_file, encoding="utf-8") as f:
+            algo_data = yaml.safe_load(f)
+            if algo_data:
+                # Add slug from filename if not present
+                if "slug" not in algo_data:
+                    algo_data["slug"] = algo_file.stem
+
+                # Include all algorithms (including hidden ones)
+                algorithms.append(algo_data)
+
+    return algorithms
+
+
 def load_shared_data() -> dict:
     """Load shared data (tags, references)."""
     data_dir = Path(__file__).parent.parent / "data"
@@ -78,7 +101,11 @@ def render_family_page(family_id: str) -> str:
         return f"**Error:** Family '{family_id}' not found."
 
     algorithms = load_algorithm_data(family_id)
+    all_algorithms = load_all_algorithm_data(family_id)
     shared_data = load_shared_data()
+
+    # Add all algorithms to family data for template access
+    family_data["all_algorithms"] = all_algorithms
 
     # Set up Jinja2 environment
     template_dir = Path(__file__).parent.parent / "templates"

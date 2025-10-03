@@ -7,7 +7,7 @@ name: Deep Q-Network (DQN)
 family_id: rl
 
 # Brief one-sentence summary for cards and navigation
-hidden: true  # Hidden by default
+hidden: false  # Hidden by default
 summary: "A deep reinforcement learning algorithm that uses neural networks to approximate Q-functions for high-dimensional state spaces."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
@@ -365,10 +365,10 @@ educational_value:
 
 # Implementation status and development info
 status:
-  current: "not_started"
-  implementation_quality: "none"
-  test_coverage: "none"
-  documentation_quality: "planned"
+  current: "complete"
+  implementation_quality: "high"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
 
   # Source code locations
   source_files:

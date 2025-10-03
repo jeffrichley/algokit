@@ -12,13 +12,13 @@
 # Global metadata and configuration
 metadata:
   version: "1.0.0"
-  last_updated: "2025-10-02"
+  last_updated: "2025-10-03"
   total_families: 9
   total_algorithms: 44
   implementation_status:
-    complete: 10
+    complete: 14
     planned: 30
-    percentage: 22.7
+    percentage: 31.8
 
 # Algorithm families with overview information
 families:
@@ -69,9 +69,9 @@ families:
       - "deep-learning"
       - "optimization"
       - "control-systems"
-    status: "planned"
-    algorithms_count: 0
-    planned_count: 6
+    status: "complete"
+    algorithms_count: 6
+    planned_count: 0
 
   control:
     name: "Control Systems"
@@ -619,11 +619,11 @@ algorithms:
       - "topological-sort"
       - "strongly-connected-components"
 
-  # Reinforcement Learning Family (Planned)
+  # Reinforcement Learning Family (In Progress)
   q-learning:
     name: "Q-Learning"
     family: "reinforcement-learning"
-    status: "planned"
+    status: "complete"
     description: "Model-free, off-policy reinforcement learning algorithm for learning optimal action-value functions"
     overview: "Q-Learning is a model-free, off-policy reinforcement learning algorithm that learns the optimal action-value function (Q-function) for a Markov Decision Process (MDP). It's one of the most fundamental and widely-used algorithms in reinforcement learning."
     complexity:
@@ -638,12 +638,12 @@ algorithms:
       - "value-based"
       - "markov-decision-process"
     implementation:
-      source_file: "src/algokit/reinforcement_learning/q_learning.py"
+      source_file: "src/algokit/algorithms/reinforcement_learning/q_learning.py"
       test_file: "tests/reinforcement_learning/test_q_learning.py"
       approaches:
         - "Standard Q-Learning"
-        - "Experience Replay Q-Learning"
-        - "Double Q-Learning"
+        - "Epsilon-Greedy Policy"
+        - "Q-Table Management"
     mathematical_formulation:
       update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_t + γ max_a' Q(s_{t+1}, a') - Q(s_t, a_t)]"
       parameters:
@@ -656,8 +656,243 @@ algorithms:
       - "Trading systems"
       - "Autonomous vehicles"
     related_algorithms:
+      - "sarsa"
       - "dqn"
       - "actor-critic"
+
+  sarsa:
+    name: "SARSA (State-Action-Reward-State-Action)"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Model-free, on-policy reinforcement learning algorithm that learns while following the current policy"
+    overview: "SARSA (State-Action-Reward-State-Action) is a model-free, on-policy reinforcement learning algorithm that learns the action-value function while following the current policy. Unlike Q-Learning, SARSA updates Q-values based on the action actually taken in the next state, making it more conservative."
+    complexity:
+      time: "O(|S| × |A|)"
+      space: "O(|S| × |A|)"
+      notes: "|S| = number of states, |A| = number of actions"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "sarsa"
+      - "temporal-difference"
+      - "value-based"
+      - "on-policy"
+      - "markov-decision-process"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/sarsa.py"
+      test_file: "tests/reinforcement_learning/test_sarsa.py"
+      approaches:
+        - "Standard SARSA"
+        - "Epsilon-Greedy Policy"
+        - "On-Policy Learning"
+    mathematical_formulation:
+      update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_t + γ Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)]"
+      parameters:
+        - "α: learning rate"
+        - "γ: discount factor"
+        - "r_t: immediate reward"
+        - "a_{t+1}: next action from current policy"
+    applications:
+      - "Safe learning scenarios"
+      - "Online learning"
+      - "Robotics with safety constraints"
+      - "Trading with risk management"
+    related_algorithms:
+      - "q-learning"
+      - "expected-sarsa"
+      - "actor-critic"
+
+  actor-critic:
+    name: "Actor-Critic"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Policy gradient method that combines actor (policy) and critic (value function) networks for stable learning"
+    overview: "Actor-Critic is a policy gradient reinforcement learning algorithm that combines the advantages of policy-based methods (Actor) with value-based methods (Critic). The Actor learns the policy while the Critic learns the value function, providing a baseline that reduces variance in policy gradient updates."
+    complexity:
+      time: "O(|S| × |A| × B)"
+      space: "O(|S| × |A| × H)"
+      notes: "|S| = number of states, |A| = number of actions, B = batch size, H = hidden layer size"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "actor-critic"
+      - "policy-gradient"
+      - "value-function"
+      - "neural-networks"
+      - "on-policy"
+      - "continuous-state"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/actor_critic.py"
+      test_file: "tests/reinforcement_learning/test_actor_critic.py"
+      approaches:
+        - "Standard Actor-Critic"
+        - "Neural Network Approximation"
+        - "Experience Replay"
+        - "Policy Gradient with Baseline"
+    mathematical_formulation:
+      update_rule: "∇θ J(θ) = E[∇θ log π(a|s) A(s,a)]"
+      actor_update: "θ ← θ + α_actor ∇θ log π(a|s) A(s,a)"
+      critic_update: "φ ← φ - α_critic ∇φ (V(s) - V_target)²"
+      parameters:
+        - "θ: actor network parameters"
+        - "φ: critic network parameters"
+        - "α_actor: actor learning rate"
+        - "α_critic: critic learning rate"
+        - "A(s,a): advantage function"
+        - "V(s): state value function"
+    applications:
+      - "Continuous control problems"
+      - "Robotics control"
+      - "Game playing"
+      - "Autonomous navigation"
+      - "Trading algorithms"
+    related_algorithms:
+      - "policy-gradient"
+      - "dqn"
+      - "sarsa"
+      - "ppo"
+
+  dqn:
+    name: "Deep Q-Network (DQN)"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Deep neural network-based Q-learning that can handle high-dimensional state spaces"
+    overview: "Deep Q-Network (DQN) is a breakthrough algorithm that combines Q-learning with deep neural networks to handle high-dimensional state spaces. DQN uses experience replay and target networks to stabilize training, enabling successful learning in complex environments like Atari games."
+    complexity:
+      time: "O(|A| × B × E)"
+      space: "O(|A| × H)"
+      notes: "|A| = number of actions, B = batch size, E = epochs, H = hidden layer size"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "dqn"
+      - "deep-learning"
+      - "value-based"
+      - "off-policy"
+      - "neural-networks"
+      - "experience-replay"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/dqn.py"
+      test_file: "tests/reinforcement_learning/test_dqn.py"
+      approaches:
+        - "Standard DQN"
+        - "Double DQN"
+        - "Dueling DQN"
+        - "Prioritized Experience Replay"
+    mathematical_formulation:
+      update_rule: "Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]"
+      loss_function: "L(θ) = E[(r + γ max_a' Q(s',a';θ^-) - Q(s,a;θ))²]"
+      parameters:
+        - "θ: neural network parameters"
+        - "α: learning rate"
+        - "γ: discount factor"
+        - "θ^-: target network parameters"
+    applications:
+      - "Game playing (Atari, Go)"
+      - "Robotics control"
+      - "Autonomous vehicles"
+      - "Trading systems"
+      - "Resource allocation"
+    related_algorithms:
+      - "q-learning"
+      - "double-dqn"
+      - "dueling-dqn"
+      - "rainbow-dqn"
+
+  policy-gradient:
+    name: "Policy Gradient"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Direct policy optimization using gradient ascent on the expected return"
+    overview: "Policy Gradient methods directly optimize the policy by following the gradient of the expected return. Unlike value-based methods, policy gradient methods can handle continuous action spaces and stochastic policies naturally. The most basic form is REINFORCE, which uses the policy gradient theorem."
+    complexity:
+      time: "O(|A| × B × E)"
+      space: "O(|A| × H)"
+      notes: "|A| = number of actions, B = batch size, E = epochs, H = hidden layer size"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "policy-gradient"
+      - "reinforce"
+      - "policy-based"
+      - "on-policy"
+      - "continuous-actions"
+      - "stochastic-policy"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/policy_gradient.py"
+      test_file: "tests/reinforcement_learning/test_policy_gradient.py"
+      approaches:
+        - "REINFORCE"
+        - "Policy Gradient with Baseline"
+        - "Natural Policy Gradient"
+        - "Trust Region Policy Optimization"
+    mathematical_formulation:
+      policy_gradient: "∇θ J(θ) = E[∇θ log π(a|s) A(s,a)]"
+      reinforce_update: "θ ← θ + α ∇θ log π(a|s) G_t"
+      parameters:
+        - "θ: policy parameters"
+        - "α: learning rate"
+        - "π(a|s): policy function"
+        - "A(s,a): advantage function"
+        - "G_t: return from time t"
+    applications:
+      - "Continuous control"
+      - "Robotics manipulation"
+      - "Game playing"
+      - "Autonomous systems"
+      - "Natural language processing"
+    related_algorithms:
+      - "actor-critic"
+      - "ppo"
+      - "trpo"
+      - "reinforce"
+
+  ppo:
+    name: "Proximal Policy Optimization (PPO)"
+    family: "reinforcement-learning"
+    status: "complete"
+    description: "Policy gradient method with clipped objective for stable and sample-efficient learning"
+    overview: "Proximal Policy Optimization (PPO) is a policy gradient method that uses a clipped objective function to prevent large policy updates. PPO is designed to be simple to implement, sample-efficient, and stable across a wide range of environments. It's one of the most popular policy gradient algorithms in practice."
+    complexity:
+      time: "O(|A| × B × E × K)"
+      space: "O(|A| × H)"
+      notes: "|A| = number of actions, B = batch size, E = epochs, K = PPO epochs"
+    tags:
+      - "reinforcement-learning"
+      - "algorithms"
+      - "ppo"
+      - "policy-gradient"
+      - "on-policy"
+      - "clipped-objective"
+      - "sample-efficient"
+      - "stable"
+    implementation:
+      source_file: "src/algokit/algorithms/reinforcement_learning/ppo.py"
+      test_file: "tests/reinforcement_learning/test_ppo.py"
+      approaches:
+        - "Standard PPO"
+        - "PPO with Clipped Objective"
+        - "PPO with KL Penalty"
+        - "Distributed PPO"
+    mathematical_formulation:
+      clipped_objective: "L^CLIP(θ) = E[min(r_t(θ)Â_t, clip(r_t(θ), 1-ε, 1+ε)Â_t)]"
+      ratio: "r_t(θ) = π_θ(a_t|s_t) / π_θ_old(a_t|s_t)"
+      parameters:
+        - "θ: policy parameters"
+        - "ε: clipping parameter"
+        - "Â_t: advantage estimate"
+        - "r_t(θ): probability ratio"
+    applications:
+      - "Continuous control"
+      - "Robotics"
+      - "Game playing"
+      - "Autonomous systems"
+      - "Natural language processing"
+    related_algorithms:
+      - "actor-critic"
+      - "policy-gradient"
+      - "trpo"
+      - "a2c"
 
 # Cross-references and relationships
 relationships:
@@ -704,10 +939,10 @@ relationships:
 # Implementation progress tracking
 progress:
   overall:
-    total_algorithms: 41
-    implemented: 8
-    planned: 33
-    percentage: 19.5
+    total_algorithms: 44
+    implemented: 14
+    planned: 30
+    percentage: 31.8
   by_family:
     dynamic-programming:
       total: 6
@@ -716,9 +951,9 @@ progress:
       percentage: 100.0
     reinforcement-learning:
       total: 6
-      implemented: 0
-      planned: 6
-      percentage: 0.0
+      implemented: 6
+      planned: 0
+      percentage: 100.0
     control:
       total: 5
       implemented: 0

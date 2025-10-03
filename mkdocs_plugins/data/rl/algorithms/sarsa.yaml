@@ -1,0 +1,230 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: sarsa
+name: SARSA (State-Action-Reward-State-Action)
+family_id: rl
+
+# Brief one-sentence summary for cards and navigation
+hidden: false  # Hidden by default
+summary: "A model-free, on-policy reinforcement learning algorithm that learns action-value functions while following the current policy."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  SARSA (State-Action-Reward-State-Action) is a model-free, on-policy reinforcement learning
+  algorithm that learns the action-value function while following the current policy. Unlike
+  Q-Learning, SARSA updates Q-values based on the action actually taken in the next state,
+  making it more conservative and suitable for online learning scenarios.
+
+  The key difference between SARSA and Q-Learning is that SARSA uses the action actually
+  taken in the next state (on-policy), while Q-Learning uses the action with the highest
+  Q-value (off-policy). This makes SARSA more conservative and safer for online learning,
+  but potentially less sample-efficient than Q-Learning.
+
+  SARSA is particularly useful in scenarios where exploration is costly or dangerous,
+  such as robotics applications or financial trading, where taking suboptimal actions
+  can have significant consequences.
+
+# Problem formulation and mathematical details
+formulation:
+  problem_definition: |
+    Given:
+    - State space: S
+    - Action space: A
+    - Reward function: R(s,a,s')
+    - Discount factor: γ ∈ [0,1]
+    - Learning rate: α ∈ (0,1]
+
+    Find Q*(s,a) that maximizes expected return:
+
+    Q*(s,a) = E[R_{t+1} + γ Q*(s_{t+1}, a_{t+1}) | s_t = s, a_t = a]
+
+    Using SARSA update rule:
+    Q(s_t, a_t) ← Q(s_t, a_t) + α[r_{t+1} + γ Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)]
+
+  key_properties:
+    - name: "On-Policy Learning"
+      description: "Learns the value of the policy being followed"
+      importance: "fundamental"
+    - name: "Conservative Updates"
+      description: "Uses actual next action, not optimal action"
+      importance: "fundamental"
+    - name: "Online Learning"
+      description: "Can learn while interacting with environment"
+      importance: "implementation"
+    - name: "Exploration-Sensitive"
+      description: "Learning depends on exploration strategy"
+      importance: "implementation"
+
+# Algorithm characteristics and properties
+characteristics:
+  learning_type: "on-policy"
+  update_method: "temporal-difference"
+  exploration_strategy: "epsilon-greedy"
+  convergence: "guaranteed under certain conditions"
+  sample_efficiency: "moderate"
+  stability: "high"
+
+# Complexity analysis
+complexity:
+  time_complexity: "O(|S| × |A|)"
+  space_complexity: "O(|S| × |A|)"
+  convergence_rate: "O(1/√t)"
+  sample_complexity: "O(|S| × |A| × (1-γ)⁻¹)"
+
+# Implementation details
+implementation:
+  source_file: "src/algokit/algorithms/reinforcement_learning/sarsa.py"
+  test_file: "tests/reinforcement_learning/test_sarsa.py"
+  main_class: "SarsaAgent"
+  key_methods:
+    - "update_q_value"
+    - "select_action"
+    - "train"
+    - "evaluate"
+
+# Mathematical formulation details
+mathematical_formulation:
+  update_rule: "Q(s_t, a_t) ← Q(s_t, a_t) + α[r_{t+1} + γ Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)]"
+  target_value: "r_{t+1} + γ Q(s_{t+1}, a_{t+1})"
+  td_error: "δ_t = r_{t+1} + γ Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)"
+  parameters:
+    - "α: learning rate (0 < α ≤ 1)"
+    - "γ: discount factor (0 ≤ γ ≤ 1)"
+    - "ε: exploration rate (0 ≤ ε ≤ 1)"
+    - "Q(s,a): action-value function"
+
+# Algorithm steps
+algorithm_steps:
+  - step: "Initialize Q(s,a) arbitrarily"
+    description: "Set all Q-values to initial values (usually 0)"
+  - step: "For each episode"
+    description: "Repeat until convergence or maximum episodes"
+  - step: "Initialize state s"
+    description: "Start from initial state"
+  - step: "Choose action a from s using policy derived from Q"
+    description: "Use ε-greedy policy: ε-greedy(Q)"
+  - step: "For each step of episode"
+    description: "Repeat until terminal state"
+  - step: "Take action a, observe r, s'"
+    description: "Execute action and observe reward and next state"
+  - step: "Choose action a' from s' using policy derived from Q"
+    description: "Select next action using same policy"
+  - step: "Update Q(s,a) ← Q(s,a) + α[r + γ Q(s',a') - Q(s,a)]"
+    description: "Update Q-value using SARSA update rule"
+  - step: "s ← s', a ← a'"
+    description: "Move to next state and action"
+
+# Advantages and disadvantages
+advantages:
+  - "On-policy learning - learns the policy being followed"
+  - "Conservative updates - safer for online learning"
+  - "Guaranteed convergence under certain conditions"
+  - "Suitable for continuous learning scenarios"
+  - "Less sensitive to exploration strategy than Q-Learning"
+
+disadvantages:
+  - "May be less sample-efficient than Q-Learning"
+  - "Learning depends on exploration strategy"
+  - "May converge to suboptimal policies with poor exploration"
+  - "Requires careful tuning of exploration parameters"
+
+# Applications and use cases
+applications:
+  - category: "Robotics"
+    examples: ["navigation", "manipulation", "locomotion"]
+    description: "Safe online learning in physical environments"
+  - category: "Finance"
+    examples: ["trading", "portfolio management", "risk management"]
+    description: "Conservative learning in high-stakes environments"
+  - category: "Gaming"
+    examples: ["strategy games", "real-time games", "multiplayer games"]
+    description: "Learning while playing against opponents"
+  - category: "Control Systems"
+    examples: ["process control", "autonomous systems", "adaptive control"]
+    description: "Online adaptation in control systems"
+
+# Related algorithms and concepts
+related_algorithms:
+  - name: "Q-Learning"
+    relationship: "alternative"
+    description: "Off-policy alternative to SARSA"
+  - name: "Expected SARSA"
+    relationship: "extension"
+    description: "Uses expected value of next action instead of actual action"
+  - name: "Double SARSA"
+    relationship: "extension"
+    description: "Uses two Q-functions to reduce overestimation bias"
+  - name: "SARSA(λ)"
+    relationship: "extension"
+    description: "Eligibility traces for faster learning"
+
+# Implementation considerations
+implementation_notes:
+  - "Use ε-greedy exploration with decaying ε"
+  - "Initialize Q-values appropriately for the problem"
+  - "Choose learning rate carefully - too high can cause instability"
+  - "Consider using eligibility traces for faster learning"
+  - "Monitor convergence and adjust parameters accordingly"
+
+# References and citations
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Sutton, R. S., & Barto, A. G."
+        year: "2018"
+        title: "Reinforcement Learning: An Introduction"
+        publisher: "MIT Press"
+        note: "ISBN 978-0-262-03924-6"
+      - author: "Szepesvári, C."
+        year: "2010"
+        title: "Algorithms for Reinforcement Learning"
+        publisher: "Morgan & Claypool"
+        note: "ISBN 978-1-60845-492-1"
+
+  - category: "SARSA Algorithm"
+    items:
+      - author: "Rummery, G. A., & Niranjan, M."
+        year: "1994"
+        title: "On-line Q-learning using connectionist systems"
+        publisher: "Cambridge University Engineering Department"
+        note: "Technical Report CUED/F-INFENG/TR 166"
+      - author: "Sutton, R. S."
+        year: "1996"
+        title: "Generalization in Reinforcement Learning: Successful Examples Using Sparse Coarse Coding"
+        publisher: "Advances in Neural Information Processing Systems"
+        note: "Volume 8, pages 1038-1044"
+
+  - category: "Online Resources"
+    items:
+      - title: "SARSA Algorithm"
+        url: "https://en.wikipedia.org/wiki/State%E2%80%93action%E2%80%93reward%E2%80%93state%E2%80%93action"
+        description: "Wikipedia article on SARSA"
+      - title: "Reinforcement Learning: An Introduction"
+        url: "http://incompleteideas.net/book/the-book.html"
+        description: "Free online version of Sutton & Barto's textbook"
+
+# Tags for categorization
+tags:
+  - "reinforcement-learning"
+  - "temporal-difference"
+  - "on-policy"
+  - "value-based"
+  - "model-free"
+  - "online-learning"
+  - "conservative-learning"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "high"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/algorithms/reinforcement_learning/sarsa.py"
+      description: "Main implementation with tabular SARSA and epsilon-greedy exploration"
+    - path: "tests/reinforcement_learning/test_sarsa.py"
+      description: "Comprehensive test suite including convergence tests"
