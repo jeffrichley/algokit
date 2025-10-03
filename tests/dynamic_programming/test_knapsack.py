@@ -188,6 +188,86 @@ def test_knapsack_01_value_only_zero_capacity() -> None:
 
 
 @pytest.mark.unit
+def test_knapsack_01_value_only_empty_weights() -> None:
+    """Test that knapsack_01_value_only raises ValueError for empty weights."""
+    # Arrange - Set up empty weights list
+    weights = []
+    values = [60, 100, 120]
+    capacity = 50
+
+    # Act & Assert - Verify that ValueError is raised for empty weights
+    with pytest.raises(ValueError, match="Weights and values lists cannot be empty"):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
+def test_knapsack_01_value_only_empty_values() -> None:
+    """Test that knapsack_01_value_only raises ValueError for empty values."""
+    # Arrange - Set up empty values list
+    weights = [10, 20, 30]
+    values = []
+    capacity = 50
+
+    # Act & Assert - Verify that ValueError is raised for empty values
+    with pytest.raises(ValueError, match="Weights and values lists cannot be empty"):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
+def test_knapsack_01_value_only_length_mismatch() -> None:
+    """Test that knapsack_01_value_only raises ValueError for mismatched lengths."""
+    # Arrange - Set up weights and values with different lengths
+    weights = [10, 20, 30]
+    values = [60, 100]  # Different length
+    capacity = 50
+
+    # Act & Assert - Verify that ValueError is raised for length mismatch
+    with pytest.raises(
+        ValueError, match="Weights and values lists must have the same length"
+    ):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
+def test_knapsack_01_value_only_negative_weights() -> None:
+    """Test that knapsack_01_value_only raises ValueError for negative weights."""
+    # Arrange - Set up weights with negative values
+    weights = [10, -20, 30]
+    values = [60, 100, 120]
+    capacity = 50
+
+    # Act & Assert - Verify that ValueError is raised for negative weights
+    with pytest.raises(ValueError, match="All weights must be positive"):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
+def test_knapsack_01_value_only_negative_values() -> None:
+    """Test that knapsack_01_value_only raises ValueError for negative values."""
+    # Arrange - Set up values with negative numbers
+    weights = [10, 20, 30]
+    values = [60, -100, 120]
+    capacity = 50
+
+    # Act & Assert - Verify that ValueError is raised for negative values
+    with pytest.raises(ValueError, match="All values must be positive"):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
+def test_knapsack_01_value_only_negative_capacity() -> None:
+    """Test that knapsack_01_value_only raises ValueError for negative capacity."""
+    # Arrange - Set up negative capacity
+    weights = [10, 20, 30]
+    values = [60, 100, 120]
+    capacity = -50
+
+    # Act & Assert - Verify that ValueError is raised for negative capacity
+    with pytest.raises(ValueError, match="Capacity must be non-negative"):
+        knapsack_01_value_only(weights, values, capacity)
+
+
+@pytest.mark.unit
 def test_knapsack_01_memoized_basic() -> None:
     """Test memoized knapsack function for basic case."""
     # Arrange - Set up test inputs for memoized knapsack

@@ -47,7 +47,7 @@ def matrix_chain_multiplication(dimensions: list[int]) -> tuple[int, list[list[i
     for length in range(2, n + 1):  # length of chain
         for i in range(n - length + 1):
             j = i + length - 1
-            dp[i][j] = math.inf
+            dp[i][j] = 2**31 - 1  # Large integer instead of math.inf
 
             for k in range(i, j):
                 # Cost of multiplying matrices i to k and k+1 to j
@@ -97,7 +97,7 @@ def matrix_chain_multiplication_value_only(dimensions: list[int]) -> int:
     for length in range(2, n + 1):
         for i in range(n - length + 1):
             j = i + length - 1
-            dp[i][j] = math.inf
+            dp[i][j] = 2**31 - 1  # Large integer instead of math.inf
 
             for k in range(i, j):
                 cost = (
@@ -146,7 +146,7 @@ def matrix_chain_multiplication_memoized(dimensions: list[int]) -> int:
         if (i, j) in memo:
             return memo[(i, j)]
 
-        result = math.inf
+        result = 2**31 - 1  # Large integer instead of math.inf
         for k in range(i, j):
             cost = (
                 matrix_chain_rec(i, k)

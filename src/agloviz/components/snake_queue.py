@@ -293,11 +293,11 @@ class SnakeQueue(m.VGroup):
         # Animate movement
         if scene:
             animations = []
-            for token, new_pos in zip(self.tokens, new_positions, strict=True):
+            for token, new_pos in zip(self.tokens, new_positions):
                 animations.append(token.animate.move_to([new_pos[0], new_pos[1], 0]))
             scene.play(m.AnimationGroup(*animations), run_time=0.3)
         else:
-            for token, new_pos in zip(self.tokens, new_positions, strict=True):
+            for token, new_pos in zip(self.tokens, new_positions):
                 token.move_to([new_pos[0], new_pos[1], 0])
 
     def is_empty(self) -> bool:

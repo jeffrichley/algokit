@@ -1,0 +1,234 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+# This schema supports all algorithm types with rich metadata and structured content
+
+# Basic metadata
+slug: edit_distance
+name: Edit Distance (Levenshtein Distance)
+family_id: dp
+aliases: ["Levenshtein Distance", "String Distance"]
+order: 4
+
+# Brief one-sentence summary for cards and navigation
+summary: "Calculate minimum operations to transform one string into another using dynamic programming."
+
+# Detailed description (markdown supported) - full overview for the algorithm page
+description: |
+  Edit Distance, also known as Levenshtein Distance, is a measure of similarity between two strings.
+  It calculates the minimum number of single-character edits (insertions, deletions, or substitutions)
+  required to transform one string into another.
+
+  This algorithm has extensive applications in spell checking, DNA sequence alignment, fuzzy string
+  matching, and natural language processing.
+
+# Problem formulation
+formulation: |
+  Given two strings s₁ and s₂, find the minimum number of operations to transform s₁ into s₂.
+  Operations allowed:
+  - **Insertion**: Add a character
+  - **Deletion**: Remove a character  
+  - **Substitution**: Replace a character
+
+  **Recurrence Relation:**
+  ```
+  ED(i,j) = {
+    max(i,j),                    if min(i,j) = 0
+    ED(i-1,j-1),                if s₁[i-1] = s₂[j-1]
+    1 + min(ED(i-1,j),          # deletion
+            ED(i,j-1),          # insertion
+            ED(i-1,j-1))        # substitution
+  }
+  ```
+
+# Key properties
+properties:
+  - name: "Optimal Substructure"
+    description: "Optimal solution contains optimal solutions to subproblems"
+    importance: "fundamental"
+  - name: "Overlapping Subproblems"
+    description: "Same subproblems solved multiple times in recursive approach"
+    importance: "fundamental"
+  - name: "Symmetric Property"
+    description: "ED(s₁, s₂) = ED(s₂, s₁)"
+    importance: "mathematical"
+  - name: "Triangle Inequality"
+    description: "ED(s₁, s₃) ≤ ED(s₁, s₂) + ED(s₂, s₃)"
+    importance: "mathematical"
+
+# Mathematical properties
+mathematical_properties:
+  - name: "Time Complexity"
+    formula: "O(m × n)"
+    description: "Where m and n are lengths of input strings"
+  - name: "Space Complexity"
+    formula: "O(m × n)"
+    description: "For 2D DP table, can be optimized to O(min(m,n))"
+  - name: "Distance Bounds"
+    formula: "0 ≤ ED(s₁, s₂) ≤ max(|s₁|, |s₂|)"
+    description: "Edit distance is bounded by length of longer string"
+  - name: "Normalized Distance"
+    formula: "1 - ED(s₁, s₂) / max(|s₁|, |s₂|)"
+    description: "Similarity score between 0 and 1"
+
+# Implementation approaches
+implementations:
+  - name: "Recursive (Naive)"
+    description: "Direct recursive implementation of recurrence relation"
+    complexity:
+      time: "O(3^(m+n))"
+      space: "O(m+n)"
+    advantages:
+      - "Simple to understand and implement"
+      - "Direct translation of mathematical formulation"
+    disadvantages:
+      - "Exponential time complexity"
+      - "Redundant computation of same subproblems"
+    use_cases: ["Educational purposes", "Very small input sizes"]
+    
+  - name: "Memoized (Top-Down)"
+    description: "Recursive approach with memoization to avoid redundant calculations"
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+    advantages:
+      - "Natural recursive structure"
+      - "Only computes needed subproblems"
+      - "Easy to understand"
+    disadvantages:
+      - "Recursion stack overhead"
+      - "May cause stack overflow for large inputs"
+    use_cases: ["Medium-sized inputs", "When recursive approach is preferred"]
+    
+  - name: "Tabulated (Bottom-Up)"
+    description: "Iterative approach building solution from base cases"
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+    advantages:
+      - "No recursion stack issues"
+      - "Better space optimization possible"
+      - "More predictable memory usage"
+    disadvantages:
+      - "Computes all subproblems"
+      - "Less intuitive than recursive approach"
+    use_cases: ["Large inputs", "Production systems", "Memory-constrained environments"]
+    
+  - name: "Space-Optimized"
+    description: "Uses only two rows of DP table instead of full 2D table"
+    complexity:
+      time: "O(m × n)"
+      space: "O(min(m,n))"
+    advantages:
+      - "Significant space savings"
+      - "Same time complexity as standard DP"
+    disadvantages:
+      - "Cannot reconstruct actual edit sequence"
+      - "Slightly more complex implementation"
+    use_cases: ["When only distance is needed", "Memory-constrained systems"]
+    
+  - name: "With Operations Tracking"
+    description: "Tracks actual operations performed to transform strings"
+    complexity:
+      time: "O(m × n)"
+      space: "O(m × n)"
+    advantages:
+      - "Provides detailed transformation steps"
+      - "Useful for debugging and analysis"
+    disadvantages:
+      - "Higher memory usage"
+      - "More complex implementation"
+    use_cases: ["When operation details are needed", "String transformation tools"]
+
+# Complexity analysis
+complexity:
+  time:
+    best: "O(m × n)"
+    average: "O(m × n)"
+    worst: "O(m × n)"
+    notes: "Time complexity is consistent across all cases"
+  space:
+    best: "O(min(m,n))"
+    average: "O(m × n)"
+    worst: "O(m × n)"
+    notes: "Space can be optimized to O(min(m,n)) for distance-only solutions"
+
+# Applications and use cases
+applications:
+  - category: "Natural Language Processing"
+    examples: ["Spell checking", "Autocorrect", "Fuzzy string matching", "Text similarity"]
+  - category: "Bioinformatics"
+    examples: ["DNA sequence alignment", "Protein sequence comparison", "Phylogenetic analysis"]
+  - category: "Data Quality"
+    examples: ["Duplicate detection", "Record linkage", "Data cleaning", "Fuzzy joins"]
+  - category: "Information Retrieval"
+    examples: ["Search suggestions", "Query expansion", "Document similarity", "Plagiarism detection"]
+  - category: "Version Control"
+    examples: ["Diff algorithms", "Merge conflict resolution", "Code similarity analysis"]
+
+# Educational value
+educational_value:
+  learning_objectives:
+    - "Understand dynamic programming principles"
+    - "Learn to identify optimal substructure"
+    - "Practice with 2D DP problems"
+    - "Understand space-time tradeoffs"
+    - "Learn string processing techniques"
+  difficulty: "intermediate"
+  prerequisites:
+    - "Basic understanding of recursion"
+    - "Familiarity with 2D arrays"
+    - "Understanding of time/space complexity"
+    - "String manipulation concepts"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "high"
+  test_coverage: "high"
+  documentation_quality: "complete"
+
+  # Source code locations
+  source_files:
+    - "src/algokit/algorithms/dynamic_programming/edit_distance.py"
+    - "tests/dynamic_programming/test_edit_distance.py"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "longest_common_subsequence"
+    relationship: "similar"
+    description: "Both work with sequence alignment and have similar DP structure"
+  - slug: "hamming_distance"
+    relationship: "variant"
+    description: "Hamming distance is edit distance with only substitution operations"
+  - slug: "fibonacci"
+    relationship: "prerequisite"
+    description: "Simpler DP problem to understand first"
+
+# References and resources
+references:
+  - category: "Core Textbooks"
+    items:
+      - bib_key: "cormen2009"
+  - category: "Historical Papers"
+    items:
+      - bib_key: "levenshtein1966"
+  - category: "Online Resources"
+    items:
+      - bib_key: "geeksforgeeks_edit_distance"
+
+# Tags for categorization and search
+tags:
+  - "dp"
+  - "string"
+  - "distance"
+  - "alignment"
+  - "nlp"
+  - "2d-dp"
+
+# Template and rendering options
+template_options:
+  show_complexity_analysis: true
+  show_implementations: true
+  show_applications: true
+  show_educational_value: true
+  show_related_algorithms: true
+  show_references: true

@@ -1,8 +1,21 @@
 """M* multi-robot path planning algorithm with subdimensional expansion.
 
-This module contains the M* algorithm implementation that uses subdimensional
-expansion to efficiently plan paths for multiple robots by only coupling robots
-when conflicts are detected.
+This module implements the M* algorithm, an efficient multi-robot path planning
+algorithm that uses subdimensional expansion to avoid the exponential complexity
+of traditional multi-robot planning approaches.
+
+Key Concepts:
+- Subdimensional Expansion: Robots plan independently until conflicts are detected
+- Conflict Detection: Identifies vertex collisions and edge swaps between robots
+- Coupling: When conflicts occur, robots are coupled and planned together
+- Decoupling: Robots can be decoupled when conflicts are resolved
+
+The algorithm maintains individual robot paths and only couples robots when
+necessary, making it much more efficient than naive approaches that consider
+all robots simultaneously.
+
+Time Complexity: O(V + E) per robot in the best case (no conflicts)
+Space Complexity: O(V) per robot
 """
 
 from __future__ import annotations
@@ -24,9 +37,22 @@ Plan = dict[Agent, Path]
 
 
 def edge_weight(G: nx.Graph, u: Pos, v: Pos) -> float:
+    """Get the weight of an edge between two positions.
+
+    Args:
+        G: NetworkX graph containing the edge weights
+        u: Source position
+        v: Target position
+
+    Returns:
+        Edge weight (default 1.0 for unweighted edges)
+
+    Raises:
+        KeyError: If no edge exists between u and v (except self-loops)
+    """
     data = G.get_edge_data(u, v, default=None)
     if data is None:
-        # waiting at a node (self-loop) is not in the graph; treat as cost 1
+        # Waiting at a node (self-loop) is not in the graph; treat as cost 1
         if u == v:
             return 1.0
         raise KeyError(f"No edge between {u} and {v}")
@@ -34,18 +60,52 @@ def edge_weight(G: nx.Graph, u: Pos, v: Pos) -> float:
 
 
 def euclid(a: Any, b: Any) -> float | None:
-    """Euclidean distance if nodes look like numeric tuples; else None."""
+    """Calculate Euclidean distance between two positions if they are numeric tuples.
+
+    This function attempts to compute the Euclidean distance between two positions
+    if they can be interpreted as numeric coordinates (tuples or lists of numbers).
+
+    Args:
+        a: First position (tuple/list of numbers or any type)
+        b: Second position (tuple/list of numbers or any type)
+
+    Returns:
+        Euclidean distance if both positions are numeric tuples/lists, None otherwise
+
+    Example:
+        >>> euclid((0, 0), (3, 4))
+        5.0
+        >>> euclid("node1", "node2")
+        None
+    """
     try:
         if isinstance(a, tuple | list) and isinstance(b, tuple | list):
-            return math.sqrt(
-                sum((float(x) - float(y)) ** 2 for x, y in zip(a, b, strict=False))
-            )
+            return math.sqrt(sum((float(x) - float(y)) ** 2 for x, y in zip(a, b)))
     except Exception:
         pass
     return None
 
 
 def has_vertex_collision(p1: Pos, p2: Pos, collision_radius: float) -> bool:
+    """Check if two positions represent a vertex collision.
+
+    A vertex collision occurs when two robots occupy the same position or
+    are within the collision radius of each other.
+
+    Args:
+        p1: First robot's position
+        p2: Second robot's position
+        collision_radius: Minimum safe distance between robots
+
+    Returns:
+        True if there is a vertex collision, False otherwise
+
+    Example:
+        >>> has_vertex_collision((0, 0), (0, 0), 1.0)
+        True
+        >>> has_vertex_collision((0, 0), (2, 0), 1.0)
+        False
+    """
     if p1 == p2:
         return True
     d = euclid(p1, p2)
@@ -55,10 +115,46 @@ def has_vertex_collision(p1: Pos, p2: Pos, collision_radius: float) -> bool:
 
 
 def has_edge_swap(prev1: Pos, next1: Pos, prev2: Pos, next2: Pos) -> bool:
+    """Check if two robots are performing an edge swap collision.
+
+    An edge swap occurs when two robots cross paths by moving in opposite
+    directions along the same edge at the same time step.
+
+    Args:
+        prev1: First robot's previous position
+        next1: First robot's next position
+        prev2: Second robot's previous position
+        next2: Second robot's next position
+
+    Returns:
+        True if an edge swap collision occurs, False otherwise
+
+    Example:
+        >>> has_edge_swap((0, 0), (1, 0), (1, 0), (0, 0))
+        True  # Robots crossing paths
+        >>> has_edge_swap((0, 0), (1, 0), (0, 1), (1, 1))
+        False  # No collision
+    """
     return prev1 == next2 and prev2 == next1
 
 
 def pad_to_length(path: Path, L: int) -> Path:
+    """Pad a path to a specified length by repeating the last position.
+
+    This is useful for synchronizing paths of different lengths by making
+    shorter paths wait at their final position.
+
+    Args:
+        path: The path to pad
+        L: Target length for the path
+
+    Returns:
+        Padded path of length L (or original path if already longer)
+
+    Example:
+        >>> pad_to_length([(0, 0), (1, 0)], 4)
+        [(0, 0), (1, 0), (1, 0), (1, 0)]
+    """
     if not path:
         return path
     if len(path) >= L:
@@ -67,17 +163,69 @@ def pad_to_length(path: Path, L: int) -> Path:
 
 
 def neighbors_with_wait(G: nx.Graph, u: Pos) -> list[Pos]:
-    """Include wait action by allowing staying in place."""
+    """Get all possible next positions including waiting at current position.
+
+    This function returns all neighbors of a position plus the position itself,
+    allowing robots to wait at their current location.
+
+    Args:
+        G: NetworkX graph
+        u: Current position
+
+    Returns:
+        List of possible next positions (including current position for waiting)
+
+    Example:
+        >>> G = nx.grid_2d_graph(3, 3)
+        >>> neighbors_with_wait(G, (1, 1))
+        [(1, 1), (0, 1), (1, 0), (1, 2), (2, 1)]
+    """
     return [u] + list(G.neighbors(u))
 
 
 def single_source_to_goal_costs(G: nx.Graph, goal: Pos) -> dict[Pos, float]:
-    """Compute admissible heuristic: shortest cost to goal for all nodes."""
-    # Reverse edges: run Dijkstra from goal to all nodes; edge weights are symmetric
+    """Compute admissible heuristic costs from all nodes to the goal.
+
+    This function precomputes the shortest path costs from every node to the goal,
+    which serves as an admissible heuristic for A* search. Since the graph is
+    undirected, we can run Dijkstra from the goal to all other nodes.
+
+    Args:
+        G: NetworkX graph (should be undirected)
+        goal: Target goal position
+
+    Returns:
+        Dictionary mapping each position to its shortest cost to the goal
+
+    Example:
+        >>> G = nx.grid_2d_graph(3, 3)
+        >>> costs = single_source_to_goal_costs(G, (2, 2))
+        >>> costs[(0, 0)]
+        4.0  # Manhattan distance from (0,0) to (2,2)
+    """
+    # Run Dijkstra from goal to all nodes; edge weights are symmetric for undirected graphs
     return nx.single_source_dijkstra_path_length(G, goal, weight="weight")
 
 
 def reconstruct_path(came_from: dict[Pos, Pos], start: Pos, goal: Pos) -> Path:
+    """Reconstruct the path from start to goal using parent pointers.
+
+    This function traces back through the parent pointers to reconstruct
+    the complete path from start to goal.
+
+    Args:
+        came_from: Dictionary mapping each position to its parent position
+        start: Starting position
+        goal: Goal position
+
+    Returns:
+        Complete path from start to goal as a list of positions
+
+    Example:
+        >>> came_from = {(1, 0): (0, 0), (2, 0): (1, 0)}
+        >>> reconstruct_path(came_from, (0, 0), (2, 0))
+        [(0, 0), (1, 0), (2, 0)]
+    """
     cur = goal
     out = [cur]
     while cur != start:
@@ -90,28 +238,58 @@ def reconstruct_path(came_from: dict[Pos, Pos], start: Pos, goal: Pos) -> Path:
 def astar_single(
     G: nx.Graph, start: Pos, goal: Pos, h_costs: dict[Pos, float]
 ) -> Path | None:
-    """Standard A* for a single agent (admissible heuristic from precomputed costs)."""
+    """Standard A* search for a single agent with precomputed heuristic costs.
+
+    This function implements the standard A* algorithm for finding the shortest
+    path from start to goal using a precomputed admissible heuristic.
+
+    Args:
+        G: NetworkX graph to search
+        start: Starting position
+        goal: Target goal position
+        h_costs: Precomputed heuristic costs from each position to goal
+
+    Returns:
+        Shortest path from start to goal, or None if no path exists
+
+    Example:
+        >>> G = nx.grid_2d_graph(3, 3)
+        >>> h_costs = single_source_to_goal_costs(G, (2, 2))
+        >>> path = astar_single(G, (0, 0), (2, 2), h_costs)
+        >>> len(path)
+        5  # Path length from (0,0) to (2,2)
+    """
     if start == goal:
         return [start]
-    open_heap: list[tuple[float, Pos]] = []
-    g = {start: 0.0}
-    f0 = g[start] + h_costs.get(start, 0.0)
-    heapq.heappush(open_heap, (f0, start))
-    came: dict[Pos, Pos] = {}
 
+    # Initialize A* data structures
+    open_heap: list[tuple[float, Pos]] = []  # Priority queue: (f_score, position)
+    g = {start: 0.0}  # Actual cost from start to each position
+    f0 = g[start] + h_costs.get(start, 0.0)  # f_score = g_score + h_score
+    heapq.heappush(open_heap, (f0, start))
+    came: dict[Pos, Pos] = {}  # Parent pointers for path reconstruction
+
+    # A* main loop
     while open_heap:
-        _, u = heapq.heappop(open_heap)
+        _, u = heapq.heappop(open_heap)  # Get position with lowest f_score
+
+        # Check if we reached the goal
         if u == goal:
             return reconstruct_path(came, start, goal)
+
+        # Explore all neighbors (including waiting at current position)
         for v in neighbors_with_wait(G, u):
-            w = edge_weight(G, u, v)
-            tentative = g[u] + w
+            w = edge_weight(G, u, v)  # Get edge weight
+            tentative = g[u] + w  # Calculate tentative g_score
+
+            # Update if we found a better path to v
             if tentative < g.get(v, float("inf")):
-                g[v] = tentative
-                came[v] = u
-                f = tentative + h_costs.get(v, 0.0)
-                heapq.heappush(open_heap, (f, v))
-    return None
+                g[v] = tentative  # Update g_score
+                came[v] = u  # Update parent pointer
+                f = tentative + h_costs.get(v, 0.0)  # Calculate f_score
+                heapq.heappush(open_heap, (f, v))  # Add to open set
+
+    return None  # No path found
 
 
 # ----------------------- Collision Checking ----------------------
@@ -200,15 +378,12 @@ def coupled_astar_repair(
     goals_tuple = tuple(goals[a] for a in subset)
 
     # If already at goals, nothing to do
-    if all(p == g for p, g in zip(start_poses, goals_tuple, strict=False)):
+    if all(p == g for p, g in zip(start_poses, goals_tuple)):
         return {a: [get_pos_at(plan[a], start_time)] for a in subset}
 
     # Heuristic: sum of single-agent to-goal distances
     def h(poses: tuple[Pos, ...]) -> float:
-        return sum(
-            h_costs_per_agent[a].get(p, 0.0)
-            for a, p in zip(subset, poses, strict=False)
-        )
+        return sum(h_costs_per_agent[a].get(p, 0.0) for a, p in zip(subset, poses))
 
     # To bound the search horizon, estimate:
     #   baseline = max of single-agent distances; add buffer

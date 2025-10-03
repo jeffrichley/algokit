@@ -99,7 +99,7 @@ def longest_common_subsequence_space_optimized(text1: str, text2: str) -> int:
     """Find LCS length using space-optimized dynamic programming.
 
     This implementation uses only O(min(m, n)) space instead of O(m * n)
-    by using only the previous row in the DP table.
+    by using a single array and updating it efficiently.
 
     Args:
         text1: First input string.
@@ -117,19 +117,21 @@ def longest_common_subsequence_space_optimized(text1: str, text2: str) -> int:
 
     m, n = len(text1), len(text2)
 
-    # Use only previous row
-    prev_dp = [0 for _ in range(m + 1)]
+    # Use single array for space optimization
+    dp = [0 for _ in range(m + 1)]
 
     for j in range(1, n + 1):
-        curr_dp = [0 for _ in range(m + 1)]
+        # Store the previous value before it gets overwritten
+        prev_val = 0
         for i in range(1, m + 1):
+            temp = dp[i]  # Store current value before overwriting
             if text1[i - 1] == text2[j - 1]:
-                curr_dp[i] = prev_dp[i - 1] + 1
+                dp[i] = prev_val + 1
             else:
-                curr_dp[i] = max(prev_dp[i], curr_dp[i - 1])
-        prev_dp = curr_dp
+                dp[i] = max(dp[i], dp[i - 1])
+            prev_val = temp  # Update prev_val for next iteration
 
-    return prev_dp[m]
+    return dp[m]
 
 
 def longest_common_subsequence_memoized(text1: str, text2: str) -> int:
@@ -239,3 +241,51 @@ def longest_increasing_subsequence_optimized(nums: list[int]) -> int:
             tails[left] = num
 
     return len(tails)
+
+
+def longest_increasing_subsequence_string(nums: list[int]) -> list[int]:
+    """Find the actual longest increasing subsequence.
+
+    This function extends the basic LIS problem to return the actual
+    subsequence, not just its length.
+
+    Args:
+        nums: List of integers.
+
+    Returns:
+        The longest increasing subsequence as a list.
+
+    Examples:
+        >>> longest_increasing_subsequence_string([10, 9, 2, 5, 3, 7, 101, 18])
+        [2, 3, 7, 18]
+        >>> longest_increasing_subsequence_string([0, 1, 0, 3, 2, 3])
+        [0, 1, 2, 3]
+    """
+    if not nums:
+        return []
+
+    n = len(nums)
+
+    # dp[i] = length of LIS ending at index i
+    dp = [1] * n
+    # parent[i] = index of previous element in LIS ending at i
+    parent = [-1] * n
+
+    for i in range(1, n):
+        for j in range(i):
+            if nums[j] < nums[i] and dp[j] + 1 > dp[i]:
+                dp[i] = dp[j] + 1
+                parent[i] = j
+
+    # Find the index with maximum LIS length
+    max_length = max(dp)
+    max_index = dp.index(max_length)
+
+    # Reconstruct the LIS by following parent pointers
+    lis = []
+    current = max_index
+    while current != -1:
+        lis.append(nums[current])
+        current = parent[current]
+
+    return lis[::-1]  # Reverse to get correct order

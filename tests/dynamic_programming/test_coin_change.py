@@ -223,3 +223,27 @@ def test_coin_change_with_coins_empty_coins_list() -> None:
     # Act & Assert - Verify that ValueError is raised for empty coins list
     with pytest.raises(ValueError, match="Coins list cannot be empty"):
         coin_change_with_coins(coins, amount)
+
+
+@pytest.mark.unit
+def test_coin_change_with_coins_negative_coins() -> None:
+    """Test that coin_change_with_coins raises ValueError for negative coins."""
+    # Arrange - Set up coins with negative values
+    coins = [1, -5, 10]
+    amount = 11
+
+    # Act & Assert - Verify that ValueError is raised for negative coins
+    with pytest.raises(ValueError, match="All coins must be positive integers"):
+        coin_change_with_coins(coins, amount)
+
+
+@pytest.mark.unit
+def test_coin_change_with_coins_negative_amount() -> None:
+    """Test that coin_change_with_coins raises ValueError for negative amount."""
+    # Arrange - Set up negative amount
+    coins = [1, 5, 10]
+    amount = -11
+
+    # Act & Assert - Verify that ValueError is raised for negative amount
+    with pytest.raises(ValueError, match="Amount must be non-negative"):
+        coin_change_with_coins(coins, amount)

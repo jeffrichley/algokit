@@ -9,6 +9,7 @@ from algokit.algorithms.dynamic_programming.longest_common_subsequence import (
     longest_common_subsequence_string,
     longest_increasing_subsequence,
     longest_increasing_subsequence_optimized,
+    longest_increasing_subsequence_string,
 )
 
 
@@ -303,3 +304,130 @@ def test_longest_increasing_subsequence_optimized_single_element() -> None:
 
     # Assert - Verify optimized result for single element
     assert result == expected_length
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_basic() -> None:
+    """Test LIS string reconstruction for basic case."""
+    # Arrange - Set up test inputs for LIS string reconstruction
+    nums = [10, 9, 2, 5, 3, 7, 101, 18]
+    expected_lis = [2, 5, 7, 101]  # One possible LIS
+
+    # Act - Calculate actual LIS string
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string is valid increasing subsequence
+    assert len(result) == 4
+    assert result == expected_lis
+    # Verify it's actually increasing
+    for i in range(len(result) - 1):
+        assert result[i] < result[i + 1]
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_empty() -> None:
+    """Test LIS string reconstruction with empty list."""
+    # Arrange - Set up empty list
+    nums = []
+    expected_lis = []
+
+    # Act - Calculate LIS string for empty list
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string is empty
+    assert result == expected_lis
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_single_element() -> None:
+    """Test LIS string reconstruction with single element."""
+    # Arrange - Set up single element list
+    nums = [5]
+    expected_lis = [5]
+
+    # Act - Calculate LIS string for single element
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string contains single element
+    assert result == expected_lis
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_decreasing() -> None:
+    """Test LIS string reconstruction with decreasing sequence."""
+    # Arrange - Set up decreasing sequence
+    nums = [5, 4, 3, 2, 1]
+    expected_lis = [5]  # First element forms LIS
+
+    # Act - Calculate LIS string for decreasing sequence
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string contains single element
+    assert result == expected_lis
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_increasing() -> None:
+    """Test LIS string reconstruction with increasing sequence."""
+    # Arrange - Set up increasing sequence
+    nums = [1, 2, 3, 4, 5]
+    expected_lis = [1, 2, 3, 4, 5]  # Entire sequence is LIS
+
+    # Act - Calculate LIS string for increasing sequence
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string equals entire sequence
+    assert result == expected_lis
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_duplicates() -> None:
+    """Test LIS string reconstruction with duplicate elements."""
+    # Arrange - Set up sequence with duplicates
+    nums = [1, 2, 2, 3, 4, 4, 5]
+    expected_lis = [1, 2, 3, 4, 5]  # Duplicates not included in LIS
+
+    # Act - Calculate LIS string for sequence with duplicates
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string excludes duplicates
+    assert result == expected_lis
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_alternating() -> None:
+    """Test LIS string reconstruction with alternating pattern."""
+    # Arrange - Set up alternating sequence
+    nums = [0, 1, 0, 3, 2, 3]
+    expected_lis = [0, 1, 2, 3]  # One possible LIS
+
+    # Act - Calculate LIS string for alternating sequence
+    result = longest_increasing_subsequence_string(nums)
+
+    # Assert - Verify LIS string is valid
+    assert len(result) == 4
+    assert result == expected_lis
+    # Verify it's actually increasing
+    for i in range(len(result) - 1):
+        assert result[i] < result[i + 1]
+
+
+@pytest.mark.unit
+def test_longest_increasing_subsequence_string_consistency_with_length() -> None:
+    """Test that LIS string length matches LIS length function."""
+    # Arrange - Set up test cases
+    test_cases = [
+        [10, 9, 2, 5, 3, 7, 101, 18],
+        [0, 1, 0, 3, 2, 3],
+        [5, 4, 3, 2, 1],
+        [1, 2, 3, 4, 5],
+        [1, 2, 2, 3, 4, 4, 5],
+    ]
+
+    for nums in test_cases:
+        # Act - Calculate both length and string
+        length_result = longest_increasing_subsequence(nums)
+        string_result = longest_increasing_subsequence_string(nums)
+
+        # Assert - Verify lengths match
+        assert len(string_result) == length_result

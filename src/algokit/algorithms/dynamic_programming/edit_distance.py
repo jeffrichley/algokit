@@ -55,7 +55,7 @@ def edit_distance_space_optimized(str1: str, str2: str) -> int:
     """Calculate edit distance using space-optimized dynamic programming.
 
     This implementation uses only O(min(m, n)) space instead of O(m * n)
-    by using only the previous row in the DP table.
+    by using a single array and updating it efficiently.
 
     Args:
         str1: First input string.
@@ -71,23 +71,27 @@ def edit_distance_space_optimized(str1: str, str2: str) -> int:
         str1, str2 = str2, str1
         m, n = n, m
 
-    # Use only previous row
-    prev_dp = list(range(m + 1))
+    # Use single array for space optimization
+    dp = list(range(m + 1))
 
     for j in range(1, n + 1):
-        curr_dp = [j] + [0] * m
-        for i in range(1, m + 1):
-            if str1[i - 1] == str2[j - 1]:
-                curr_dp[i] = prev_dp[i - 1]
-            else:
-                curr_dp[i] = 1 + min(
-                    prev_dp[i],  # Delete
-                    curr_dp[i - 1],  # Insert
-                    prev_dp[i - 1],  # Substitute
-                )
-        prev_dp = curr_dp
+        # Store the previous value before it gets overwritten
+        prev_val = dp[0]  # This will be j-1
+        dp[0] = j  # Update first element
 
-    return prev_dp[m]
+        for i in range(1, m + 1):
+            temp = dp[i]  # Store current value before overwriting
+            if str1[i - 1] == str2[j - 1]:
+                dp[i] = prev_val
+            else:
+                dp[i] = 1 + min(
+                    dp[i],  # Delete (current row, same column)
+                    dp[i - 1],  # Insert (current row, previous column)
+                    prev_val,  # Substitute (previous row, previous column)
+                )
+            prev_val = temp  # Update prev_val for next iteration
+
+    return dp[m]
 
 
 def edit_distance_with_operations(str1: str, str2: str) -> tuple[int, list[str]]:
@@ -224,7 +228,7 @@ def hamming_distance(str1: str, str2: str) -> int:
         ValueError: If strings have different lengths.
 
     Examples:
-        >>> hamming_distance("abc", "abd")
+        >>> hamming_distance("abc", "abx")
         1
         >>> hamming_distance("abc", "abc")
         0
@@ -232,7 +236,7 @@ def hamming_distance(str1: str, str2: str) -> int:
     if len(str1) != len(str2):
         raise ValueError("Strings must have the same length for Hamming distance")
 
-    return sum(c1 != c2 for c1, c2 in zip(str1, str2, strict=False))
+    return sum(c1 != c2 for c1, c2 in zip(str1, str2))
 
 
 def longest_common_substring(str1: str, str2: str) -> int:
