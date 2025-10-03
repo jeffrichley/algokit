@@ -74,12 +74,12 @@ class TestQLearningAgent:
             QLearningAgent(state_space_size=3, action_space_size=2, discount_factor=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon
-        with pytest.raises(ValueError, match="epsilon must be between 0 and 1"):
+        with pytest.raises(ValueError, match="epsilon_start must be between 0 and 1"):
             QLearningAgent(state_space_size=3, action_space_size=2, epsilon=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon min
         with pytest.raises(
-            ValueError, match="epsilon_min must be between 0 and epsilon"
+            ValueError, match="epsilon_end must be less than or equal to epsilon_start"
         ):
             QLearningAgent(
                 state_space_size=3, action_space_size=2, epsilon=0.1, epsilon_min=0.2

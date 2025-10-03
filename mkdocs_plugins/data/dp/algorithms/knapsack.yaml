@@ -27,8 +27,10 @@ status:
 
   # Source code locations
   source_files:
-    - "src/algokit/algorithms/dynamic_programming/knapsack.py"
-    - "tests/dynamic_programming/test_knapsack.py"
+    - path: "src/algokit/algorithms/dynamic_programming/knapsack.py"
+      description: "Main implementation file"
+    - path: "tests/dynamic_programming/test_knapsack.py"
+      description: "Test suite"
 
 # Tags for categorization and search
 tags:

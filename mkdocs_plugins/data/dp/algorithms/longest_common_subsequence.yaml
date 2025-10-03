@@ -21,18 +21,16 @@ description: |
   systems (diff algorithms), and text processing (plagiarism detection).
 
 # Problem formulation
-formulation: |
-  Given two sequences X = [x₁, x₂, ..., xₘ] and Y = [y₁, y₂, ..., yₙ], find the longest
-  subsequence that appears in both sequences.
-
-  **Recurrence Relation:**
-  ```
-  LCS(i,j) = {
-    0,                           if i = 0 or j = 0
-    1 + LCS(i-1, j-1),          if xᵢ = yⱼ
-    max(LCS(i-1, j), LCS(i, j-1)), otherwise
-  }
-  ```
+formulation:
+  problem_definition: |
+    Given two sequences X = [x₁, x₂, ..., xₘ] and Y = [y₁, y₂, ..., yₙ], find the longest
+    subsequence that appears in both sequences.
+  recurrence_relation: |
+    LCS(i,j) = {
+      0,                           if i = 0 or j = 0
+      1 + LCS(i-1, j-1),          if xᵢ = yⱼ
+      max(LCS(i-1, j), LCS(i, j-1)), otherwise
+    }
 
 # Key properties
 properties:
@@ -140,16 +138,10 @@ applications:
 
 # Educational value
 educational_value:
-  learning_objectives:
-    - "Understand dynamic programming principles"
-    - "Learn to identify optimal substructure"
-    - "Practice with 2D DP problems"
-    - "Understand space-time tradeoffs"
-  difficulty: "intermediate"
-  prerequisites:
-    - "Basic understanding of recursion"
-    - "Familiarity with 2D arrays"
-    - "Understanding of time/space complexity"
+  - "Understand dynamic programming principles"
+  - "Learn to identify optimal substructure"
+  - "Practice with 2D DP problems"
+  - "Understand space-time tradeoffs"
 
 # Implementation status and development info
 status:
@@ -160,8 +152,10 @@ status:
 
   # Source code locations
   source_files:
-    - "src/algokit/algorithms/dynamic_programming/longest_common_subsequence.py"
-    - "tests/dynamic_programming/test_longest_common_subsequence.py"
+    - path: "src/algokit/algorithms/dynamic_programming/longest_common_subsequence.py"
+      description: "Main implementation file"
+    - path: "tests/dynamic_programming/test_longest_common_subsequence.py"
+      description: "Test suite"
 
 # Related algorithms and cross-references
 related_algorithms:

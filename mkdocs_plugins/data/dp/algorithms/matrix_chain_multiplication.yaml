@@ -23,22 +23,15 @@ description: |
   of linear algebra operations.
 
 # Problem formulation
-formulation: |
-  Given matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
-  find the optimal parenthesization to minimize scalar multiplications.
-
-  **Cost of multiplying matrices A[i]×A[i+1]×...×A[j]:**
-  ```
-  Cost = p[i-1] × p[k] × p[j]  (where k is the split point)
-  ```
-
-  **Recurrence Relation:**
-  ```
-  M[i,j] = {
-    0,                                    if i = j
-    min(M[i,k] + M[k+1,j] + p[i-1]×p[k]×p[j]),  for k in [i, j-1]
-  }
-  ```
+formulation:
+  problem_definition: |
+    Given matrices A₁, A₂, ..., Aₙ with dimensions p₀×p₁, p₁×p₂, ..., pₙ₋₁×pₙ,
+    find the optimal parenthesization to minimize scalar multiplications.
+  recurrence_relation: |
+    M[i,j] = {
+      0,                                    if i = j
+      min(M[i,k] + M[k+1,j] + p[i-1]×p[k]×p[j]),  for k in [i, j-1]
+    }
 
 # Key properties
 properties:
@@ -167,18 +160,12 @@ applications:
 
 # Educational value
 educational_value:
-  learning_objectives:
-    - "Understand dynamic programming principles"
-    - "Learn interval DP techniques"
-    - "Practice with 2D DP problems"
-    - "Understand optimization problems"
-    - "Learn matrix operations"
-  difficulty: "intermediate"
-  prerequisites:
-    - "Basic understanding of recursion"
-    - "Familiarity with 2D arrays"
-    - "Understanding of time/space complexity"
-    - "Matrix multiplication concepts"
+  - "Understand dynamic programming principles"
+  - "Learn interval DP techniques"
+  - "Practice with 2D DP problems"
+  - "Understand optimization problems"
+  - "Learn matrix operations"
+  - "Matrix multiplication concepts"
 
 # Implementation status and development info
 status:
@@ -189,8 +176,10 @@ status:
 
   # Source code locations
   source_files:
-    - "src/algokit/algorithms/dynamic_programming/matrix_chain_multiplication.py"
-    - "tests/dynamic_programming/test_matrix_chain_multiplication.py"
+    - path: "src/algokit/algorithms/dynamic_programming/matrix_chain_multiplication.py"
+      description: "Main implementation file"
+    - path: "tests/dynamic_programming/test_matrix_chain_multiplication.py"
+      description: "Test suite"
 
 # Related algorithms and cross-references
 related_algorithms:

@@ -71,18 +71,50 @@
 {% if family.algorithms.comparison.enabled %}
 ## Comparison Table
 
+{% if algorithms %}
 {% set metrics = family.algorithms.comparison.metrics %}
 | Algorithm{% if 'status' in metrics %} | Status{% endif %}{% if 'time_complexity' in metrics %} | Time Complexity{% endif %}{% if 'space_complexity' in metrics %} | Space Complexity{% endif %}{% if 'difficulty' in metrics %} | Difficulty{% endif %}{% if 'applications' in metrics %} | Applications{% endif %} |
 |-----------{% if 'status' in metrics %}|--------{% endif %}{% if 'time_complexity' in metrics %}|---------------{% endif %}{% if 'space_complexity' in metrics %}|----------------{% endif %}{% if 'difficulty' in metrics %}|----------{% endif %}{% if 'applications' in metrics %}|-------------{% endif %}|
 {% for algo in algorithms %}| **{{ algo.name }}**{% if 'status' in metrics %} | {% if algo.status.current == 'complete' %}✅ Complete{% elif algo.status.current == 'in_progress' %}🚧 In Progress{% elif algo.status.current == 'planned' %}📋 Planned{% else %}❓ Unknown{% endif %}{% endif %}{% if 'time_complexity' in metrics %} | {% if algo.complexity and algo.complexity.analysis %}{{ algo.complexity.analysis[0].time }}{% else %}Varies{% endif %}{% endif %}{% if 'space_complexity' in metrics %} | {% if algo.complexity and algo.complexity.analysis %}{{ algo.complexity.analysis[0].space }}{% else %}Varies{% endif %}{% endif %}{% if 'difficulty' in metrics %} | {% if algo.difficulty %}{{ algo.difficulty }}{% else %}Medium{% endif %}{% endif %}{% if 'applications' in metrics %} | {% if algo.applications %}{{ algo.applications[0].category }}{% if algo.applications|length > 1 %}, {{ algo.applications[1].category }}{% endif %}{% else %}General applications{% endif %}{% endif %} |
 {% endfor %}
+{% else %}
+!!! info "Algorithms Coming Soon"
+    This algorithm family is currently in development. The following algorithms are planned for implementation:
+
+    {% set all_algorithms = family.all_algorithms if family.all_algorithms else [] %}
+    {% set planned_algorithms = all_algorithms | selectattr('status.current', 'equalto', 'planned') | list %}
+    {% if planned_algorithms %}
+    {% for algo in planned_algorithms %}
+    - **{{ algo.name }}** - {{ algo.summary }}
+    {% endfor %}
+    {% else %}
+    - Algorithm implementations are being developed
+    - Check back soon for updates
+    {% endif %}
+{% endif %}
 {% endif %}
 
 ## Algorithms in This Family
 
+{% if algorithms %}
 {% for algo in algorithms %}
 - [**{{ algo.name }}**]({{ algo.slug }}.md) - {{ algo.summary }}
 {% endfor %}
+{% else %}
+!!! info "Algorithms Coming Soon"
+    This algorithm family is currently in development. The following algorithms are planned for implementation:
+
+    {% set all_algorithms = family.all_algorithms if family.all_algorithms else [] %}
+    {% set planned_algorithms = all_algorithms | selectattr('status.current', 'equalto', 'planned') | list %}
+    {% if planned_algorithms %}
+    {% for algo in planned_algorithms %}
+    - **{{ algo.name }}** - {{ algo.summary }}
+    {% endfor %}
+    {% else %}
+    - Algorithm implementations are being developed
+    - Check back soon for updates
+    {% endif %}
+{% endif %}
 
 {% if family.template_options.show_implementation_status %}
 ## Implementation Status
@@ -92,6 +124,7 @@
 {% set planned_count = algorithms | selectattr('status.current', 'equalto', 'planned') | list | length %}
 {% set total_count = algorithms | length %}
 
+{% if total_count > 0 %}
 <div class="grid cards" markdown>
 
 -   :material-check-circle: **Complete**
@@ -115,6 +148,25 @@
     {{ planned_count }}/{{ total_count }} algorithms ({{ (planned_count / total_count * 100) | round(0) | int }}%)
 
 </div>
+{% else %}
+!!! info "Development Status"
+    This algorithm family is currently in development. All algorithms are planned for implementation.
+
+    {% set all_algorithms = family.all_algorithms if family.all_algorithms else [] %}
+    {% set all_planned_count = all_algorithms | selectattr('status.current', 'equalto', 'planned') | list | length %}
+    {% set all_in_progress_count = all_algorithms | selectattr('status.current', 'equalto', 'in-progress') | list | length %}
+    {% set all_complete_count = all_algorithms | selectattr('status.current', 'equalto', 'complete') | list | length %}
+    {% set all_total_count = all_algorithms | length %}
+
+    {% if all_total_count > 0 %}
+    **Overall Progress:**
+    - **Complete**: {{ all_complete_count }}/{{ all_total_count }} algorithms
+    - **In Progress**: {{ all_in_progress_count }}/{{ all_total_count }} algorithms
+    - **Planned**: {{ all_planned_count }}/{{ all_total_count }} algorithms
+    {% else %}
+    Algorithm implementations are being developed. Check back soon for updates.
+    {% endif %}
+{% endif %}
 {% endif %}
 
 {% if family.template_options.show_related_families %}
