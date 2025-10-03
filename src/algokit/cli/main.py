@@ -276,18 +276,7 @@ sys.excepthook = handle_exception
 #     help="SARSA (State-Action-Reward-State-Action) reinforcement learning algorithm commands",
 # )
 
-# Add render command
-try:
-    from algokit.cli.render import app as render_app
-
-    app.add_typer(
-        render_app,
-        name="render",
-        help="🎬 Render algorithm visualizations with Manim",
-    )
-except ImportError:
-    # Render command not available if dependencies are missing
-    pass
+# Render command moved to viz-source - no longer part of main CLI
 
 # ============================================================================
 # GLOBAL COMMANDS

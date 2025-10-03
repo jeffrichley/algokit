@@ -7,7 +7,7 @@ polluting the core algorithm code.
 
 import networkx as nx
 
-from algokit.core.utils.decorators import with_event_tracking
+from decorators import with_event_tracking
 
 
 # Create the decorated version for convenience

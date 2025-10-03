@@ -384,7 +384,7 @@ def _render_bfs_implementation(
     console.print()
 
     # Build manim command
-    scene_file = "src/agloviz/scenes/planning/bfs/render_bfs_scene.py"
+    scene_file = "viz-source/agloviz/scenes/planning/bfs/render_bfs_scene.py"
     manim_args = [
         "uv",
         "run",

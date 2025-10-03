@@ -115,7 +115,6 @@ source = { editable = "." }
 dependencies = [
     { name = "autorom" },
     { name = "gymnasium", extra = ["atari", "box2d", "classic-control", "mujoco", "toy-text"] },
-    { name = "manim" },
     { name = "matplotlib" },
     { name = "mkdocs-gen-files" },
     { name = "mkdocs-git-revision-date-localized-plugin" },
@@ -130,6 +129,11 @@ dependencies = [
     { name = "rich" },
     { name = "seaborn" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+viz = [
+    { name = "manim" },
 ]
 
 [package.dev-dependencies]
@@ -189,7 +193,7 @@ docs = [
 requires-dist = [
     { name = "autorom", specifier = ">=0.6.1" },
     { name = "gymnasium", extras = ["atari", "box2d", "classic-control", "mujoco", "toy-text"], specifier = ">=1.2.0" },
-    { name = "manim", specifier = ">=0.19.0" },
+    { name = "manim", marker = "extra == 'viz'", specifier = ">=0.19.0" },
     { name = "matplotlib", specifier = ">=3.7.0" },
     { name = "mkdocs-gen-files", specifier = ">=0.5.0" },
     { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.4.7" },
@@ -205,6 +209,7 @@ requires-dist = [
     { name = "seaborn", specifier = ">=0.12.0" },
     { name = "typer", specifier = ">=0.17.4" },
 ]
+provides-extras = ["viz"]
 
 [package.metadata.requires-dev]
 dev = [
