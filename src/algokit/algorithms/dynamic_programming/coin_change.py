@@ -96,7 +96,7 @@ def coin_change_with_coins(coins: list[int], amount: int) -> list[int]:
         result.append(coin)
         current -= coin
 
-    return sorted(result)
+    return result
 
 
 def coin_change_count_ways(coins: list[int], amount: int) -> int:

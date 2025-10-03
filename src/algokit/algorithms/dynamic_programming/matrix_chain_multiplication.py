@@ -1,5 +1,7 @@
 """Matrix Chain Multiplication implementation using dynamic programming."""
 
+import math
+
 
 def matrix_chain_multiplication(dimensions: list[int]) -> tuple[int, list[list[int]]]:
     """Find the minimum number of scalar multiplications needed for matrix chain multiplication.
@@ -45,7 +47,7 @@ def matrix_chain_multiplication(dimensions: list[int]) -> tuple[int, list[list[i
     for length in range(2, n + 1):  # length of chain
         for i in range(n - length + 1):
             j = i + length - 1
-            dp[i][j] = 999999999  # Large number instead of inf
+            dp[i][j] = math.inf
 
             for k in range(i, j):
                 # Cost of multiplying matrices i to k and k+1 to j
@@ -95,7 +97,7 @@ def matrix_chain_multiplication_value_only(dimensions: list[int]) -> int:
     for length in range(2, n + 1):
         for i in range(n - length + 1):
             j = i + length - 1
-            dp[i][j] = 999999999  # Large number instead of inf
+            dp[i][j] = math.inf
 
             for k in range(i, j):
                 cost = (
@@ -144,7 +146,7 @@ def matrix_chain_multiplication_memoized(dimensions: list[int]) -> int:
         if (i, j) in memo:
             return memo[(i, j)]
 
-        result = 999999999
+        result = math.inf
         for k in range(i, j):
             cost = (
                 matrix_chain_rec(i, k)
@@ -276,7 +278,7 @@ def matrix_chain_multiplication_brute_force(dimensions: list[int]) -> int:
         if i == j:
             return 0
 
-        min_cost: int = 999999999
+        min_cost: float = math.inf
         for k in range(i, j):
             cost = (
                 brute_force_rec(i, k)
@@ -285,6 +287,6 @@ def matrix_chain_multiplication_brute_force(dimensions: list[int]) -> int:
             )
             min_cost = min(min_cost, cost)
 
-        return min_cost
+        return int(min_cost)
 
     return brute_force_rec(0, n - 1)

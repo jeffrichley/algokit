@@ -75,7 +75,7 @@ def knapsack_01_value_only(weights: list[int], values: list[int], capacity: int)
     """Solve the 0/1 knapsack problem and return only the maximum value.
 
     This is a space-optimized version that only returns the maximum value
-    without tracking which items were selected.
+    without tracking which items were selected. Uses 1D array update-in-place.
 
     Args:
         weights: List of item weights (positive integers).
@@ -104,22 +104,15 @@ def knapsack_01_value_only(weights: list[int], values: list[int], capacity: int)
     if capacity == 0:
         return 0
 
-    # Space-optimized DP using only previous row
-    prev_dp = [0 for _ in range(capacity + 1)]
+    # 1D DP array with update-in-place (iterate backwards to avoid using updated values)
+    dp = [0 for _ in range(capacity + 1)]
 
     for i in range(n):
-        curr_dp = [0 for _ in range(capacity + 1)]
-        for w in range(capacity + 1):
-            # Don't take current item
-            curr_dp[w] = prev_dp[w]
+        # Iterate backwards to avoid using updated values in the same iteration
+        for w in range(capacity, weights[i] - 1, -1):
+            dp[w] = max(dp[w], dp[w - weights[i]] + values[i])
 
-            # Take current item (if it fits)
-            if weights[i] <= w:
-                curr_dp[w] = max(curr_dp[w], prev_dp[w - weights[i]] + values[i])
-
-        prev_dp = curr_dp
-
-    return prev_dp[capacity]
+    return dp[capacity]
 
 
 def knapsack_fractional_greedy(

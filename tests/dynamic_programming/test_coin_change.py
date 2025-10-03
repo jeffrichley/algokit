@@ -127,7 +127,7 @@ def test_coin_change_with_coins_basic() -> None:
     result = coin_change_with_coins(coins, amount)
 
     # Assert - Verify coins used are correct
-    assert sorted(result) == expected_coins
+    assert result == expected_coins
 
 
 @pytest.mark.unit
