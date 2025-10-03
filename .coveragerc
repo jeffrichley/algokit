@@ -3,6 +3,8 @@ source = src/algokit
 omit =
     src/algokit/cli/*
     src/algokit/__init__.py
+    viz-source/*
+    viz_tests/*
 
 [report]
 fail_under = 70
