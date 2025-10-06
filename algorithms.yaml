@@ -894,6 +894,86 @@ algorithms:
       - "trpo"
       - "a2c"
 
+  # Control Family (Planned)
+  pid-control:
+    name: "PID Control"
+    family: "control"
+    status: "planned"
+    description: "Proportional-Integral-Derivative controller for system regulation"
+    overview: "PID control is one of the most widely used control algorithms in industry. It combines three control actions: proportional (P), integral (I), and derivative (D) to achieve stable and accurate control of dynamic systems."
+    complexity:
+      time: "$O(1)$"
+      space: "$O(1)$"
+      notes: "Constant time per control step"
+    tags:
+      - "control"
+      - "pid"
+      - "feedback"
+      - "regulation"
+    applications:
+      - "Industrial automation"
+      - "Robotics"
+      - "Process control"
+      - "Automotive systems"
+    mathematical_formulation:
+      control_law: "u(t) = K_p e(t) + K_i ∫e(τ)dτ + K_d de(t)/dt"
+      parameters:
+        - "K_p: proportional gain"
+        - "K_i: integral gain"
+        - "K_d: derivative gain"
+
+  adaptive-control:
+    name: "Adaptive Control"
+    family: "control"
+    status: "planned"
+    description: "Control system that adjusts its parameters based on changing system dynamics"
+    overview: "Adaptive control systems automatically adjust their control parameters to maintain optimal performance as system dynamics change. This is particularly useful for systems with uncertain or time-varying parameters."
+    complexity:
+      time: "$O(n^2)$"
+      space: "$O(n)$"
+      notes: "n = number of parameters"
+    tags:
+      - "control"
+      - "adaptive"
+      - "uncertainty"
+      - "optimization"
+    applications:
+      - "Aerospace systems"
+      - "Robotics"
+      - "Process control"
+      - "Autonomous vehicles"
+    mathematical_formulation:
+      parameter_update: "θ(t+1) = θ(t) + γ φ(t) e(t)"
+      parameters:
+        - "γ: adaptation gain"
+        - "φ(t): regressor vector"
+        - "e(t): tracking error"
+
+  # MPC Family (Planned)
+  linear-mpc:
+    name: "Linear Model Predictive Control"
+    family: "mpc"
+    status: "planned"
+    description: "MPC using linear system models for optimization"
+    overview: "Linear MPC uses linear system models to predict future behavior and optimize control actions. It's computationally efficient and widely used in process control applications."
+    complexity:
+      time: "$O(N^3)$"
+      space: "$O(N^2)$"
+      notes: "N = prediction horizon"
+    tags:
+      - "mpc"
+      - "linear"
+      - "optimization"
+      - "predictive"
+    applications:
+      - "Chemical processes"
+      - "Power systems"
+      - "Automotive"
+      - "Robotics"
+    mathematical_formulation:
+      objective: "min Σ(k=0 to N-1) [||x(k)||²_Q + ||u(k)||²_R]"
+      constraints: "x(k+1) = Ax(k) + Bu(k), u_min ≤ u(k) ≤ u_max"
+
 # Cross-references and relationships
 relationships:
   family_hierarchy:

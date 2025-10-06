@@ -82,7 +82,7 @@ quality: install-dev install-docs
     uv run mypy src tests
     uv run mkdocs build
     uv run python -m linkcheckmd docs
-    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley,bu
     @echo "🔍 Checking code complexity (advisory - non-blocking)..."
     uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
 
