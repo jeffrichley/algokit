@@ -317,5 +317,5 @@ version_files = [
 ]
 
 [tool.codespell]
-ignore-words-list = "algokit,jeffrichley,pyproject"
+ignore-words-list = "algokit,jeffrichley,pyproject,bu,meger"
 skip = "*.pyc,*.pyo,*.pyd,.git,*.so,*.egg,*.egg-info,.tox,.venv,htmlcov,site"
