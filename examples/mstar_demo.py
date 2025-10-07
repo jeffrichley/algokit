@@ -3,12 +3,15 @@
 
 This script demonstrates the M* algorithm for multi-robot path planning.
 It shows how multiple robots can plan collision-free paths in a shared environment.
+
+The demo shows both the functional API (mstar_plan_paths) and the new
+class-based API (MStar class with MStarConfig).
 """
 
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from algokit.algorithms.pathfinding.mstar import mstar_plan_paths
+from algokit.algorithms.pathfinding.mstar import MStar, MStarConfig, mstar_plan_paths
 from algokit.core.helpers import create_grid_graph
 from algokit.core.utils.distances import manhattan_distance
 
@@ -429,6 +432,94 @@ def demo_collision_avoidance() -> None:
             print("  No solution found!")
 
 
+def demo_class_based_api() -> None:
+    """Demonstrate the new class-based MStar API with MStarConfig."""
+    print("\n=== Class-Based API Demo ===")
+    print("This demo shows the new MStar class with Pydantic configuration.")
+    print()
+
+    # Example 1: Using default configuration
+    print("Example 1: Default configuration")
+    planner = MStar()
+    graph = create_grid_graph(4, 4)
+    starts = {"robot1": (0, 0), "robot2": (3, 3)}
+    goals = {"robot1": (3, 3), "robot2": (0, 0)}
+
+    print(f"  Collision radius: {planner.collision_radius}")
+    print(f"  Max extra steps: {planner.max_extra_steps}")
+    print(f"  Safety cap: {planner.safety_cap}")
+
+    paths = planner.plan(graph, starts, goals)
+    if paths:
+        print("  ✓ Solution found!")
+        for robot_id, path in paths.items():
+            print(f"    {robot_id}: {len(path)} steps")
+    else:
+        print("  ✗ No solution found")
+
+    # Example 2: Using custom configuration with config object (recommended)
+    print("\nExample 2: Custom configuration (recommended approach)")
+    config = MStarConfig(
+        collision_radius=1.5,
+        max_extra_steps=300,
+        safety_cap=3000
+    )
+    planner = MStar(config=config)
+
+    print(f"  Collision radius: {planner.collision_radius}")
+    print(f"  Max extra steps: {planner.max_extra_steps}")
+    print(f"  Safety cap: {planner.safety_cap}")
+
+    graph = create_grid_graph(5, 5)
+    starts = {"robot1": (0, 0), "robot2": (4, 4), "robot3": (0, 4)}
+    goals = {"robot1": (4, 4), "robot2": (0, 0), "robot3": (4, 0)}
+
+    paths = planner.plan(graph, starts, goals)
+    if paths:
+        print("  ✓ Solution found for 3 robots!")
+        for robot_id, path in paths.items():
+            print(f"    {robot_id}: {len(path)} steps")
+    else:
+        print("  ✗ No solution found")
+
+    # Example 3: Using kwargs for backwards compatibility
+    print("\nExample 3: Kwargs approach (backwards compatible)")
+    planner = MStar(collision_radius=2.0, max_extra_steps=250)
+
+    print(f"  Collision radius: {planner.collision_radius}")
+    print(f"  Max extra steps: {planner.max_extra_steps}")
+
+    graph = create_grid_graph(4, 4)
+    starts = {"robot1": (0, 0), "robot2": (3, 0)}
+    goals = {"robot1": (3, 3), "robot2": (0, 3)}
+
+    paths = planner.plan(graph, starts, goals)
+    if paths:
+        print("  ✓ Solution found!")
+        for robot_id, path in paths.items():
+            print(f"    {robot_id}: {len(path)} steps")
+    else:
+        print("  ✗ No solution found")
+
+    # Example 4: Input validation demonstration
+    print("\nExample 4: Configuration validation")
+    print("  Attempting invalid configuration (negative collision_radius)...")
+    try:
+        invalid_config = MStarConfig(collision_radius=-1.0)
+        print("  ✗ Validation failed to catch error!")
+    except Exception as e:
+        print(f"  ✓ Validation caught error: {type(e).__name__}")
+
+    print("\n  Attempting invalid configuration (unreasonably large collision_radius)...")
+    try:
+        invalid_config = MStarConfig(collision_radius=150.0)
+        print("  ✗ Validation failed to catch error!")
+    except Exception as e:
+        print(f"  ✓ Validation caught error: {type(e).__name__}")
+
+    print("\n  ✓ All validation examples passed!")
+
+
 def main() -> None:
     """Run all M* demonstrations."""
     import sys
@@ -457,6 +548,7 @@ def main() -> None:
     demo_three_robots()
     demo_hallway_scenario()
     demo_collision_avoidance()
+    demo_class_based_api()
 
     print("\n" + "=" * 50)
     print("Demo completed!")

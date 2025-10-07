@@ -785,34 +785,51 @@ class ParameterDefinitionValidator:
             if param_spec is None:
                 # Keep unknown parameters as-is
                 normalized[param_name] = param_value
-                continue
-
-            # Type conversion
-            if param_spec.type == "float" and isinstance(param_value, str):
-                try:
-                    normalized[param_name] = float(param_value)
-                except ValueError:
-                    normalized[param_name] = (
-                        param_value  # Keep original if conversion fails
-                    )
-            elif param_spec.type == "int" and isinstance(param_value, str):
-                try:
-                    normalized[param_name] = int(param_value)
-                except ValueError:
-                    normalized[param_name] = (
-                        param_value  # Keep original if conversion fails
-                    )
-            elif param_spec.type == "bool" and isinstance(param_value, str):
-                normalized[param_name] = param_value.lower() in (
-                    "true",
-                    "1",
-                    "yes",
-                    "on",
-                )
             else:
-                normalized[param_name] = param_value
+                normalized[param_name] = self._convert_parameter_value(
+                    param_spec.type, param_value
+                )
 
         return normalized
+
+    @staticmethod
+    def _convert_parameter_value(param_type: str, value: Any) -> Any:
+        """Convert parameter value to appropriate type.
+
+        Args:
+            param_type: Expected parameter type
+            value: Value to convert
+
+        Returns:
+            Converted value, or original if conversion fails
+        """
+        if not isinstance(value, str):
+            return value
+
+        if param_type == "float":
+            return ParameterDefinitionValidator._try_convert(value, float)
+        if param_type == "int":
+            return ParameterDefinitionValidator._try_convert(value, int)
+        if param_type == "bool":
+            return value.lower() in ("true", "1", "yes", "on")
+
+        return value
+
+    @staticmethod
+    def _try_convert(value: str, converter: type) -> Any:
+        """Attempt to convert value using converter function.
+
+        Args:
+            value: String value to convert
+            converter: Conversion function (e.g., int, float)
+
+        Returns:
+            Converted value, or original if conversion fails
+        """
+        try:
+            return converter(value)
+        except ValueError:
+            return value
 
     def get_parameter_suggestions(
         self, algorithm: Algorithm, mode: str = "train"

@@ -18,6 +18,92 @@ import random
 from typing import Any
 
 import numpy as np
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+
+
+class QLearningConfig(BaseModel):
+    """Configuration parameters for Q-Learning with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_space_size: Number of possible states in the environment
+        action_space_size: Number of possible actions
+        learning_rate: Learning rate (alpha) for Q-value updates (0 < α ≤ 1)
+        discount_factor: Discount factor (gamma) for future rewards (0 < γ ≤ 1)
+        epsilon_start: Initial exploration rate (0 ≤ ε ≤ 1)
+        epsilon_end: Final exploration rate (0 ≤ ε ≤ 1)
+        epsilon_decay: Rate of epsilon decay over time (0 ≤ decay ≤ 1)
+        use_double_q: Whether to use Double Q-Learning variant
+        debug: Whether to enable debug logging
+        random_seed: Random seed for reproducible results
+    """
+
+    state_space_size: int = Field(
+        gt=0, description="Number of possible states in the environment"
+    )
+    action_space_size: int = Field(gt=0, description="Number of possible actions")
+    learning_rate: float = Field(
+        default=0.1,
+        gt=0.0,
+        le=1.0,
+        description="Learning rate (alpha) for Q-value updates",
+    )
+    discount_factor: float = Field(
+        default=0.95,
+        gt=0.0,
+        le=1.0,
+        description="Discount factor (gamma) for future rewards",
+    )
+    epsilon_start: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Initial exploration rate for epsilon-greedy policy",
+    )
+    epsilon_end: float = Field(
+        default=0.01,
+        ge=0.0,
+        le=1.0,
+        description="Final exploration rate for epsilon-greedy policy",
+    )
+    epsilon_decay: float = Field(
+        default=0.995, ge=0.0, le=1.0, description="Rate of epsilon decay over time"
+    )
+    use_double_q: bool = Field(
+        default=False, description="Whether to use Double Q-Learning variant"
+    )
+    debug: bool = Field(default=False, description="Whether to enable debug logging")
+    random_seed: int | None = Field(
+        default=None, description="Random seed for reproducible results"
+    )
+
+    @field_validator("epsilon_end")
+    @classmethod
+    def validate_epsilon_end(cls, v: float, info: ValidationInfo) -> float:
+        """Validate that epsilon_end is less than or equal to epsilon_start.
+
+        Args:
+            v: The epsilon_end value to validate
+            info: Validation context containing other field values
+
+        Returns:
+            The validated epsilon_end value
+
+        Raises:
+            ValueError: If epsilon_end > epsilon_start
+        """
+        epsilon_start = info.data.get("epsilon_start", 1.0)
+        if v > epsilon_start:
+            raise ValueError(
+                f"epsilon_end ({v}) must be less than or equal to "
+                f"epsilon_start ({epsilon_start})"
+            )
+        return v
+
+    model_config = {"frozen": False}  # Allow mutation for epsilon decay
 
 
 class QLearningAgent:
@@ -55,8 +141,10 @@ class QLearningAgent:
 
     def __init__(
         self,
-        state_space_size: int,
-        action_space_size: int,
+        config: QLearningConfig | None = None,
+        # Support both new config-based and old kwargs-based initialization
+        state_space_size: int | None = None,
+        action_space_size: int | None = None,
         learning_rate: float = 0.1,
         discount_factor: float = 0.95,
         epsilon_start: float = 1.0,
@@ -68,12 +156,17 @@ class QLearningAgent:
         # Backward compatibility parameters
         epsilon: float | None = None,
         epsilon_min: float | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize Q-Learning agent.
 
+        This method supports both new config-based and old kwargs-based initialization
+        for complete backwards compatibility.
+
         Args:
-            state_space_size: Number of possible states
-            action_space_size: Number of possible actions
+            config: Pre-validated configuration object (recommended)
+            state_space_size: Number of possible states (required if config is None)
+            action_space_size: Number of possible actions (required if config is None)
             learning_rate: Learning rate (alpha) for Q-value updates
             discount_factor: Discount factor (gamma) for future rewards
             epsilon_start: Initial exploration rate for epsilon-greedy policy
@@ -84,63 +177,80 @@ class QLearningAgent:
             random_seed: Random seed for reproducible results
             epsilon: Backward compatibility - maps to epsilon_start
             epsilon_min: Backward compatibility - maps to epsilon_end
+            **kwargs: Additional parameters for future compatibility
+
+        Examples:
+            New style (recommended):
+            >>> config = QLearningConfig(state_space_size=4, action_space_size=2)
+            >>> agent = QLearningAgent(config=config)
+
+            Old style (backwards compatible):
+            >>> agent = QLearningAgent(state_space_size=4, action_space_size=2)
 
         Raises:
-            ValueError: If any parameter is invalid
+            ValidationError: If parameters are invalid (via Pydantic)
+            ValueError: If required parameters are missing
         """
-        # Handle backward compatibility
-        if epsilon is not None:
-            epsilon_start = epsilon
-        if epsilon_min is not None:
-            epsilon_end = epsilon_min
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            # Handle backward compatibility for epsilon parameters
+            if epsilon is not None:
+                epsilon_start = epsilon
+            if epsilon_min is not None:
+                epsilon_end = epsilon_min
 
-        # Validate parameters
-        if state_space_size <= 0:
-            raise ValueError("state_space_size must be positive")
-        if action_space_size <= 0:
-            raise ValueError("action_space_size must be positive")
-        if not 0 < learning_rate <= 1:
-            raise ValueError("learning_rate must be between 0 and 1")
-        if not 0 < discount_factor <= 1:
-            raise ValueError("discount_factor must be between 0 and 1")
-        if not 0 <= epsilon_start <= 1:
-            raise ValueError("epsilon_start must be between 0 and 1")
-        if not 0 <= epsilon_end <= 1:
-            raise ValueError("epsilon_end must be between 0 and 1")
-        if not 0 <= epsilon_decay <= 1:
-            raise ValueError("epsilon_decay must be between 0 and 1")
-        if not epsilon_end <= epsilon_start:
-            raise ValueError("epsilon_end must be less than or equal to epsilon_start")
+            # Build config from kwargs
+            if state_space_size is None or action_space_size is None:
+                raise ValueError(
+                    "state_space_size and action_space_size are required "
+                    "when config is not provided"
+                )
 
-        # Store parameters
-        self.state_space_size = state_space_size
-        self.action_space_size = action_space_size
-        self.learning_rate = learning_rate
-        self.discount_factor = discount_factor
-        self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end
-        self.epsilon_decay = epsilon_decay
-        self.use_double_q = use_double_q
-        self.debug = debug
+            config = QLearningConfig(
+                state_space_size=state_space_size,
+                action_space_size=action_space_size,
+                learning_rate=learning_rate,
+                discount_factor=discount_factor,
+                epsilon_start=epsilon_start,
+                epsilon_end=epsilon_end,
+                epsilon_decay=epsilon_decay,
+                use_double_q=use_double_q,
+                debug=debug,
+                random_seed=random_seed,
+            )
+
+        # Store config
+        self.config = config
+
+        # Extract all parameters from config
+        self.state_space_size = config.state_space_size
+        self.action_space_size = config.action_space_size
+        self.learning_rate = config.learning_rate
+        self.discount_factor = config.discount_factor
+        self.epsilon_start = config.epsilon_start
+        self.epsilon_end = config.epsilon_end
+        self.epsilon_decay = config.epsilon_decay
+        self.use_double_q = config.use_double_q
+        self.debug = config.debug
 
         # Current epsilon (starts at epsilon_start)
-        self.epsilon = epsilon_start
+        self.epsilon = config.epsilon_start
 
         # Initialize Q-table with zeros
-        self.q_table = np.zeros((state_space_size, action_space_size))
+        self.q_table = np.zeros((self.state_space_size, self.action_space_size))
 
         # Initialize second Q-table for Double Q-Learning if enabled
-        if use_double_q:
-            self.q_table_b = np.zeros((state_space_size, action_space_size))
+        if self.use_double_q:
+            self.q_table_b = np.zeros((self.state_space_size, self.action_space_size))
         else:
             self.q_table_b = None
 
         # Initialize actions list
-        self.actions = list(range(action_space_size))
+        self.actions = list(range(self.action_space_size))
 
         # Set up logging
         self._logger = logging.getLogger(f"{self.__class__.__name__}_{id(self)}")
-        if debug:
+        if config.debug:
             self._logger.setLevel(logging.DEBUG)
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
@@ -150,8 +260,8 @@ class QLearningAgent:
             self._logger.addHandler(handler)
 
         # Set random seed if provided
-        if random_seed is not None:
-            self.set_seed(random_seed)
+        if config.random_seed is not None:
+            self.set_seed(config.random_seed)
 
     def set_seed(self, seed: int) -> None:
         """Set random seed for reproducible results.

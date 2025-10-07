@@ -231,44 +231,112 @@ class OutputManager:
         Returns:
             List of run directory paths matching the criteria.
         """
+        search_dirs = self._get_search_directories(run_type)
         runs = []
 
-        # Search in all run type directories
-        search_dirs = ["runs", "replays", "demos", "benchmarks"]
-        if run_type:
-            search_dirs = [run_type]
-
         for search_dir in search_dirs:
-            base_dir = self.output_dir / search_dir
-            if not base_dir.exists():
-                continue
-
-            for run_dir in base_dir.iterdir():
-                if not run_dir.is_dir():
-                    continue
-
-                # Parse run directory name: timestamp_family_algorithm_type_id
-                parts = run_dir.name.split("_")
-                if len(parts) < 4:
-                    continue
-
-                run_family = parts[1] if len(parts) > 1 else None
-                run_algorithm = parts[2] if len(parts) > 2 else None
-                run_type_name = parts[3] if len(parts) > 3 else None
-
-                # Apply filters
-                if family and run_family != family:
-                    continue
-                if algorithm and run_algorithm != algorithm:
-                    continue
-                if run_type and run_type_name != run_type:
-                    continue
-
-                runs.append(run_dir)
+            runs.extend(
+                self._collect_matching_runs(search_dir, family, algorithm, run_type)
+            )
 
         # Sort by creation time (newest first)
         runs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         return runs
+
+    def _get_search_directories(self, run_type: str | None) -> list[str]:
+        """Get directories to search for runs.
+
+        Args:
+            run_type: Optional run type filter
+
+        Returns:
+            List of directory names to search
+        """
+        if run_type:
+            return [run_type]
+        return ["runs", "replays", "demos", "benchmarks"]
+
+    def _collect_matching_runs(
+        self,
+        search_dir: str,
+        family: str | None,
+        algorithm: str | None,
+        run_type: str | None,
+    ) -> list[Path]:
+        """Collect runs matching filters from a search directory.
+
+        Args:
+            search_dir: Directory name to search
+            family: Optional family filter
+            algorithm: Optional algorithm filter
+            run_type: Optional run type filter
+
+        Returns:
+            List of matching run directory paths
+        """
+        base_dir = self.output_dir / search_dir
+        if not base_dir.exists():
+            return []
+
+        matching_runs = []
+        for run_dir in base_dir.iterdir():
+            if run_dir.is_dir() and self._matches_filters(
+                run_dir, family, algorithm, run_type
+            ):
+                matching_runs.append(run_dir)
+
+        return matching_runs
+
+    @staticmethod
+    def _matches_filters(
+        run_dir: Path,
+        family: str | None,
+        algorithm: str | None,
+        run_type: str | None,
+    ) -> bool:
+        """Check if run directory matches the specified filters.
+
+        Args:
+            run_dir: Run directory path
+            family: Optional family filter
+            algorithm: Optional algorithm filter
+            run_type: Optional run type filter
+
+        Returns:
+            True if run matches all filters, False otherwise
+        """
+        parts = OutputManager._parse_run_name(run_dir.name)
+        if parts is None:
+            return False
+
+        run_family, run_algorithm, run_type_name = parts
+
+        # All filters must match
+        return (
+            (not family or run_family == family)
+            and (not algorithm or run_algorithm == algorithm)
+            and (not run_type or run_type_name == run_type)
+        )
+
+    @staticmethod
+    def _parse_run_name(name: str) -> tuple[str, str, str] | None:
+        """Parse run directory name into components.
+
+        Args:
+            name: Run directory name (format: timestamp_family_algorithm_type_id)
+
+        Returns:
+            Tuple of (family, algorithm, type) or None if invalid format
+        """
+        parts = name.split("_")
+        if len(parts) < 4:
+            return None
+
+        return (
+            parts[1] if len(parts) > 1 else "",
+            parts[2] if len(parts) > 2 else "",
+            parts[3] if len(parts) > 3 else "",
+        )
 
     def get_run_info(self, run_dir: Path) -> dict[str, Any]:
         """Get comprehensive information about a run directory.
@@ -405,36 +473,9 @@ class OutputManager:
         temp_dir.mkdir(exist_ok=True)
 
         try:
-            shutil.unpack_archive(archive_path, temp_dir)
-
-            # Find the extracted run directory
-            extracted_dirs = [d for d in temp_dir.iterdir() if d.is_dir()]
-            if not extracted_dirs:
-                raise ValueError("No run directory found in archive")
-
-            source_run_dir = extracted_dirs[0]
-
-            # Determine target directory
-            if target_family:
-                # Modify run name to include target family
-                run_name = source_run_dir.name
-                parts = run_name.split("_")
-                if len(parts) >= 2:
-                    parts[1] = target_family
-                    run_name = "_".join(parts)
-            else:
-                run_name = source_run_dir.name
-
-            # Determine target base directory from run type
-            if "replay" in run_name:
-                target_base = self.output_dir / "replays"
-            elif "demo" in run_name:
-                target_base = self.output_dir / "demos"
-            elif "benchmark" in run_name:
-                target_base = self.output_dir / "benchmarks"
-            else:
-                target_base = self.output_dir / "runs"
-
+            source_run_dir = self._extract_run_from_archive(archive_path, temp_dir)
+            run_name = self._get_import_run_name(source_run_dir.name, target_family)
+            target_base = self._get_target_base_directory(run_name)
             target_run_dir = target_base / run_name
 
             # Move to target location
@@ -447,6 +488,68 @@ class OutputManager:
             # Clean up temporary directory
             if temp_dir.exists():
                 shutil.rmtree(temp_dir)
+
+    @staticmethod
+    def _extract_run_from_archive(archive_path: Path, temp_dir: Path) -> Path:
+        """Extract run directory from archive file.
+
+        Args:
+            archive_path: Path to archive file
+            temp_dir: Temporary extraction directory
+
+        Returns:
+            Path to extracted run directory
+
+        Raises:
+            ValueError: If no run directory found in archive
+        """
+        shutil.unpack_archive(archive_path, temp_dir)
+
+        # Find the extracted run directory
+        extracted_dirs = [d for d in temp_dir.iterdir() if d.is_dir()]
+        if not extracted_dirs:
+            raise ValueError("No run directory found in archive")
+
+        return extracted_dirs[0]
+
+    @staticmethod
+    def _get_import_run_name(source_name: str, target_family: str | None) -> str:
+        """Get the run name for imported run with optional family override.
+
+        Args:
+            source_name: Original run directory name
+            target_family: Optional target family to use
+
+        Returns:
+            Modified run name with target family if specified
+        """
+        if not target_family:
+            return source_name
+
+        # Modify run name to include target family
+        parts = source_name.split("_")
+        if len(parts) >= 2:
+            parts[1] = target_family
+            return "_".join(parts)
+
+        return source_name
+
+    def _get_target_base_directory(self, run_name: str) -> Path:
+        """Determine target base directory from run name.
+
+        Args:
+            run_name: Run directory name
+
+        Returns:
+            Base directory path for the run type
+        """
+        if "replay" in run_name:
+            return self.output_dir / "replays"
+        if "demo" in run_name:
+            return self.output_dir / "demos"
+        if "benchmark" in run_name:
+            return self.output_dir / "benchmarks"
+        return self.output_dir / "runs"
 
     def get_disk_usage(self) -> dict[str, Any]:
         """Get disk usage statistics for the output directory.

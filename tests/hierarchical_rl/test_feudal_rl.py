@@ -11,9 +11,11 @@ import gymnasium as gym
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 from algokit.algorithms.hierarchical_rl.feudal_rl import (
     FeudalAgent,
+    FeudalConfig,
     ManagerNetwork,
     StateEncoder,
     WorkerNetwork,
@@ -889,3 +891,319 @@ class TestFeudalAgentInterpretability:
         # Different states should produce different goals (with high probability)
         goal_diff = torch.norm(agent.current_goal - first_goal).item()
         assert goal_diff > 0.01  # Goals should be meaningfully different
+
+
+@pytest.mark.unit
+class TestFeudalConfig:
+    """Test Pydantic configuration validation for FeudalAgent."""
+
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_size."""
+        # Arrange - prepare invalid parameters with negative state_size
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_size"):
+            FeudalConfig(state_size=-1, action_size=4)
+
+    def test_config_validates_zero_state_size(self) -> None:
+        """Test that Config rejects zero state_size."""
+        # Arrange - prepare invalid parameters with zero state_size
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_size"):
+            FeudalConfig(state_size=0, action_size=4)
+
+    def test_config_validates_negative_action_size(self) -> None:
+        """Test that Config rejects negative action_size."""
+        # Arrange - prepare invalid parameters with negative action_size
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="action_size"):
+            FeudalConfig(state_size=4, action_size=-1)
+
+    def test_config_validates_zero_action_size(self) -> None:
+        """Test that Config rejects zero action_size."""
+        # Arrange - prepare invalid parameters with zero action_size
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="action_size"):
+            FeudalConfig(state_size=4, action_size=0)
+
+    def test_config_validates_negative_latent_size(self) -> None:
+        """Test that Config rejects negative latent_size."""
+        # Arrange - prepare invalid parameters with negative latent_size
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="latent_size"):
+            FeudalConfig(state_size=4, action_size=2, latent_size=-1)
+
+    def test_config_validates_zero_latent_size(self) -> None:
+        """Test that Config rejects zero latent_size."""
+        # Arrange - prepare invalid parameters with zero latent_size
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="latent_size"):
+            FeudalConfig(state_size=4, action_size=2, latent_size=0)
+
+    def test_config_validates_negative_goal_size(self) -> None:
+        """Test that Config rejects negative goal_size."""
+        # Arrange - prepare invalid parameters with negative goal_size
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="goal_size"):
+            FeudalConfig(state_size=4, action_size=2, goal_size=-1)
+
+    def test_config_validates_zero_goal_size(self) -> None:
+        """Test that Config rejects zero goal_size."""
+        # Arrange - prepare invalid parameters with zero goal_size
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="goal_size"):
+            FeudalConfig(state_size=4, action_size=2, goal_size=0)
+
+    def test_config_validates_negative_hidden_size(self) -> None:
+        """Test that Config rejects negative hidden_size."""
+        # Arrange - prepare invalid parameters with negative hidden_size
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="hidden_size"):
+            FeudalConfig(state_size=4, action_size=2, hidden_size=-1)
+
+    def test_config_validates_zero_hidden_size(self) -> None:
+        """Test that Config rejects zero hidden_size."""
+        # Arrange - prepare invalid parameters with zero hidden_size
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="hidden_size"):
+            FeudalConfig(state_size=4, action_size=2, hidden_size=0)
+
+    def test_config_validates_negative_manager_horizon(self) -> None:
+        """Test that Config rejects negative manager_horizon."""
+        # Arrange - prepare invalid parameters with negative manager_horizon
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="manager_horizon"):
+            FeudalConfig(state_size=4, action_size=2, manager_horizon=-1)
+
+    def test_config_validates_zero_manager_horizon(self) -> None:
+        """Test that Config rejects zero manager_horizon."""
+        # Arrange - prepare invalid parameters with zero manager_horizon
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="manager_horizon"):
+            FeudalConfig(state_size=4, action_size=2, manager_horizon=0)
+
+    def test_config_validates_negative_learning_rate(self) -> None:
+        """Test that Config rejects negative learning_rate."""
+        # Arrange - prepare invalid parameters with negative learning_rate
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="learning_rate"):
+            FeudalConfig(state_size=4, action_size=2, learning_rate=-0.001)
+
+    def test_config_validates_zero_learning_rate(self) -> None:
+        """Test that Config rejects zero learning_rate."""
+        # Arrange - prepare invalid parameters with zero learning_rate
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="learning_rate"):
+            FeudalConfig(state_size=4, action_size=2, learning_rate=0.0)
+
+    def test_config_validates_learning_rate_too_high(self) -> None:
+        """Test that Config rejects learning_rate > 1."""
+        # Arrange - prepare invalid parameters with learning_rate > 1
+        # Act - attempt to create config with too high value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="learning_rate"):
+            FeudalConfig(state_size=4, action_size=2, learning_rate=1.5)
+
+    def test_config_validates_negative_manager_lr(self) -> None:
+        """Test that Config rejects negative manager_lr."""
+        # Arrange - prepare invalid parameters with negative manager_lr
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="manager_lr"):
+            FeudalConfig(state_size=4, action_size=2, manager_lr=-0.001)
+
+    def test_config_validates_zero_manager_lr(self) -> None:
+        """Test that Config rejects zero manager_lr."""
+        # Arrange - prepare invalid parameters with zero manager_lr
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="manager_lr"):
+            FeudalConfig(state_size=4, action_size=2, manager_lr=0.0)
+
+    def test_config_validates_manager_lr_too_high(self) -> None:
+        """Test that Config rejects manager_lr > 1."""
+        # Arrange - prepare invalid parameters with manager_lr > 1
+        # Act - attempt to create config with too high value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="manager_lr"):
+            FeudalConfig(state_size=4, action_size=2, manager_lr=1.5)
+
+    def test_config_validates_negative_worker_lr(self) -> None:
+        """Test that Config rejects negative worker_lr."""
+        # Arrange - prepare invalid parameters with negative worker_lr
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="worker_lr"):
+            FeudalConfig(state_size=4, action_size=2, worker_lr=-0.001)
+
+    def test_config_validates_zero_worker_lr(self) -> None:
+        """Test that Config rejects zero worker_lr."""
+        # Arrange - prepare invalid parameters with zero worker_lr
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="worker_lr"):
+            FeudalConfig(state_size=4, action_size=2, worker_lr=0.0)
+
+    def test_config_validates_worker_lr_too_high(self) -> None:
+        """Test that Config rejects worker_lr > 1."""
+        # Arrange - prepare invalid parameters with worker_lr > 1
+        # Act - attempt to create config with too high value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="worker_lr"):
+            FeudalConfig(state_size=4, action_size=2, worker_lr=1.5)
+
+    def test_config_validates_gamma_too_low(self) -> None:
+        """Test that Config rejects gamma <= 0."""
+        # Arrange - prepare invalid parameters with gamma <= 0
+        # Act - attempt to create config with too low value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gamma"):
+            FeudalConfig(state_size=4, action_size=2, gamma=0.0)
+
+    def test_config_validates_gamma_too_high(self) -> None:
+        """Test that Config rejects gamma >= 1."""
+        # Arrange - prepare invalid parameters with gamma >= 1
+        # Act - attempt to create config with too high value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gamma"):
+            FeudalConfig(state_size=4, action_size=2, gamma=1.0)
+
+    def test_config_validates_negative_entropy_coef(self) -> None:
+        """Test that Config rejects negative entropy_coef."""
+        # Arrange - prepare invalid parameters with negative entropy_coef
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="entropy_coef"):
+            FeudalConfig(state_size=4, action_size=2, entropy_coef=-0.1)
+
+    def test_config_validates_invalid_device(self) -> None:
+        """Test that Config rejects invalid device strings."""
+        # Arrange - prepare invalid parameters with unknown device
+        # Act - attempt to create config with invalid device string
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="device"):
+            FeudalConfig(state_size=4, action_size=2, device="invalid_device")
+
+    def test_config_accepts_valid_cpu_device(self) -> None:
+        """Test that Config accepts 'cpu' device."""
+        # Arrange - set up test configuration
+
+        # Act - create config object
+        config = FeudalConfig(state_size=4, action_size=2, device="cpu")
+
+        # Assert - verify device is set to cpu
+        assert config.device == "cpu"
+
+    def test_config_accepts_valid_cuda_device(self) -> None:
+        """Test that Config accepts 'cuda' device."""
+        # Arrange - set up test configuration
+
+        # Act - create config object
+        config = FeudalConfig(state_size=4, action_size=2, device="cuda")
+
+        # Assert - verify device is set to cuda
+        assert config.device == "cuda"
+
+    def test_config_accepts_valid_cuda_numbered_device(self) -> None:
+        """Test that Config accepts 'cuda:N' device."""
+        # Arrange - set up test configuration
+
+        # Act - create config object
+        config = FeudalConfig(state_size=4, action_size=2, device="cuda:0")
+
+        # Assert - verify device is set to cuda:0
+        assert config.device == "cuda:0"
+
+    def test_config_accepts_mps_device(self) -> None:
+        """Test that Config accepts 'mps' device for Apple Silicon."""
+        # Arrange - set up test configuration
+
+        # Act - create config object
+        config = FeudalConfig(state_size=4, action_size=2, device="mps")
+
+        # Assert - verify device is set to mps
+        assert config.device == "mps"
+
+    def test_config_defaults_are_set_correctly(self) -> None:
+        """Test that Config sets default values correctly."""
+        # Arrange - set up test configuration
+
+        # Act - create config object
+        config = FeudalConfig(state_size=4, action_size=2)
+
+        # Assert - verify all default values are correct
+        assert config.state_size == 4
+        assert config.action_size == 2
+        assert config.latent_size == 64
+        assert config.goal_size is None
+        assert config.hidden_size == 256
+        assert config.manager_horizon == 10
+        assert config.learning_rate == 0.0001
+        assert config.manager_lr is None
+        assert config.worker_lr is None
+        assert config.gamma == 0.99
+        assert config.entropy_coef == 0.01
+        assert config.device == "cpu"
+        assert config.seed is None
+
+    def test_backwards_compatible_kwargs_initialization(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - set up test configuration
+
+        # Act - create agent with kwargs
+        agent = FeudalAgent(state_size=4, action_size=2, latent_size=32, seed=42)
+
+        # Assert - verify agent initialized with correct values
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.latent_size == 32
+        assert agent.config.state_size == 4
+        assert agent.config.action_size == 2
+        assert agent.config.latent_size == 32
+
+    def test_config_object_initialization(self) -> None:
+        """Test that agent accepts config object."""
+        # Arrange - create config object
+        config = FeudalConfig(state_size=4, action_size=2, latent_size=32, seed=42)
+
+        # Act - initialize agent with config
+        agent = FeudalAgent(config=config)
+
+        # Assert - verify agent uses config correctly
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.latent_size == 32
+
+    def test_config_object_takes_precedence(self) -> None:
+        """Test that config object takes precedence over kwargs."""
+        # Arrange - create config with specific values
+        config = FeudalConfig(state_size=4, action_size=2, latent_size=32)
+
+        # Act - create agent with config and conflicting kwargs
+        agent = FeudalAgent(config=config, state_size=100, action_size=100)
+
+        # Assert - verify config values are used not kwargs
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    def test_config_validation_happens_automatically(self) -> None:
+        """Test that validation happens automatically during init."""
+        # Arrange - prepare test parameters
+        # Act - perform operation
+        # Assert - verify result - should raise ValidationError during init
+        with pytest.raises(ValidationError, match="state_size"):
+            FeudalAgent(state_size=-1, action_size=2)

@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.sarsa import SarsaAgent
 
@@ -58,29 +59,27 @@ class TestSarsaAgent:
     def test_invalid_initialization_parameters(self) -> None:
         """Test SARSA agent raises errors for invalid parameters."""
         # Arrange & Act & Assert - Test invalid state space size
-        with pytest.raises(ValueError, match="state_space_size must be positive"):
+        with pytest.raises(ValidationError, match="state_space_size"):
             SarsaAgent(state_space_size=0, action_space_size=2)
 
         # Arrange & Act & Assert - Test invalid action space size
-        with pytest.raises(ValueError, match="action_space_size must be positive"):
+        with pytest.raises(ValidationError, match="action_space_size"):
             SarsaAgent(state_space_size=3, action_space_size=0)
 
         # Arrange & Act & Assert - Test invalid learning rate
-        with pytest.raises(ValueError, match="learning_rate must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="learning_rate"):
             SarsaAgent(state_space_size=3, action_space_size=2, learning_rate=1.5)
 
         # Arrange & Act & Assert - Test invalid discount factor
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="discount_factor"):
             SarsaAgent(state_space_size=3, action_space_size=2, discount_factor=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon
-        with pytest.raises(ValueError, match="epsilon must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="epsilon_start"):
             SarsaAgent(state_space_size=3, action_space_size=2, epsilon=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon min
-        with pytest.raises(
-            ValueError, match="epsilon_min must be between 0 and epsilon"
-        ):
+        with pytest.raises(ValidationError, match="epsilon_end"):
             SarsaAgent(
                 state_space_size=3, action_space_size=2, epsilon=0.1, epsilon_min=0.2
             )
@@ -389,3 +388,100 @@ class TestSarsaAgent:
         assert "learning_rate=0.1" in repr_str
         assert "discount_factor=0.95" in repr_str
         assert "epsilon=0.200" in repr_str
+
+    @pytest.mark.unit
+    def test_config_object_initialization(self) -> None:
+        """Test that agent accepts config object."""
+        # Arrange - Create config with specific parameters
+        from algokit.algorithms.reinforcement_learning.sarsa import SarsaConfig
+
+        config = SarsaConfig(state_space_size=4, action_space_size=2)
+
+        # Act - Initialize agent with config object
+        agent = SarsaAgent(config=config)
+
+        # Assert - Verify agent uses config and extracts parameters correctly
+        assert agent.config == config
+        assert agent.state_space_size == 4
+        assert agent.action_space_size == 2
+
+    @pytest.mark.unit
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_size."""
+        # Arrange - Import config class
+        from algokit.algorithms.reinforcement_learning.sarsa import SarsaConfig
+
+        # Act - Attempt to create config with negative state size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_space_size"):
+            SarsaConfig(state_space_size=-1, action_space_size=4)
+
+    @pytest.mark.unit
+    def test_config_validates_epsilon_end_greater_than_start(self) -> None:
+        """Test that Config rejects epsilon_end > epsilon_start."""
+        # Arrange - Import config class
+        from algokit.algorithms.reinforcement_learning.sarsa import SarsaConfig
+
+        # Act - Attempt to create config with epsilon_end > epsilon_start
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="epsilon_end"):
+            SarsaConfig(
+                state_space_size=4,
+                action_space_size=2,
+                epsilon_start=0.1,
+                epsilon_end=0.5,
+            )
+
+    @pytest.mark.unit
+    def test_backwards_compatible_kwargs(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - Set up parameters using old-style kwargs including epsilon/epsilon_min
+
+        # Act - Create agent with kwargs including backwards-compatible parameters
+        agent = SarsaAgent(
+            state_space_size=4,
+            action_space_size=2,
+            learning_rate=0.2,
+            epsilon=0.5,
+            epsilon_min=0.01,
+        )
+
+        # Assert - Verify agent maps old parameters to new ones correctly
+        assert agent.state_space_size == 4
+        assert agent.action_space_size == 2
+        assert agent.learning_rate == 0.2
+        assert agent.epsilon_start == 0.5
+        assert agent.epsilon_end == 0.01
+
+    @pytest.mark.unit
+    def test_config_with_all_parameters(self) -> None:
+        """Test that config accepts all parameters."""
+        # Arrange - Create config with all available parameters
+        from algokit.algorithms.reinforcement_learning.sarsa import SarsaConfig
+
+        config = SarsaConfig(
+            state_space_size=10,
+            action_space_size=4,
+            learning_rate=0.01,
+            discount_factor=0.99,
+            epsilon_start=1.0,
+            epsilon_end=0.05,
+            epsilon_decay=0.999,
+            use_expected_sarsa=True,
+            debug=True,
+            random_seed=123,
+        )
+
+        # Act - Initialize agent with fully-configured config object
+        agent = SarsaAgent(config=config)
+
+        # Assert - Verify all parameters are correctly set on the agent
+        assert agent.state_space_size == 10
+        assert agent.action_space_size == 4
+        assert agent.learning_rate == 0.01
+        assert agent.discount_factor == 0.99
+        assert agent.epsilon_start == 1.0
+        assert agent.epsilon_end == 0.05
+        assert agent.epsilon_decay == 0.999
+        assert agent.use_expected_sarsa is True
+        assert agent.debug is True

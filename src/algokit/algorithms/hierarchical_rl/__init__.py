@@ -9,12 +9,21 @@ Algorithms included:
 - HIRO: Data-efficient hierarchical reinforcement learning
 """
 
-from algokit.algorithms.hierarchical_rl.feudal_rl import FeudalAgent
+from algokit.algorithms.hierarchical_rl.feudal_rl import FeudalAgent, FeudalConfig
 from algokit.algorithms.hierarchical_rl.hiro import HIROAgent
-from algokit.algorithms.hierarchical_rl.options_framework import OptionsAgent
+from algokit.algorithms.hierarchical_rl.options_framework import (
+    IntraOptionQLearning,
+    IntraOptionQLearningConfig,
+    OptionsAgent,
+    OptionsAgentConfig,
+)
 
 __all__ = [
     "OptionsAgent",
+    "OptionsAgentConfig",
+    "IntraOptionQLearning",
+    "IntraOptionQLearningConfig",
     "FeudalAgent",
+    "FeudalConfig",
     "HIROAgent",
 ]

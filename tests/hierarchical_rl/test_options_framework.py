@@ -852,3 +852,233 @@ class TestOptionsFrameworkIntegration:
         assert agent.n_options == initial_options + 3
         assert agent.q_learner.n_options == agent.n_options
         assert agent.termination_network is not None
+
+
+@pytest.mark.unit
+class TestIntraOptionQLearningConfig:
+    """Test Pydantic configuration validation for IntraOptionQLearning."""
+
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that IntraOptionQLearningConfig rejects negative state_size."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="state_size"):
+            IntraOptionQLearningConfig(state_size=-1, n_options=4)
+
+    def test_config_validates_zero_state_size(self) -> None:
+        """Test that IntraOptionQLearningConfig rejects zero state_size."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="state_size"):
+            IntraOptionQLearningConfig(state_size=0, n_options=4)
+
+    def test_config_validates_negative_n_options(self) -> None:
+        """Test that IntraOptionQLearningConfig rejects negative n_options."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="n_options"):
+            IntraOptionQLearningConfig(state_size=4, n_options=-1)
+
+    def test_config_validates_learning_rate_too_high(self) -> None:
+        """Test that IntraOptionQLearningConfig rejects learning_rate > 1."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="learning_rate"):
+            IntraOptionQLearningConfig(state_size=4, n_options=2, learning_rate=1.5)
+
+    def test_config_validates_gamma_out_of_range(self) -> None:
+        """Test that IntraOptionQLearningConfig rejects gamma outside [0, 1]."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="gamma"):
+            IntraOptionQLearningConfig(state_size=4, n_options=2, gamma=1.5)
+
+    def test_config_accepts_valid_parameters(self) -> None:
+        """Test that IntraOptionQLearningConfig accepts valid parameters."""
+        # Arrange - Import config class for testing
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        # Act - Create config with test parameters
+        config = IntraOptionQLearningConfig(
+            state_size=4,
+            n_options=2,
+            learning_rate=0.001,
+            gamma=0.99,
+        )
+
+        # Assert - Verify parameters are correctly set
+        assert config.state_size == 4
+        assert config.n_options == 2
+        assert config.learning_rate == 0.001
+        assert config.gamma == 0.99
+
+    def test_backwards_compatible_kwargs(self) -> None:
+        """Test that IntraOptionQLearning accepts kwargs for backwards compatibility."""
+        # Arrange - No setup required for backwards compatibility test
+
+        # Act - Create learner with kwargs
+        learner = IntraOptionQLearning(state_size=4, n_options=2)
+
+        # Assert - Verify parameters are correctly set
+        assert learner.state_size == 4
+        assert learner.n_options == 2
+
+    def test_config_object_initialization(self) -> None:
+        """Test that IntraOptionQLearning accepts config object."""
+        # Arrange - Import config class for testing
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            IntraOptionQLearningConfig,
+        )
+
+        config = IntraOptionQLearningConfig(state_size=4, n_options=2)
+
+        # Act - Create learner with kwargs
+        learner = IntraOptionQLearning(config=config)
+
+        # Assert - Verify parameters are correctly set
+        assert learner.config == config
+        assert learner.state_size == 4
+        assert learner.n_options == 2
+
+
+@pytest.mark.unit
+class TestOptionsAgentConfig:
+    """Test Pydantic configuration validation for OptionsAgent."""
+
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that OptionsAgentConfig rejects negative state_size."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="state_size"):
+            OptionsAgentConfig(state_size=-1, action_size=2)
+
+    def test_config_validates_negative_action_size(self) -> None:
+        """Test that OptionsAgentConfig rejects negative action_size."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="action_size"):
+            OptionsAgentConfig(state_size=4, action_size=-1)
+
+    def test_config_validates_epsilon_min_greater_than_epsilon(self) -> None:
+        """Test that OptionsAgentConfig rejects epsilon_min > epsilon."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="epsilon_min.*epsilon"):
+            OptionsAgentConfig(
+                state_size=4,
+                action_size=2,
+                epsilon=0.1,
+                epsilon_min=0.5,
+            )
+
+    def test_config_validates_epsilon_out_of_range(self) -> None:
+        """Test that OptionsAgentConfig rejects epsilon outside [0, 1]."""
+        # Arrange - Import validation error and config classes
+        from pydantic import ValidationError
+
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        # Act & Assert - Verify validation error is raised for invalid parameter
+        with pytest.raises(ValidationError, match="epsilon"):
+            OptionsAgentConfig(state_size=4, action_size=2, epsilon=1.5)
+
+    def test_config_accepts_valid_parameters(self) -> None:
+        """Test that OptionsAgentConfig accepts valid parameters."""
+        # Arrange - Import config class for testing
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        # Act - Create config with test parameters
+        config = OptionsAgentConfig(
+            state_size=4,
+            action_size=2,
+            learning_rate=0.001,
+            gamma=0.99,
+        )
+
+        # Assert - Verify parameters are correctly set
+        assert config.state_size == 4
+        assert config.action_size == 2
+        assert config.learning_rate == 0.001
+        assert config.gamma == 0.99
+
+    def test_backwards_compatible_kwargs(self) -> None:
+        """Test that OptionsAgent accepts kwargs for backwards compatibility."""
+        # Arrange - No setup required for backwards compatibility test
+
+        # Act - Create agent with kwargs
+        agent = OptionsAgent(state_size=4, action_size=2)
+
+        # Assert - Verify parameters are correctly set
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    def test_config_object_initialization(self) -> None:
+        """Test that OptionsAgent accepts config object."""
+        # Arrange - Import config class for testing
+        from algokit.algorithms.hierarchical_rl.options_framework import (
+            OptionsAgentConfig,
+        )
+
+        config = OptionsAgentConfig(state_size=4, action_size=2)
+
+        # Act - Create agent with config object
+        agent = OptionsAgent(config=config)
+
+        # Assert - Verify parameters are correctly set
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2

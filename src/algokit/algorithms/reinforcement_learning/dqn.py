@@ -15,13 +15,21 @@ This implementation supports:
 
 import random
 from collections import deque, namedtuple
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 # Define experience tuple for replay buffer
 Experience = namedtuple(
@@ -147,6 +155,136 @@ class ReplayBuffer:
         return len(self.buffer)
 
 
+class DQNConfig(BaseModel):
+    """Configuration for DQN agent.
+
+    This class uses Pydantic for declarative parameter validation.
+    """
+
+    state_size: int = Field(..., gt=0, description="Dimension of the state space")
+    action_size: int = Field(..., gt=0, description="Dimension of the action space")
+    hidden_sizes: list[int] | None = Field(
+        default=[128, 128], description="List of hidden layer sizes"
+    )
+    learning_rate: float = Field(
+        default=0.001,
+        ge=0.0,
+        le=1.0,
+        description="Learning rate for neural network optimizer",
+    )
+    discount_factor: float = Field(
+        default=0.95,
+        ge=0.0,
+        le=1.0,
+        description="Discount factor for future rewards",
+    )
+    epsilon: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Initial exploration rate for epsilon-greedy policy",
+    )
+    epsilon_decay: float = Field(
+        default=0.995,
+        ge=0.0,
+        le=1.0,
+        description="Rate of epsilon decay over time",
+    )
+    epsilon_min: float = Field(
+        default=0.01,
+        ge=0.0,
+        le=1.0,
+        description="Minimum exploration rate",
+    )
+    batch_size: int = Field(
+        default=64,
+        ge=1,
+        description="Batch size for neural network training",
+    )
+    memory_size: int = Field(
+        default=10000,
+        ge=1,
+        description="Size of experience replay buffer",
+    )
+    target_update: int = Field(
+        default=100,
+        ge=1,
+        description="Frequency of target network updates",
+    )
+    dropout_rate: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Dropout rate for regularization",
+    )
+    device: torch.device | None = Field(
+        default=None, description="PyTorch device for computations"
+    )
+    random_seed: int | None = Field(
+        default=None, description="Random seed for reproducible results"
+    )
+    dqn_variant: Literal["vanilla", "double"] = Field(
+        default="double", description="Type of DQN algorithm"
+    )
+    use_huber_loss: bool = Field(
+        default=True, description="Whether to use Huber loss instead of MSE"
+    )
+    gradient_clip_norm: float = Field(
+        default=1.0,
+        ge=0.0,
+        description="Maximum gradient norm for clipping",
+    )
+    tau: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Soft update parameter for target network (0 = hard update)",
+    )
+    epsilon_decay_type: Literal["multiplicative", "linear"] = Field(
+        default="multiplicative", description="Type of epsilon decay"
+    )
+    epsilon_decay_steps: int | None = Field(
+        default=None,
+        description="Number of steps for linear decay (None for multiplicative)",
+    )
+
+    @field_validator("epsilon_min")
+    @classmethod
+    def validate_epsilon_min(cls, v: float, info: ValidationInfo) -> float:
+        """Validate epsilon_min is not greater than epsilon."""
+        epsilon = info.data.get("epsilon", 1.0)
+        if v > epsilon:
+            raise ValueError(f"epsilon_min ({v}) must be <= epsilon ({epsilon})")
+        return v
+
+    @field_validator("epsilon_decay")
+    @classmethod
+    def validate_epsilon_decay(cls, v: float) -> float:
+        """Validate epsilon_decay is greater than 0."""
+        if v <= 0:
+            raise ValueError("epsilon_decay must be greater than 0")
+        return v
+
+    @field_validator("gradient_clip_norm")
+    @classmethod
+    def validate_gradient_clip_norm(cls, v: float) -> float:
+        """Validate gradient_clip_norm is positive."""
+        if v <= 0:
+            raise ValueError("gradient_clip_norm must be positive")
+        return v
+
+    @model_validator(mode="after")
+    def validate_epsilon_decay_steps(self) -> "DQNConfig":
+        """Validate epsilon_decay_steps for linear decay type."""
+        if self.epsilon_decay_type == "linear" and self.epsilon_decay_steps is None:
+            raise ValueError("epsilon_decay_steps must be provided for linear decay")
+        if self.epsilon_decay_steps is not None and self.epsilon_decay_steps <= 0:
+            raise ValueError("epsilon_decay_steps must be positive")
+        return self
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # Allow torch.device
+
+
 class DQNAgent:
     """Deep Q-Network agent for reinforcement learning.
 
@@ -186,129 +324,79 @@ class DQNAgent:
 
     def __init__(
         self,
-        state_size: int,
-        action_size: int,
-        hidden_sizes: list[int] | None = None,
-        learning_rate: float = 0.001,
-        discount_factor: float = 0.95,
-        epsilon: float = 1.0,
-        epsilon_decay: float = 0.995,
-        epsilon_min: float = 0.01,
-        batch_size: int = 64,
-        memory_size: int = 10000,
-        target_update: int = 100,
-        dropout_rate: float = 0.0,
-        device: torch.device | None = None,
-        random_seed: int | None = None,
-        dqn_variant: Literal["vanilla", "double"] = "double",
-        use_huber_loss: bool = True,
-        gradient_clip_norm: float = 1.0,
-        tau: float = 0.0,
-        epsilon_decay_type: Literal["multiplicative", "linear"] = "multiplicative",
-        epsilon_decay_steps: int | None = None,
+        config: DQNConfig | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize DQN agent.
 
         Args:
-            state_size: Dimension of the state space
-            action_size: Dimension of the action space
-            hidden_sizes: List of hidden layer sizes
-            learning_rate: Learning rate for neural network optimizer
-            discount_factor: Discount factor for future rewards
-            epsilon: Initial exploration rate for epsilon-greedy policy
-            epsilon_decay: Rate of epsilon decay over time
-            epsilon_min: Minimum exploration rate
-            batch_size: Batch size for neural network training
-            memory_size: Size of experience replay buffer
-            target_update: Frequency of target network updates
-            dropout_rate: Dropout rate for regularization
-            device: PyTorch device for computations
-            random_seed: Random seed for reproducible results
-            dqn_variant: Type of DQN algorithm ("vanilla" or "double")
-            use_huber_loss: Whether to use Huber loss instead of MSE
-            gradient_clip_norm: Maximum gradient norm for clipping
-            tau: Soft update parameter for target network (0 = hard update)
-            epsilon_decay_type: Type of epsilon decay ("multiplicative" or "linear")
-            epsilon_decay_steps: Number of steps for linear decay (None for multiplicative)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+
+        Examples:
+            # New style (recommended)
+            >>> config = DQNConfig(state_size=4, action_size=2)
+            >>> agent = DQNAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = DQNAgent(state_size=4, action_size=2)
 
         Raises:
-            ValueError: If any parameter is invalid
+            ValidationError: If parameters are invalid (via Pydantic)
         """
-        if state_size <= 0:
-            raise ValueError("state_size must be positive")
-        if action_size <= 0:
-            raise ValueError("action_size must be positive")
-        if not 0 <= learning_rate <= 1:
-            raise ValueError("learning_rate must be between 0 and 1")
-        if not 0 <= discount_factor <= 1:
-            raise ValueError("discount_factor must be between 0 and 1")
-        if not 0 <= epsilon <= 1:
-            raise ValueError("epsilon must be between 0 and 1")
-        if not 0 < epsilon_decay <= 1:
-            raise ValueError("epsilon_decay must be between 0 and 1")
-        if not 0 <= epsilon_min <= epsilon:
-            raise ValueError("epsilon_min must be between 0 and epsilon")
-        if batch_size <= 0:
-            raise ValueError("batch_size must be positive")
-        if memory_size <= 0:
-            raise ValueError("memory_size must be positive")
-        if target_update <= 0:
-            raise ValueError("target_update must be positive")
-        if dqn_variant not in ["vanilla", "double"]:
-            raise ValueError("dqn_variant must be 'vanilla' or 'double'")
-        if gradient_clip_norm <= 0:
-            raise ValueError("gradient_clip_norm must be positive")
-        if not 0 <= tau <= 1:
-            raise ValueError("tau must be between 0 and 1")
-        if epsilon_decay_type not in ["multiplicative", "linear"]:
-            raise ValueError("epsilon_decay_type must be 'multiplicative' or 'linear'")
-        if epsilon_decay_type == "linear" and epsilon_decay_steps is None:
-            raise ValueError("epsilon_decay_steps must be provided for linear decay")
-        if epsilon_decay_steps is not None and epsilon_decay_steps <= 0:
-            raise ValueError("epsilon_decay_steps must be positive")
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = DQNConfig(**kwargs)
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.learning_rate = learning_rate
-        self.discount_factor = discount_factor
-        self.epsilon = epsilon
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_min = epsilon_min
-        self.batch_size = batch_size
-        self.memory_size = memory_size
-        self.target_update = target_update
-        self.dqn_variant = dqn_variant
-        self.use_huber_loss = use_huber_loss
-        self.gradient_clip_norm = gradient_clip_norm
-        self.tau = tau
-        self.epsilon_decay_type = epsilon_decay_type
-        self.epsilon_decay_steps = epsilon_decay_steps
+        # Store config
+        self.config = config
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.learning_rate = config.learning_rate
+        self.discount_factor = config.discount_factor
+        self.epsilon = config.epsilon
+        self.epsilon_decay = config.epsilon_decay
+        self.epsilon_min = config.epsilon_min
+        self.batch_size = config.batch_size
+        self.memory_size = config.memory_size
+        self.target_update = config.target_update
+        self.dqn_variant = config.dqn_variant
+        self.use_huber_loss = config.use_huber_loss
+        self.gradient_clip_norm = config.gradient_clip_norm
+        self.tau = config.tau
+        self.epsilon_decay_type = config.epsilon_decay_type
+        self.epsilon_decay_steps = config.epsilon_decay_steps
 
         # Set device
-        if device is None:
+        if config.device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
-            self.device = device
+            self.device = config.device
 
         # Set random seeds
-        if random_seed is not None:
-            self.set_seed(random_seed)
+        if config.random_seed is not None:
+            self.set_seed(config.random_seed)
 
         # Initialize networks
-        if hidden_sizes is None:
-            hidden_sizes = [128, 128]
+        hidden_sizes = (
+            config.hidden_sizes if config.hidden_sizes is not None else [128, 128]
+        )
         self.q_network = DQNNetwork(
-            state_size, action_size, hidden_sizes, dropout_rate
+            config.state_size, config.action_size, hidden_sizes, config.dropout_rate
         ).to(self.device)
         self.target_network = DQNNetwork(
-            state_size, action_size, hidden_sizes, dropout_rate
+            config.state_size, config.action_size, hidden_sizes, config.dropout_rate
         ).to(self.device)
 
         # Initialize optimizer
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(
+            self.q_network.parameters(), lr=config.learning_rate
+        )
 
         # Initialize experience replay buffer
-        self.memory = ReplayBuffer(memory_size)
+        self.memory = ReplayBuffer(self.memory_size)
 
         # Initialize step counter
         self.step_count = 0

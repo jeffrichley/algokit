@@ -39,6 +39,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import BaseModel, Field, field_validator
 
 
 class HigherLevelPolicy(nn.Module):
@@ -177,6 +178,106 @@ class LowerLevelPolicy(nn.Module):
         return self.critic(combined)
 
 
+class HIROConfig(BaseModel):
+    """Configuration parameters for HIRO with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of state space (must be positive)
+        action_size: Number of primitive actions (must be positive)
+        goal_size: Dimension of goal space (must be positive)
+        hidden_size: Size of hidden layers in networks (must be positive)
+        goal_horizon: Steps between higher-level decisions (must be positive)
+        learning_rate: Learning rate for networks (must be in (0, 1])
+        gamma: Discount factor (must be in [0, 1])
+        tau: Soft update coefficient for target networks (must be in (0, 1])
+        device: Device for computation ('cpu' or 'cuda')
+        seed: Random seed for reproducibility (optional, must be non-negative if set)
+        policy_noise: Noise std for target policy smoothing (must be non-negative)
+        noise_clip: Maximum absolute value for policy noise (must be non-negative)
+        intrinsic_scale: Scaling factor for intrinsic rewards (must be positive)
+    """
+
+    # Required parameters
+    state_size: int = Field(..., gt=0, description="Dimension of state space")
+    action_size: int = Field(..., gt=0, description="Number of primitive actions")
+
+    # Optional parameters with defaults
+    goal_size: int = Field(default=16, gt=0, description="Dimension of goal space")
+    hidden_size: int = Field(default=256, gt=0, description="Size of hidden layers")
+    goal_horizon: int = Field(
+        default=10, gt=0, description="Steps between higher-level decisions"
+    )
+    learning_rate: float = Field(
+        default=0.0003, gt=0.0, le=1.0, description="Learning rate for networks"
+    )
+    gamma: float = Field(default=0.99, ge=0.0, le=1.0, description="Discount factor")
+    tau: float = Field(
+        default=0.005,
+        gt=0.0,
+        le=1.0,
+        description="Soft update coefficient for target networks",
+    )
+    device: str = Field(
+        default="cpu", description="Device for computation ('cpu' or 'cuda')"
+    )
+    seed: int | None = Field(
+        default=None, description="Random seed for reproducibility"
+    )
+    policy_noise: float = Field(
+        default=0.2,
+        ge=0.0,
+        description="Noise std for target policy smoothing (TD3-style)",
+    )
+    noise_clip: float = Field(
+        default=0.5, ge=0.0, description="Maximum absolute value for policy noise"
+    )
+    intrinsic_scale: float = Field(
+        default=1.0, gt=0.0, description="Scaling factor for intrinsic rewards"
+    )
+
+    model_config = {"arbitrary_types_allowed": True}  # For torch.device
+
+    @field_validator("device")
+    @classmethod
+    def validate_device(cls, v: str) -> str:
+        """Validate device string.
+
+        Args:
+            v: Device string to validate
+
+        Returns:
+            Validated device string
+
+        Raises:
+            ValueError: If device is not 'cpu' or 'cuda'
+        """
+        if v.lower() not in ["cpu", "cuda"]:
+            raise ValueError(f"Device must be 'cpu' or 'cuda', got '{v}'")
+        return v.lower()
+
+    @field_validator("seed")
+    @classmethod
+    def validate_seed(cls, v: int | None) -> int | None:
+        """Validate seed is non-negative if provided.
+
+        Args:
+            v: Seed value to validate
+
+        Returns:
+            Validated seed value
+
+        Raises:
+            ValueError: If seed is negative
+        """
+        if v is not None and v < 0:
+            raise ValueError(f"Seed must be non-negative, got {v}")
+        return v
+
+
 class HIROAgent:
     """HIRO agent with hierarchical goal-conditioned RL.
 
@@ -186,54 +287,48 @@ class HIROAgent:
     - Off-policy correction: Relabels goals for data efficiency
     """
 
-    def __init__(
-        self,
-        state_size: int,
-        action_size: int,
-        goal_size: int = 16,
-        hidden_size: int = 256,
-        goal_horizon: int = 10,
-        learning_rate: float = 0.0003,
-        gamma: float = 0.99,
-        tau: float = 0.005,
-        device: str = "cpu",
-        seed: int | None = None,
-        policy_noise: float = 0.2,
-        noise_clip: float = 0.5,
-        intrinsic_scale: float = 1.0,
-    ) -> None:
+    def __init__(self, config: HIROConfig | None = None, **kwargs: Any) -> None:
         """Initialize HIRO agent.
 
         Args:
-            state_size: Dimension of state space
-            action_size: Number of primitive actions
-            goal_size: Dimension of goal space
-            hidden_size: Size of hidden layers
-            goal_horizon: Steps between higher-level decisions
-            learning_rate: Learning rate for networks
-            gamma: Discount factor
-            tau: Soft update coefficient for target networks
-            device: Device for computation
-            seed: Random seed for reproducibility
-            policy_noise: Noise std for target policy smoothing (TD3-style)
-            noise_clip: Maximum absolute value for policy noise
-            intrinsic_scale: Scaling factor for intrinsic rewards
-        """
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.goal_size = goal_size
-        self.goal_horizon = goal_horizon
-        self.gamma = gamma
-        self.tau = tau
-        self.device = torch.device(device)
-        self.policy_noise = policy_noise
-        self.noise_clip = noise_clip
-        self.intrinsic_scale = intrinsic_scale
+        Examples:
+            # New style (recommended)
+            >>> config = HIROConfig(state_size=4, action_size=2)
+            >>> agent = HIROAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = HIROAgent(state_size=4, action_size=2)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
+        """
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = HIROConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Set random seeds if provided
+        if config.seed is not None:
+            torch.manual_seed(config.seed)
+            np.random.seed(config.seed)
+            random.seed(config.seed)
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.goal_size = config.goal_size
+        self.goal_horizon = config.goal_horizon
+        self.gamma = config.gamma
+        self.tau = config.tau
+        self.device = torch.device(config.device)
+        self.policy_noise = config.policy_noise
+        self.noise_clip = config.noise_clip
+        self.intrinsic_scale = config.intrinsic_scale
 
         # Track distance statistics for normalization
         self.distance_mean = 0.0
@@ -242,42 +337,46 @@ class HIROAgent:
 
         # Initialize higher-level policy
         self.higher_policy = HigherLevelPolicy(
-            state_size=state_size, goal_size=goal_size, hidden_size=hidden_size
+            state_size=config.state_size,
+            goal_size=config.goal_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
 
         self.higher_target = HigherLevelPolicy(
-            state_size=state_size, goal_size=goal_size, hidden_size=hidden_size
+            state_size=config.state_size,
+            goal_size=config.goal_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
         self.higher_target.load_state_dict(self.higher_policy.state_dict())
 
         # Initialize lower-level policy
         self.lower_policy = LowerLevelPolicy(
-            state_size=state_size,
-            action_size=action_size,
-            goal_size=goal_size,
-            hidden_size=hidden_size,
+            state_size=config.state_size,
+            action_size=config.action_size,
+            goal_size=config.goal_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
 
         self.lower_target = LowerLevelPolicy(
-            state_size=state_size,
-            action_size=action_size,
-            goal_size=goal_size,
-            hidden_size=hidden_size,
+            state_size=config.state_size,
+            action_size=config.action_size,
+            goal_size=config.goal_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
         self.lower_target.load_state_dict(self.lower_policy.state_dict())
 
         # Optimizers - separate for actor and critic
         self.higher_actor_optimizer = optim.Adam(
-            self.higher_policy.network.parameters(), lr=learning_rate
+            self.higher_policy.network.parameters(), lr=config.learning_rate
         )
         self.higher_critic_optimizer = optim.Adam(
-            self.higher_policy.critic.parameters(), lr=learning_rate
+            self.higher_policy.critic.parameters(), lr=config.learning_rate
         )
         self.lower_actor_optimizer = optim.Adam(
-            self.lower_policy.policy.parameters(), lr=learning_rate
+            self.lower_policy.policy.parameters(), lr=config.learning_rate
         )
         self.lower_critic_optimizer = optim.Adam(
-            self.lower_policy.critic.parameters(), lr=learning_rate
+            self.lower_policy.critic.parameters(), lr=config.learning_rate
         )
 
         # Experience buffers

@@ -14,6 +14,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import BaseModel, Field
 
 # Define experience tuple for rollout storage
 RolloutExperience = namedtuple(
@@ -245,6 +246,91 @@ class RolloutBuffer:
         return len(self.buffer)
 
 
+class PPOConfig(BaseModel):
+    """Configuration parameters for PPO with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of the state space (must be positive)
+        action_size: Dimension of the action space (must be positive)
+        learning_rate: Learning rate for both networks (0 < lr <= 1)
+        discount_factor: Discount factor for future rewards (0 <= gamma <= 1)
+        hidden_sizes: List of hidden layer sizes for both networks
+        dropout_rate: Dropout rate for regularization (0 <= rate < 1)
+        buffer_size: Size of rollout buffer (must be positive)
+        batch_size: Batch size for training (must be positive)
+        clip_ratio: PPO clipping ratio (0 < ratio < 1)
+        value_coef: Value function loss coefficient (>= 0)
+        entropy_coef: Entropy bonus coefficient (>= 0)
+        max_grad_norm: Maximum gradient norm for clipping (must be positive)
+        gae_lambda: GAE lambda parameter (0 <= lambda <= 1)
+        clip_value_loss: Whether to clip value loss
+        n_epochs: Number of training epochs per update (must be positive)
+        device: Device to run computations on ('cpu' or 'cuda')
+        random_seed: Random seed for reproducible results (optional)
+    """
+
+    state_size: int = Field(gt=0, description="Dimension of the state space")
+    action_size: int = Field(gt=0, description="Dimension of the action space")
+    learning_rate: float = Field(
+        default=3e-4,
+        gt=0.0,
+        le=1.0,
+        description="Learning rate for both networks",
+    )
+    discount_factor: float = Field(
+        default=0.99,
+        ge=0.0,
+        le=1.0,
+        description="Discount factor for future rewards",
+    )
+    hidden_sizes: list[int] | None = Field(
+        default=None, description="List of hidden layer sizes for both networks"
+    )
+    dropout_rate: float = Field(
+        default=0.0,
+        ge=0.0,
+        lt=1.0,
+        description="Dropout rate for regularization",
+    )
+    buffer_size: int = Field(default=2048, gt=0, description="Size of rollout buffer")
+    batch_size: int = Field(default=64, gt=0, description="Batch size for training")
+    clip_ratio: float = Field(
+        default=0.2, gt=0.0, lt=1.0, description="PPO clipping ratio"
+    )
+    value_coef: float = Field(
+        default=0.5, ge=0.0, description="Value function loss coefficient"
+    )
+    entropy_coef: float = Field(
+        default=0.01,
+        ge=0.0,
+        description="Entropy bonus coefficient (positive for maximization)",
+    )
+    max_grad_norm: float = Field(
+        default=0.5, gt=0.0, description="Maximum gradient norm for clipping"
+    )
+    gae_lambda: float = Field(
+        default=0.95, ge=0.0, le=1.0, description="GAE lambda parameter"
+    )
+    clip_value_loss: bool = Field(
+        default=True, description="Whether to clip value loss"
+    )
+    n_epochs: int = Field(
+        default=4, gt=0, description="Number of training epochs per update"
+    )
+    device: str = Field(
+        default="cpu", description="Device to run computations on ('cpu' or 'cuda')"
+    )
+    random_seed: int | None = Field(
+        default=None, description="Random seed for reproducible results"
+    )
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
 class PPOAgent:
     """Proximal Policy Optimization (PPO) agent.
 
@@ -259,112 +345,87 @@ class PPOAgent:
 
     def __init__(
         self,
-        state_size: int,
-        action_size: int,
-        learning_rate: float = 3e-4,
-        discount_factor: float = 0.99,
-        hidden_sizes: list[int] | None = None,
-        dropout_rate: float = 0.0,
-        buffer_size: int = 2048,
-        batch_size: int = 64,
-        clip_ratio: float = 0.2,
-        value_coef: float = 0.5,
-        entropy_coef: float = 0.01,
-        max_grad_norm: float = 0.5,
-        gae_lambda: float = 0.95,
-        clip_value_loss: bool = True,
-        n_epochs: int = 4,
-        device: str = "cpu",
-        random_seed: int | None = None,
+        state_size: int | None = None,
+        action_size: int | None = None,
+        *,
+        config: PPOConfig | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize PPO agent.
 
         Args:
-            state_size: Dimension of the state space
-            action_size: Dimension of the action space
-            learning_rate: Learning rate for both networks
-            discount_factor: Discount factor for future rewards
-            hidden_sizes: List of hidden layer sizes for both networks
-            dropout_rate: Dropout rate for regularization
-            buffer_size: Size of rollout buffer
-            batch_size: Batch size for training
-            clip_ratio: PPO clipping ratio
-            value_coef: Value function loss coefficient
-            entropy_coef: Entropy bonus coefficient (positive for maximization)
-            max_grad_norm: Maximum gradient norm for clipping
-            gae_lambda: GAE lambda parameter
-            clip_value_loss: Whether to clip value loss
-            n_epochs: Number of training epochs per update
-            device: Device to run computations on ('cpu' or 'cuda')
-            random_seed: Random seed for reproducible results
+            state_size: Dimension of the state space (for backwards compatibility)
+            action_size: Dimension of the action space (for backwards compatibility)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+
+        Examples:
+            # New style (recommended)
+            >>> config = PPOConfig(state_size=4, action_size=2)
+            >>> agent = PPOAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = PPOAgent(state_size=4, action_size=2)
+            >>> agent = PPOAgent(4, 2)  # Positional arguments also work
 
         Raises:
-            ValueError: If any parameter is invalid
+            ValidationError: If parameters are invalid (via Pydantic)
         """
-        if state_size <= 0:
-            raise ValueError("state_size must be positive")
-        if action_size <= 0:
-            raise ValueError("action_size must be positive")
-        if not 0 < learning_rate <= 1:
-            raise ValueError("learning_rate must be between 0 and 1")
-        if not 0 <= discount_factor <= 1:
-            raise ValueError("discount_factor must be between 0 and 1")
-        if not 0 <= dropout_rate < 1:
-            raise ValueError("dropout_rate must be between 0 and 1")
-        if buffer_size <= 0:
-            raise ValueError("buffer_size must be positive")
-        if batch_size <= 0:
-            raise ValueError("batch_size must be positive")
-        if not 0 < clip_ratio < 1:
-            raise ValueError("clip_ratio must be between 0 and 1")
-        if value_coef < 0:
-            raise ValueError("value_coef must be non-negative")
-        if entropy_coef < 0:
-            raise ValueError("entropy_coef must be non-negative")
-        if max_grad_norm <= 0:
-            raise ValueError("max_grad_norm must be positive")
-        if not 0 <= gae_lambda <= 1:
-            raise ValueError("gae_lambda must be between 0 and 1")
-        if n_epochs <= 0:
-            raise ValueError("n_epochs must be positive")
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            # Support positional arguments
+            if state_size is not None:
+                kwargs["state_size"] = state_size
+            if action_size is not None:
+                kwargs["action_size"] = action_size
+            config = PPOConfig(**kwargs)
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.learning_rate = learning_rate
-        self.discount_factor = discount_factor
-        self.batch_size = batch_size
-        self.clip_ratio = clip_ratio
-        self.value_coef = value_coef
-        self.entropy_coef = entropy_coef
-        self.max_grad_norm = max_grad_norm
-        self.gae_lambda = gae_lambda
-        self.clip_value_loss = clip_value_loss
-        self.n_epochs = n_epochs
-        self.device = torch.device(device if torch.cuda.is_available() else "cpu")
+        # Store config
+        self.config = config
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.learning_rate = config.learning_rate
+        self.discount_factor = config.discount_factor
+        self.batch_size = config.batch_size
+        self.clip_ratio = config.clip_ratio
+        self.value_coef = config.value_coef
+        self.entropy_coef = config.entropy_coef
+        self.max_grad_norm = config.max_grad_norm
+        self.gae_lambda = config.gae_lambda
+        self.clip_value_loss = config.clip_value_loss
+        self.n_epochs = config.n_epochs
+        self.device = torch.device(
+            config.device if torch.cuda.is_available() else "cpu"
+        )
 
         # Set random seeds
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
-            np.random.seed(random_seed)
-            random.seed(random_seed)
+        if config.random_seed is not None:
+            torch.manual_seed(config.random_seed)
+            np.random.seed(config.random_seed)
+            random.seed(config.random_seed)
 
         # Initialize networks
         self.policy = PolicyNetwork(
-            state_size, action_size, hidden_sizes, dropout_rate
+            config.state_size,
+            config.action_size,
+            config.hidden_sizes,
+            config.dropout_rate,
         ).to(self.device)
-        self.value = ValueNetwork(state_size, hidden_sizes, dropout_rate).to(
-            self.device
-        )
+        self.value = ValueNetwork(
+            config.state_size, config.hidden_sizes, config.dropout_rate
+        ).to(self.device)
 
         # Initialize optimizer
         self.optimizer = optim.Adam(
             list(self.policy.parameters()) + list(self.value.parameters()),
-            lr=learning_rate,
+            lr=config.learning_rate,
             eps=1e-5,  # Small epsilon for numerical stability
         )
 
         # Initialize rollout buffer
-        self.rollout_buffer = RolloutBuffer(buffer_size)
+        self.rollout_buffer = RolloutBuffer(config.buffer_size)
 
         # Training mode
         self.training = True

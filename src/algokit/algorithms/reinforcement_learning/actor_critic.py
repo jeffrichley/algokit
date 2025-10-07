@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Define experience tuple for on-policy rollouts
 RolloutExperience = namedtuple(
@@ -137,6 +138,68 @@ class CriticNetwork(nn.Module):
         return self.network(state)
 
 
+class ActorCriticConfig(BaseModel):
+    """Configuration for Actor-Critic agent.
+
+    This class defines the hyperparameters for the Actor-Critic reinforcement learning
+    algorithm, including network architecture, learning rates, and training parameters.
+    """
+
+    state_size: int = Field(..., gt=0, description="Dimension of the state space")
+    action_size: int = Field(..., gt=0, description="Dimension of the action space")
+    learning_rate_actor: float = Field(
+        default=0.001, gt=0.0, le=1.0, description="Learning rate for actor network"
+    )
+    learning_rate_critic: float = Field(
+        default=0.001, gt=0.0, le=1.0, description="Learning rate for critic network"
+    )
+    discount_factor: float = Field(
+        default=0.99, ge=0.0, le=1.0, description="Discount factor for future rewards"
+    )
+    hidden_sizes: list[int] | None = Field(
+        default=None, description="List of hidden layer sizes for both networks"
+    )
+    dropout_rate: float = Field(
+        default=0.0, ge=0.0, lt=1.0, description="Dropout rate for regularization"
+    )
+    entropy_coefficient: float = Field(
+        default=0.01, ge=0.0, description="Coefficient for entropy bonus in actor loss"
+    )
+    gae_lambda: float = Field(
+        default=0.95,
+        ge=0.0,
+        le=1.0,
+        description="Lambda parameter for Generalized Advantage Estimation",
+    )
+    normalize_advantages: bool = Field(
+        default=True,
+        description="Whether to normalize advantages for better conditioning",
+    )
+    gradient_clip_norm: float = Field(
+        default=0.5,
+        ge=0.0,
+        description="Maximum norm for gradient clipping (0 to disable)",
+    )
+    device: str = Field(
+        default="cpu", description="Device to run computations on ('cpu' or 'cuda')"
+    )
+    random_seed: int | None = Field(
+        default=None, description="Random seed for reproducible results"
+    )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("hidden_sizes")
+    @classmethod
+    def check_hidden_sizes(cls, v: list[int] | None) -> list[int]:
+        """Validate hidden_sizes is not empty."""
+        if v is None:
+            return [128, 128]
+        if not v:
+            raise ValueError("hidden_sizes cannot be empty")
+        return v
+
+
 class ActorCriticAgent:
     """Actor-Critic reinforcement learning agent.
 
@@ -146,90 +209,70 @@ class ActorCriticAgent:
 
     def __init__(
         self,
-        state_size: int,
-        action_size: int,
-        learning_rate_actor: float = 0.001,
-        learning_rate_critic: float = 0.001,
-        discount_factor: float = 0.99,
-        hidden_sizes: list[int] | None = None,
-        dropout_rate: float = 0.0,
-        entropy_coefficient: float = 0.01,
-        gae_lambda: float = 0.95,
-        normalize_advantages: bool = True,
-        gradient_clip_norm: float = 0.5,
-        device: str = "cpu",
-        random_seed: int | None = None,
+        config: ActorCriticConfig | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize Actor-Critic agent.
 
         Args:
-            state_size: Dimension of the state space
-            action_size: Dimension of the action space
-            learning_rate_actor: Learning rate for actor network
-            learning_rate_critic: Learning rate for critic network
-            discount_factor: Discount factor for future rewards
-            hidden_sizes: List of hidden layer sizes for both networks
-            dropout_rate: Dropout rate for regularization
-            entropy_coefficient: Coefficient for entropy bonus in actor loss
-            gae_lambda: Lambda parameter for Generalized Advantage Estimation
-            normalize_advantages: Whether to normalize advantages for better conditioning
-            gradient_clip_norm: Maximum norm for gradient clipping (0 to disable)
-            device: Device to run computations on ('cpu' or 'cuda')
-            random_seed: Random seed for reproducible results
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+
+        Examples:
+            # New style (recommended)
+            >>> config = ActorCriticConfig(state_size=4, action_size=2)
+            >>> agent = ActorCriticAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = ActorCriticAgent(state_size=4, action_size=2)
 
         Raises:
-            ValueError: If any parameter is invalid
+            ValidationError: If parameters are invalid (via Pydantic)
         """
-        if state_size <= 0:
-            raise ValueError("state_size must be positive")
-        if action_size <= 0:
-            raise ValueError("action_size must be positive")
-        if not 0 < learning_rate_actor <= 1:
-            raise ValueError("learning_rate_actor must be between 0 and 1")
-        if not 0 < learning_rate_critic <= 1:
-            raise ValueError("learning_rate_critic must be between 0 and 1")
-        if not 0 <= discount_factor <= 1:
-            raise ValueError("discount_factor must be between 0 and 1")
-        if not 0 <= dropout_rate < 1:
-            raise ValueError("dropout_rate must be between 0 and 1")
-        if entropy_coefficient < 0:
-            raise ValueError("entropy_coefficient must be non-negative")
-        if not 0 <= gae_lambda <= 1:
-            raise ValueError("gae_lambda must be between 0 and 1")
-        if gradient_clip_norm < 0:
-            raise ValueError("gradient_clip_norm must be non-negative")
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = ActorCriticConfig(**kwargs)
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.learning_rate_actor = learning_rate_actor
-        self.learning_rate_critic = learning_rate_critic
-        self.discount_factor = discount_factor
-        self.entropy_coefficient = entropy_coefficient
-        self.gae_lambda = gae_lambda
-        self.normalize_advantages = normalize_advantages
-        self.gradient_clip_norm = gradient_clip_norm
-        self.device = torch.device(device if torch.cuda.is_available() else "cpu")
+        # Store config
+        self.config = config
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.learning_rate_actor = config.learning_rate_actor
+        self.learning_rate_critic = config.learning_rate_critic
+        self.discount_factor = config.discount_factor
+        self.entropy_coefficient = config.entropy_coefficient
+        self.gae_lambda = config.gae_lambda
+        self.normalize_advantages = config.normalize_advantages
+        self.gradient_clip_norm = config.gradient_clip_norm
+        self.device = torch.device(
+            config.device if torch.cuda.is_available() else "cpu"
+        )
 
         # Set random seeds
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
-            np.random.seed(random_seed)
-            random.seed(random_seed)
+        if config.random_seed is not None:
+            torch.manual_seed(config.random_seed)
+            np.random.seed(config.random_seed)
+            random.seed(config.random_seed)
 
         # Initialize networks
         self.actor = ActorNetwork(
-            state_size, action_size, hidden_sizes, dropout_rate
+            config.state_size,
+            config.action_size,
+            config.hidden_sizes,
+            config.dropout_rate,
         ).to(self.device)
-        self.critic = CriticNetwork(state_size, hidden_sizes, dropout_rate).to(
-            self.device
-        )
+        self.critic = CriticNetwork(
+            config.state_size, config.hidden_sizes, config.dropout_rate
+        ).to(self.device)
 
         # Initialize optimizers
         self.actor_optimizer = optim.Adam(
-            self.actor.parameters(), lr=learning_rate_actor
+            self.actor.parameters(), lr=config.learning_rate_actor
         )
         self.critic_optimizer = optim.Adam(
-            self.critic.parameters(), lr=learning_rate_critic
+            self.critic.parameters(), lr=config.learning_rate_critic
         )
 
         # Training mode

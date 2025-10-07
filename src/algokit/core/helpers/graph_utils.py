@@ -81,24 +81,36 @@ class HarborNetScenario:
         """
         errors = []
 
-        # Check dimensions
-        if self.width <= 0 or self.height <= 0:
-            errors.append("Grid dimensions must be positive")
+        errors.extend(self._validate_dimensions())
+        errors.extend(self._validate_positions())
+        errors.extend(self._validate_obstacles())
 
-        # Check start position
-        if not (0 <= self.start[0] < self.width and 0 <= self.start[1] < self.height):
+        return errors
+
+    def _validate_dimensions(self) -> list[str]:
+        """Validate grid dimensions.
+
+        Returns:
+            List of dimension validation errors
+        """
+        if self.width <= 0 or self.height <= 0:
+            return ["Grid dimensions must be positive"]
+        return []
+
+    def _validate_positions(self) -> list[str]:
+        """Validate start and goal positions.
+
+        Returns:
+            List of position validation errors
+        """
+        errors = []
+
+        if not self._is_within_bounds(self.start):
             errors.append("Start position must be within grid bounds")
 
-        # Check goal position
-        if not (0 <= self.goal[0] < self.width and 0 <= self.goal[1] < self.height):
+        if not self._is_within_bounds(self.goal):
             errors.append("Goal position must be within grid bounds")
 
-        # Check obstacles
-        for obstacle in self.obstacles:
-            if not (0 <= obstacle[0] < self.width and 0 <= obstacle[1] < self.height):
-                errors.append(f"Obstacle {obstacle} is outside grid bounds")
-
-        # Check start/goal not on obstacles
         if self.start in self.obstacles:
             errors.append("Start position cannot be on an obstacle")
 
@@ -106,6 +118,30 @@ class HarborNetScenario:
             errors.append("Goal position cannot be on an obstacle")
 
         return errors
+
+    def _validate_obstacles(self) -> list[str]:
+        """Validate obstacle positions.
+
+        Returns:
+            List of obstacle validation errors
+        """
+        errors = []
+        for obstacle in self.obstacles:
+            if not self._is_within_bounds(obstacle):
+                errors.append(f"Obstacle {obstacle} is outside grid bounds")
+        return errors
+
+    def _is_within_bounds(self, position: tuple[int, int]) -> bool:
+        """Check if position is within grid bounds.
+
+        Args:
+            position: Position to check
+
+        Returns:
+            True if position is within bounds, False otherwise
+        """
+        x, y = position
+        return 0 <= x < self.width and 0 <= y < self.height
 
 
 def create_grid_graph(
@@ -139,29 +175,11 @@ def create_grid_graph(
     graph = nx.Graph()
 
     # Add nodes
-    for x in range(width):
-        for y in range(height):
-            if (x, y) not in blocked:
-                graph.add_node((x, y))
+    _add_grid_nodes(graph, width, height, blocked)
 
-    # Add edges (4-connected or 8-connected)
-    directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    if diagonal:
-        directions.extend([(1, 1), (1, -1), (-1, 1), (-1, -1)])
-
-    for x in range(width):
-        for y in range(height):
-            if (x, y) in blocked:
-                continue
-
-            for dx, dy in directions:
-                next_x, next_y = x + dx, y + dy
-                if (
-                    0 <= next_x < width
-                    and 0 <= next_y < height
-                    and (next_x, next_y) not in blocked
-                ):
-                    graph.add_edge((x, y), (next_x, next_y))
+    # Add edges
+    directions = _get_movement_directions(diagonal)
+    _add_grid_edges(graph, width, height, blocked, directions)
 
     # Add metadata
     graph.graph.update(
@@ -176,6 +194,86 @@ def create_grid_graph(
     )
 
     return graph
+
+
+def _add_grid_nodes(
+    graph: nx.Graph, width: int, height: int, blocked: set[tuple[int, int]]
+) -> None:
+    """Add nodes to grid graph for non-blocked positions.
+
+    Args:
+        graph: Graph to add nodes to
+        width: Grid width
+        height: Grid height
+        blocked: Set of blocked positions
+    """
+    for x in range(width):
+        for y in range(height):
+            if (x, y) not in blocked:
+                graph.add_node((x, y))
+
+
+def _get_movement_directions(diagonal: bool) -> list[tuple[int, int]]:
+    """Get movement directions for grid connectivity.
+
+    Args:
+        diagonal: Whether to include diagonal movements
+
+    Returns:
+        List of (dx, dy) direction tuples
+    """
+    directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    if diagonal:
+        directions.extend([(1, 1), (1, -1), (-1, 1), (-1, -1)])
+    return directions
+
+
+def _add_grid_edges(
+    graph: nx.Graph,
+    width: int,
+    height: int,
+    blocked: set[tuple[int, int]],
+    directions: list[tuple[int, int]],
+) -> None:
+    """Add edges to grid graph based on movement directions.
+
+    Args:
+        graph: Graph to add edges to
+        width: Grid width
+        height: Grid height
+        blocked: Set of blocked positions
+        directions: List of (dx, dy) direction tuples
+    """
+    for x in range(width):
+        for y in range(height):
+            if (x, y) in blocked:
+                continue
+
+            for dx, dy in directions:
+                next_pos = (x + dx, y + dy)
+                if _is_valid_neighbor(next_pos, width, height, blocked):
+                    graph.add_edge((x, y), next_pos)
+
+
+def _is_valid_neighbor(
+    position: tuple[int, int],
+    width: int,
+    height: int,
+    blocked: set[tuple[int, int]],
+) -> bool:
+    """Check if position is a valid neighbor for edges.
+
+    Args:
+        position: Position to check
+        width: Grid width
+        height: Grid height
+        blocked: Set of blocked positions
+
+    Returns:
+        True if position is valid neighbor, False otherwise
+    """
+    x, y = position
+    return 0 <= x < width and 0 <= y < height and position not in blocked
 
 
 def load_harbor_scenario(file_path: str | Path) -> HarborNetScenario:

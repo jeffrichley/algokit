@@ -33,6 +33,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 @dataclass
@@ -95,6 +96,47 @@ class TerminationNetwork(nn.Module):
         return self.network(state)
 
 
+class IntraOptionQLearningConfig(BaseModel):
+    """Configuration parameters for IntraOptionQLearning with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of state space (must be positive)
+        n_options: Number of options available (must be positive)
+        learning_rate: Learning rate for Q-function (0 < lr <= 1)
+        gamma: Discount factor (0 <= gamma <= 1)
+        lambda_trace: Trace decay parameter (0 <= lambda <= 1)
+        n_step: Number of steps for n-step returns (must be positive)
+        use_traces: Whether to use eligibility traces
+        device: Device for computation
+    """
+
+    state_size: int = Field(gt=0, description="Dimension of state space")
+    n_options: int = Field(gt=0, description="Number of options available")
+    learning_rate: float = Field(
+        default=0.001, gt=0.0, le=1.0, description="Learning rate for Q-function"
+    )
+    gamma: float = Field(default=0.99, ge=0.0, le=1.0, description="Discount factor")
+    lambda_trace: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Trace decay parameter (0 = no traces, 1 = full traces)",
+    )
+    n_step: int = Field(
+        default=5, gt=0, description="Number of steps for n-step returns"
+    )
+    use_traces: bool = Field(
+        default=True, description="Whether to use eligibility traces"
+    )
+    device: str = Field(default="cpu", description="Device for computation")
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
 class IntraOptionQLearning:
     """Intra-option Q-learning with eligibility traces and n-step updates.
 
@@ -107,51 +149,58 @@ class IntraOptionQLearning:
 
     def __init__(
         self,
-        state_size: int,
-        n_options: int,
-        learning_rate: float = 0.001,
-        gamma: float = 0.99,
-        lambda_trace: float = 0.9,
-        n_step: int = 5,
-        use_traces: bool = True,
-        device: str = "cpu",
+        config: IntraOptionQLearningConfig | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize intra-option Q-learning.
 
         Args:
-            state_size: Dimension of state space
-            n_options: Number of options available
-            learning_rate: Learning rate for Q-function
-            gamma: Discount factor
-            lambda_trace: Trace decay parameter (0 = no traces, 1 = full traces)
-            n_step: Number of steps for n-step returns
-            use_traces: Whether to use eligibility traces
-            device: Device for computation
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+
+        Examples:
+            # New style (recommended)
+            >>> config = IntraOptionQLearningConfig(state_size=4, n_options=2)
+            >>> learner = IntraOptionQLearning(config=config)
+
+            # Old style (backwards compatible)
+            >>> learner = IntraOptionQLearning(state_size=4, n_options=2)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
         """
-        self.state_size = state_size
-        self.n_options = n_options
-        self.gamma = gamma
-        self.lambda_trace = lambda_trace
-        self.n_step = n_step
-        self.use_traces = use_traces
-        self.device = torch.device(device)
-        self.learning_rate = learning_rate
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = IntraOptionQLearningConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.n_options = config.n_options
+        self.gamma = config.gamma
+        self.lambda_trace = config.lambda_trace
+        self.n_step = config.n_step
+        self.use_traces = config.use_traces
+        self.device = torch.device(config.device)
+        self.learning_rate = config.learning_rate
 
         # Q-values over options
-        self.q_network = self._create_q_network(n_options).to(self.device)
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        self.q_network = self._create_q_network(self.n_options).to(self.device)
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
 
         # Eligibility traces (one per option)
         self.traces: dict[int, dict[str, torch.Tensor]] = {}
-        if use_traces:
+        if self.use_traces:
             self._initialize_traces()
 
         # N-step buffer for each option
         self.n_step_buffers: dict[int, deque[tuple[torch.Tensor, float]]] = defaultdict(
-            lambda: deque(maxlen=n_step)
+            lambda: deque(maxlen=self.n_step)
         )
 
-    def _create_q_network(self, n_options: int) -> nn.Module:
+    def _create_q_network(self, n_options: int) -> nn.Sequential:
         """Create Q-network architecture.
 
         Args:
@@ -393,6 +442,105 @@ class IntraOptionQLearning:
             self._initialize_traces()
 
 
+class OptionsAgentConfig(BaseModel):
+    """Configuration parameters for OptionsAgent with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of state space (must be positive)
+        action_size: Dimension of action space (must be positive)
+        options: List of available options (if None, creates primitive options)
+        learning_rate: Learning rate for Q-learning (0 < lr <= 1)
+        termination_lr: Learning rate for termination function (0 < lr <= 1)
+        gamma: Discount factor (0 <= gamma <= 1)
+        epsilon: Initial exploration rate (0 <= epsilon <= 1)
+        epsilon_min: Minimum exploration rate (0 <= epsilon_min <= epsilon)
+        epsilon_decay: Decay rate for exploration (0 < decay <= 1)
+        lambda_trace: Trace decay parameter (0 <= lambda <= 1)
+        n_step: Number of steps for n-step returns (must be positive)
+        use_traces: Whether to use eligibility traces
+        learn_termination: Whether to learn termination functions
+        primitive_termination_prob: Termination probability for primitive options (0 <= prob <= 1)
+        termination_entropy_weight: Weight for entropy regularization (>= 0)
+        use_option_critic_termination: Use option-critic style termination gradient
+        device: Device for computation
+        seed: Random seed for reproducibility
+    """
+
+    state_size: int = Field(gt=0, description="Dimension of state space")
+    action_size: int = Field(gt=0, description="Dimension of action space")
+    options: list[Option] | None = Field(
+        default=None,
+        description="List of available options (if None, creates primitive options)",
+    )
+    learning_rate: float = Field(
+        default=0.001, gt=0.0, le=1.0, description="Learning rate for Q-learning"
+    )
+    termination_lr: float = Field(
+        default=0.001,
+        gt=0.0,
+        le=1.0,
+        description="Learning rate for termination function",
+    )
+    gamma: float = Field(default=0.99, ge=0.0, le=1.0, description="Discount factor")
+    epsilon: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Initial exploration rate"
+    )
+    epsilon_min: float = Field(
+        default=0.01, ge=0.0, le=1.0, description="Minimum exploration rate"
+    )
+    epsilon_decay: float = Field(
+        default=0.995, gt=0.0, le=1.0, description="Decay rate for exploration"
+    )
+    lambda_trace: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Trace decay parameter for eligibility traces",
+    )
+    n_step: int = Field(
+        default=5, gt=0, description="Number of steps for n-step returns"
+    )
+    use_traces: bool = Field(
+        default=True, description="Whether to use eligibility traces"
+    )
+    learn_termination: bool = Field(
+        default=True, description="Whether to learn termination functions"
+    )
+    primitive_termination_prob: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Termination probability for primitive options",
+    )
+    termination_entropy_weight: float = Field(
+        default=0.01,
+        ge=0.0,
+        description="Weight for entropy regularization in termination loss",
+    )
+    use_option_critic_termination: bool = Field(
+        default=False, description="Use option-critic style termination gradient"
+    )
+    device: str = Field(default="cpu", description="Device for computation")
+    seed: int | None = Field(
+        default=None, description="Random seed for reproducibility"
+    )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("epsilon_min")
+    @classmethod
+    def validate_epsilon_min(cls, v: float, info: ValidationInfo) -> float:
+        """Validate that epsilon_min is not greater than epsilon."""
+        epsilon = info.data.get("epsilon", 1.0)
+        if v > epsilon:
+            raise ValueError(f"epsilon_min ({v}) must be <= epsilon ({epsilon})")
+        return v
+
+
 class OptionsAgent:
     """Options Framework agent with temporal abstraction.
 
@@ -409,82 +557,70 @@ class OptionsAgent:
 
     def __init__(
         self,
-        state_size: int,
-        action_size: int,
-        options: list[Option] | None = None,
-        learning_rate: float = 0.001,
-        termination_lr: float = 0.001,
-        gamma: float = 0.99,
-        epsilon: float = 1.0,
-        epsilon_min: float = 0.01,
-        epsilon_decay: float = 0.995,
-        lambda_trace: float = 0.9,
-        n_step: int = 5,
-        use_traces: bool = True,
-        learn_termination: bool = True,
-        primitive_termination_prob: float = 1.0,
-        termination_entropy_weight: float = 0.01,
-        use_option_critic_termination: bool = False,
-        device: str = "cpu",
-        seed: int | None = None,
+        config: OptionsAgentConfig | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize Options Framework agent.
 
         Args:
-            state_size: Dimension of state space
-            action_size: Dimension of action space (for primitive actions)
-            options: List of available options (if None, creates primitive options)
-            learning_rate: Learning rate for Q-learning
-            termination_lr: Learning rate for termination function
-            gamma: Discount factor
-            epsilon: Initial exploration rate
-            epsilon_min: Minimum exploration rate
-            epsilon_decay: Decay rate for exploration
-            lambda_trace: Trace decay parameter for eligibility traces
-            n_step: Number of steps for n-step returns
-            use_traces: Whether to use eligibility traces
-            learn_termination: Whether to learn termination functions
-            primitive_termination_prob: Termination probability for primitive options
-            termination_entropy_weight: Weight for entropy regularization in termination loss
-            use_option_critic_termination: Use option-critic style termination gradient
-            device: Device for computation
-            seed: Random seed for reproducibility
-        """
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.epsilon_min = epsilon_min
-        self.epsilon_decay = epsilon_decay
-        self.learn_termination_enabled = learn_termination
-        self.primitive_termination_prob = primitive_termination_prob
-        self.termination_entropy_weight = termination_entropy_weight
-        self.use_option_critic_termination = use_option_critic_termination
-        self.device = torch.device(device)
+        Examples:
+            # New style (recommended)
+            >>> config = OptionsAgentConfig(state_size=4, action_size=2)
+            >>> agent = OptionsAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = OptionsAgent(state_size=4, action_size=2)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
+        """
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = OptionsAgentConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Set random seed if provided
+        if config.seed is not None:
+            torch.manual_seed(config.seed)
+            np.random.seed(config.seed)
+            random.seed(config.seed)
+
+        # Extract all parameters
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.gamma = config.gamma
+        self.epsilon = config.epsilon
+        self.epsilon_min = config.epsilon_min
+        self.epsilon_decay = config.epsilon_decay
+        self.learn_termination_enabled = config.learn_termination
+        self.primitive_termination_prob = config.primitive_termination_prob
+        self.termination_entropy_weight = config.termination_entropy_weight
+        self.use_option_critic_termination = config.use_option_critic_termination
+        self.device = torch.device(config.device)
 
         # Create default primitive options if none provided
-        if options is None:
+        if config.options is None:
             self.options = self._create_primitive_options()
         else:
-            self.options = options
+            self.options = config.options
 
         self.n_options = len(self.options)
 
         # Initialize intra-option Q-learning with advanced features
         self.q_learner = IntraOptionQLearning(
-            state_size=state_size,
+            state_size=self.state_size,
             n_options=self.n_options,
-            learning_rate=learning_rate,
-            gamma=gamma,
-            lambda_trace=lambda_trace,
-            n_step=n_step,
-            use_traces=use_traces,
-            device=device,
+            learning_rate=config.learning_rate,
+            gamma=self.gamma,
+            lambda_trace=config.lambda_trace,
+            n_step=config.n_step,
+            use_traces=config.use_traces,
+            device=config.device,
         )
 
         # Initialize learnable termination functions
@@ -492,10 +628,10 @@ class OptionsAgent:
         self.termination_optimizer: optim.Adam | None
         if self.learn_termination_enabled:
             self.termination_network = TerminationNetwork(
-                state_size, self.n_options
+                self.state_size, self.n_options
             ).to(self.device)
             self.termination_optimizer = optim.Adam(
-                self.termination_network.parameters(), lr=termination_lr
+                self.termination_network.parameters(), lr=config.termination_lr
             )
         else:
             self.termination_network = None

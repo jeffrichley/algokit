@@ -3,9 +3,11 @@
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.dqn import (
     DQNAgent,
+    DQNConfig,
     DQNNetwork,
     ReplayBuffer,
 )
@@ -124,6 +126,104 @@ class TestReplayBuffer:
             ReplayBuffer(capacity=0)
 
 
+class TestDQNConfig:
+    """Test the DQN configuration validation."""
+
+    @pytest.mark.unit
+    def test_config_valid_parameters(self) -> None:
+        """Test DQNConfig accepts valid parameters."""
+        # Arrange - Prepare configuration parameters
+
+        # Act - Create config with valid parameters
+        config = DQNConfig(state_size=4, action_size=2)
+
+        # Assert - Verify config has correct values
+        assert config.state_size == 4
+        assert config.action_size == 2
+        assert config.learning_rate == 0.001
+        assert config.epsilon == 1.0
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_state_size(self) -> None:
+        """Test DQNConfig rejects negative state_size."""
+        # Arrange - Prepare invalid state_size parameter
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError, match="state_size"):
+            DQNConfig(state_size=-1, action_size=4)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_action_size(self) -> None:
+        """Test DQNConfig rejects negative action_size."""
+        # Arrange - Prepare invalid action_size parameter
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError, match="action_size"):
+            DQNConfig(state_size=4, action_size=-1)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_learning_rate(self) -> None:
+        """Test DQNConfig rejects learning_rate > 1."""
+        # Arrange - Prepare invalid learning_rate parameter
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError):
+            DQNConfig(state_size=4, action_size=2, learning_rate=1.5)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_epsilon(self) -> None:
+        """Test DQNConfig rejects epsilon > 1."""
+        # Arrange - Prepare invalid epsilon parameter
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError):
+            DQNConfig(state_size=4, action_size=2, epsilon=1.5)
+
+    @pytest.mark.unit
+    def test_config_rejects_epsilon_min_greater_than_epsilon(self) -> None:
+        """Test DQNConfig rejects epsilon_min > epsilon."""
+        # Arrange - Prepare epsilon_min greater than epsilon
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError, match="epsilon_min"):
+            DQNConfig(state_size=4, action_size=2, epsilon=0.5, epsilon_min=0.8)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_dqn_variant(self) -> None:
+        """Test DQNConfig rejects invalid dqn_variant."""
+        # Arrange - Prepare invalid dqn_variant parameter
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError):
+            DQNConfig(state_size=4, action_size=2, dqn_variant="invalid")
+
+    @pytest.mark.unit
+    def test_config_requires_decay_steps_for_linear_decay(self) -> None:
+        """Test DQNConfig requires epsilon_decay_steps for linear decay."""
+        # Arrange - Prepare linear decay without epsilon_decay_steps
+
+        # Act & Assert - Create config and verify validation error
+        with pytest.raises(ValidationError, match="epsilon_decay_steps"):
+            DQNConfig(state_size=4, action_size=2, epsilon_decay_type="linear")
+
+    @pytest.mark.unit
+    def test_config_accepts_linear_decay_with_steps(self) -> None:
+        """Test DQNConfig accepts linear decay with epsilon_decay_steps."""
+        # Arrange - Prepare linear decay with epsilon_decay_steps
+
+        # Act - Create config with valid linear decay parameters
+        config = DQNConfig(
+            state_size=4,
+            action_size=2,
+            epsilon_decay_type="linear",
+            epsilon_decay_steps=100,
+        )
+
+        # Assert - Verify config has correct decay parameters
+        assert config.epsilon_decay_type == "linear"
+        assert config.epsilon_decay_steps == 100
+
+
 class TestDQNAgent:
     """Test the DQN agent implementation."""
 
@@ -142,6 +242,34 @@ class TestDQNAgent:
         assert agent.action_size == action_size
         assert agent.epsilon == 1.0
         assert len(agent.memory) == 0
+
+    @pytest.mark.unit
+    def test_agent_config_object_initialization(self) -> None:
+        """Test DQN agent accepts config object."""
+        # Arrange - Create config object
+        config = DQNConfig(state_size=4, action_size=2, learning_rate=0.002)
+
+        # Act - Create agent with config
+        agent = DQNAgent(config=config)
+
+        # Assert - Verify agent initialized with config values
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.learning_rate == 0.002
+
+    @pytest.mark.unit
+    def test_agent_backwards_compatible_kwargs(self) -> None:
+        """Test DQN agent accepts kwargs for backwards compatibility."""
+        # Arrange - Prepare agent parameters
+
+        # Act - Create agent with kwargs (old style)
+        agent = DQNAgent(state_size=4, action_size=2, learning_rate=0.003)
+
+        # Assert - Verify agent initialized correctly
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.learning_rate == 0.003
 
     @pytest.mark.unit
     def test_agent_initialization_with_seed(self) -> None:
@@ -192,49 +320,47 @@ class TestDQNAgent:
     def test_invalid_initialization_parameters(self) -> None:
         """Test DQN agent raises errors for invalid parameters."""
         # Arrange & Act & Assert - Test invalid state size
-        with pytest.raises(ValueError, match="state_size must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=0, action_size=2)
 
         # Arrange & Act & Assert - Test invalid action size
-        with pytest.raises(ValueError, match="action_size must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=0)
 
         # Arrange & Act & Assert - Test invalid learning rate
-        with pytest.raises(ValueError, match="learning_rate must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, learning_rate=1.5)
 
         # Arrange & Act & Assert - Test invalid discount factor
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, discount_factor=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon
-        with pytest.raises(ValueError, match="epsilon must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, epsilon=1.5)
 
         # Arrange & Act & Assert - Test invalid batch size
-        with pytest.raises(ValueError, match="batch_size must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, batch_size=0)
 
         # Arrange & Act & Assert - Test invalid memory size
-        with pytest.raises(ValueError, match="memory_size must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, memory_size=0)
 
         # Arrange & Act & Assert - Test invalid target update
-        with pytest.raises(ValueError, match="target_update must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, target_update=0)
 
         # Arrange & Act & Assert - Test invalid DQN variant
-        with pytest.raises(
-            ValueError, match="dqn_variant must be 'vanilla' or 'double'"
-        ):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, dqn_variant="invalid")
 
         # Arrange & Act & Assert - Test invalid gradient clip norm
-        with pytest.raises(ValueError, match="gradient_clip_norm must be positive"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, gradient_clip_norm=0)
 
         # Arrange & Act & Assert - Test invalid tau
-        with pytest.raises(ValueError, match="tau must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             DQNAgent(state_size=4, action_size=2, tau=1.5)
 
     @pytest.mark.unit
@@ -631,7 +757,7 @@ class TestDQNAgent:
     def test_epsilon_decay_validation(self) -> None:
         """Test epsilon decay parameter validation."""
         # Arrange & Act & Assert - Test invalid decay type
-        with pytest.raises(ValueError, match="epsilon_decay_type must be"):
+        with pytest.raises(ValidationError):
             DQNAgent(
                 state_size=4,
                 action_size=2,
@@ -639,7 +765,7 @@ class TestDQNAgent:
             )
 
         # Arrange & Act & Assert - Test linear decay without steps
-        with pytest.raises(ValueError, match="epsilon_decay_steps must be provided"):
+        with pytest.raises(ValidationError, match="epsilon_decay_steps"):
             DQNAgent(
                 state_size=4,
                 action_size=2,
@@ -647,7 +773,7 @@ class TestDQNAgent:
             )
 
         # Arrange & Act & Assert - Test invalid decay steps
-        with pytest.raises(ValueError, match="epsilon_decay_steps must be positive"):
+        with pytest.raises(ValidationError, match="epsilon_decay_steps"):
             DQNAgent(
                 state_size=4,
                 action_size=2,

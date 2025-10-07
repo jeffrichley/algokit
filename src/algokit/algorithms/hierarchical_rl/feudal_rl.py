@@ -40,6 +40,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StateEncoder(nn.Module):
@@ -205,6 +206,159 @@ class WorkerNetwork(nn.Module):
         return logits, value
 
 
+class FeudalConfig(BaseModel):
+    """Configuration parameters for Feudal RL with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of state space (must be positive)
+        action_size: Number of primitive actions (must be positive)
+        latent_size: Dimension of latent state encoding (must be positive)
+        goal_size: Dimension of goal space (defaults to latent_size, must be positive if specified)
+        hidden_size: Size of hidden layers (must be positive)
+        manager_horizon: Number of steps between manager decisions (must be positive)
+        learning_rate: Base learning rate (0 < lr <= 1)
+        manager_lr: Manager-specific learning rate (0 < lr <= 1, defaults to 1e-4)
+        worker_lr: Worker-specific learning rate (0 < lr <= 1, defaults to 3e-4)
+        gamma: Discount factor (0 < gamma < 1)
+        entropy_coef: Entropy regularization coefficient (must be non-negative)
+        device: Device for computation ('cpu' or 'cuda')
+        seed: Random seed for reproducibility (optional)
+    """
+
+    # Core architecture parameters
+    state_size: int = Field(..., gt=0, description="Dimension of state space")
+    action_size: int = Field(..., gt=0, description="Number of primitive actions")
+    latent_size: int = Field(
+        default=64, gt=0, description="Dimension of latent state encoding"
+    )
+    goal_size: int | None = Field(
+        default=None,
+        description="Dimension of goal space (defaults to latent_size for intrinsic reward computation)",
+    )
+    hidden_size: int = Field(
+        default=256, gt=0, description="Size of hidden layers in networks"
+    )
+
+    # Temporal coordination
+    manager_horizon: int = Field(
+        default=10, gt=0, description="Number of steps between manager decisions"
+    )
+
+    # Learning parameters
+    learning_rate: float = Field(
+        default=0.0001,
+        gt=0.0,
+        le=1.0,
+        description="Base learning rate (used if manager_lr/worker_lr not specified)",
+    )
+    manager_lr: float | None = Field(
+        default=None,
+        description="Manager-specific learning rate (defaults to 1e-4 for stability)",
+    )
+    worker_lr: float | None = Field(
+        default=None,
+        description="Worker-specific learning rate (defaults to 3e-4 for faster adaptation)",
+    )
+    gamma: float = Field(
+        default=0.99, gt=0.0, lt=1.0, description="Discount factor for future rewards"
+    )
+    entropy_coef: float = Field(
+        default=0.01,
+        ge=0.0,
+        description="Entropy regularization coefficient for exploration",
+    )
+
+    # System configuration
+    device: str = Field(
+        default="cpu", description="Device for computation ('cpu' or 'cuda')"
+    )
+    seed: int | None = Field(
+        default=None, description="Random seed for reproducibility"
+    )
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True  # For torch.device compatibility
+    )
+
+    @field_validator("goal_size")
+    @classmethod
+    def validate_goal_size(cls, v: int | None) -> int | None:
+        """Validate goal_size is positive if specified.
+
+        Args:
+            v: goal_size value
+
+        Returns:
+            Validated goal_size
+
+        Raises:
+            ValueError: If goal_size is specified but not positive
+        """
+        if v is not None and v <= 0:
+            raise ValueError("goal_size must be positive if specified")
+        return v
+
+    @field_validator("manager_lr")
+    @classmethod
+    def validate_manager_lr(cls, v: float | None) -> float | None:
+        """Validate manager_lr is in valid range if specified.
+
+        Args:
+            v: manager_lr value
+
+        Returns:
+            Validated manager_lr
+
+        Raises:
+            ValueError: If manager_lr is specified but outside valid range
+        """
+        if v is not None and (v <= 0 or v > 1):
+            raise ValueError("manager_lr must be between 0 and 1 if specified")
+        return v
+
+    @field_validator("worker_lr")
+    @classmethod
+    def validate_worker_lr(cls, v: float | None) -> float | None:
+        """Validate worker_lr is in valid range if specified.
+
+        Args:
+            v: worker_lr value
+
+        Returns:
+            Validated worker_lr
+
+        Raises:
+            ValueError: If worker_lr is specified but outside valid range
+        """
+        if v is not None and (v <= 0 or v > 1):
+            raise ValueError("worker_lr must be between 0 and 1 if specified")
+        return v
+
+    @field_validator("device")
+    @classmethod
+    def validate_device(cls, v: str) -> str:
+        """Validate device is a valid PyTorch device string.
+
+        Args:
+            v: device string
+
+        Returns:
+            Validated device string
+
+        Raises:
+            ValueError: If device is not a valid PyTorch device
+        """
+        if v not in ["cpu", "cuda", "mps"] and not v.startswith("cuda:"):
+            raise ValueError(
+                f"device must be 'cpu', 'cuda', 'mps', or 'cuda:N', got '{v}'"
+            )
+        return v
+
+
 class FeudalAgent:
     """Production-quality Feudal RL agent with hierarchical manager-worker structure.
 
@@ -226,80 +380,80 @@ class FeudalAgent:
     Vezhnevets et al. (2017) with modern best practices for stable training.
     """
 
-    def __init__(
-        self,
-        state_size: int,
-        action_size: int,
-        latent_size: int = 64,
-        goal_size: int | None = None,
-        hidden_size: int = 256,
-        manager_horizon: int = 10,
-        learning_rate: float = 0.0001,
-        manager_lr: float | None = None,
-        worker_lr: float | None = None,
-        gamma: float = 0.99,
-        entropy_coef: float = 0.01,
-        device: str = "cpu",
-        seed: int | None = None,
-    ) -> None:
+    def __init__(self, config: FeudalConfig | None = None, **kwargs: Any) -> None:
         """Initialize Feudal RL agent.
 
         Args:
-            state_size: Dimension of state space
-            action_size: Number of primitive actions
-            latent_size: Dimension of latent state encoding
-            goal_size: Dimension of goal space (defaults to latent_size for intrinsic reward computation)
-            hidden_size: Size of hidden layers
-            manager_horizon: Number of steps between manager decisions
-            learning_rate: Base learning rate (used if manager_lr/worker_lr not specified)
-            manager_lr: Manager-specific learning rate (defaults to 1e-4 for stability)
-            worker_lr: Worker-specific learning rate (defaults to 3e-4 for faster adaptation)
-            gamma: Discount factor
-            entropy_coef: Entropy regularization coefficient
-            device: Device for computation
-            seed: Random seed for reproducibility
-        """
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.latent_size = latent_size
+        Examples:
+            # New style (recommended)
+            >>> config = FeudalConfig(state_size=4, action_size=2)
+            >>> agent = FeudalAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = FeudalAgent(state_size=4, action_size=2)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
+        """
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = FeudalConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Extract all parameters from config
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.latent_size = config.latent_size
         # Default goal_size to latent_size for intrinsic reward computation
-        self.goal_size = goal_size if goal_size is not None else latent_size
-        self.manager_horizon = manager_horizon
-        self.gamma = gamma
-        self.entropy_coef = entropy_coef
-        self.device = torch.device(device)
+        self.goal_size = (
+            config.goal_size if config.goal_size is not None else config.latent_size
+        )
+        self.manager_horizon = config.manager_horizon
+        self.gamma = config.gamma
+        self.entropy_coef = config.entropy_coef
+        self.device = torch.device(config.device)
 
         # Set learning rates with recommended defaults
-        self.manager_lr = manager_lr if manager_lr is not None else 1e-4
-        self.worker_lr = worker_lr if worker_lr is not None else 3e-4
+        self.manager_lr = config.manager_lr if config.manager_lr is not None else 1e-4
+        self.worker_lr = config.worker_lr if config.worker_lr is not None else 3e-4
+
+        # Set seed if provided
+        if config.seed is not None:
+            torch.manual_seed(config.seed)
+            np.random.seed(config.seed)
+            random.seed(config.seed)
 
         # Initialize shared state encoder
         self.state_encoder = StateEncoder(
-            state_size=state_size, latent_size=latent_size, hidden_size=hidden_size
+            state_size=config.state_size,
+            latent_size=config.latent_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
 
         # Initialize manager
         self.manager = ManagerNetwork(
-            latent_size=latent_size, goal_size=self.goal_size, hidden_size=hidden_size
+            latent_size=config.latent_size,
+            goal_size=self.goal_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
 
         # Initialize worker
         self.worker = WorkerNetwork(
-            latent_size=latent_size,
-            action_size=action_size,
+            latent_size=config.latent_size,
+            action_size=config.action_size,
             goal_size=self.goal_size,
-            hidden_size=hidden_size,
+            hidden_size=config.hidden_size,
         ).to(self.device)
 
         # Goal projection for intrinsic reward (if goal_size != latent_size)
         self.goal_projection: nn.Linear | None
-        if self.goal_size != latent_size:
-            self.goal_projection = nn.Linear(self.goal_size, latent_size).to(
+        if self.goal_size != config.latent_size:
+            self.goal_projection = nn.Linear(self.goal_size, config.latent_size).to(
                 self.device
             )
         else:
@@ -308,7 +462,7 @@ class FeudalAgent:
         # Optimizers with separate learning rates for manager/worker
         # Manager learns slower for stability, worker learns faster for adaptation
         self.encoder_optimizer = optim.Adam(
-            self.state_encoder.parameters(), lr=learning_rate
+            self.state_encoder.parameters(), lr=config.learning_rate
         )
         self.manager_optimizer = optim.Adam(
             self.manager.parameters(), lr=self.manager_lr

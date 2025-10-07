@@ -387,19 +387,44 @@ def main() -> None:
     print(f"Goal state: {goal_state}")
 
     # Create agents with same parameters for fair comparison
-    agent_params = {
-        "state_space_size": state_space_size,
-        "action_space_size": action_space_size,
-        "learning_rate": 0.1,
-        "discount_factor": 0.95,
-        "epsilon": 1.0,
-        "epsilon_decay": 0.995,
-        "epsilon_min": 0.01,
-        "random_seed": 42,
-    }
 
-    q_agent = QLearningAgent(**agent_params)
-    sarsa_agent = SarsaAgent(**agent_params)
+    # Q-Learning agent (old style - backwards compatible)
+    q_agent = QLearningAgent(
+        state_space_size=state_space_size,
+        action_space_size=action_space_size,
+        learning_rate=0.1,
+        discount_factor=0.95,
+        epsilon=1.0,
+        epsilon_decay=0.995,
+        epsilon_min=0.01,
+        random_seed=42,
+    )
+
+    # SARSA agent - demonstrating new config-based approach (recommended)
+    # from algokit.algorithms.reinforcement_learning.sarsa import SarsaConfig
+    # config = SarsaConfig(
+    #     state_space_size=state_space_size,
+    #     action_space_size=action_space_size,
+    #     learning_rate=0.1,
+    #     discount_factor=0.95,
+    #     epsilon_start=1.0,
+    #     epsilon_decay=0.995,
+    #     epsilon_end=0.01,
+    #     random_seed=42,
+    # )
+    # sarsa_agent = SarsaAgent(config=config)
+
+    # SARSA agent (old style - still works for backwards compatibility)
+    sarsa_agent = SarsaAgent(
+        state_space_size=state_space_size,
+        action_space_size=action_space_size,
+        learning_rate=0.1,
+        discount_factor=0.95,
+        epsilon=1.0,
+        epsilon_decay=0.995,
+        epsilon_min=0.01,
+        random_seed=42,
+    )
 
     print(f"\nQ-Learning Agent: {q_agent}")
     print(f"SARSA Agent: {sarsa_agent}")

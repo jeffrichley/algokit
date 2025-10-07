@@ -3,9 +3,11 @@
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.actor_critic import (
     ActorCriticAgent,
+    ActorCriticConfig,
     ActorNetwork,
     CriticNetwork,
     RolloutExperience,
@@ -143,7 +145,7 @@ class TestActorCriticAgent:
         action_size = 2
 
         # Act - Create agent
-        agent = ActorCriticAgent(state_size, action_size)
+        agent = ActorCriticAgent(state_size=state_size, action_size=action_size)
 
         # Assert - Verify agent properties
         assert agent.state_size == state_size
@@ -159,29 +161,27 @@ class TestActorCriticAgent:
     def test_agent_invalid_parameters(self) -> None:
         """Test agent raises errors for invalid parameters."""
         # Arrange & Act & Assert - Test invalid state size
-        with pytest.raises(ValueError, match="state_size must be positive"):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=0, action_size=2)
 
         # Arrange & Act & Assert - Test invalid action size
-        with pytest.raises(ValueError, match="action_size must be positive"):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=4, action_size=0)
 
         # Arrange & Act & Assert - Test invalid learning rate
-        with pytest.raises(
-            ValueError, match="learning_rate_actor must be between 0 and 1"
-        ):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=4, action_size=2, learning_rate_actor=1.5)
 
         # Arrange & Act & Assert - Test invalid discount factor
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=4, action_size=2, discount_factor=1.5)
 
         # Arrange & Act & Assert - Test invalid GAE lambda
-        with pytest.raises(ValueError, match="gae_lambda must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=4, action_size=2, gae_lambda=1.5)
 
         # Arrange & Act & Assert - Test invalid gradient clip norm
-        with pytest.raises(ValueError, match="gradient_clip_norm must be non-negative"):
+        with pytest.raises(ValidationError):
             ActorCriticAgent(state_size=4, action_size=2, gradient_clip_norm=-0.1)
 
     @pytest.mark.unit
@@ -396,3 +396,150 @@ class TestActorCriticAgent:
         assert isinstance(action2, int)
         assert 0 <= action1 < 2
         assert 0 <= action2 < 2
+
+    @pytest.mark.unit
+    def test_config_object_initialization(self) -> None:
+        """Test that agent accepts config object."""
+        # Arrange - Create a config object
+        config = ActorCriticConfig(state_size=4, action_size=2)
+
+        # Act - Initialize agent with config
+        agent = ActorCriticAgent(config=config)
+
+        # Assert - Verify agent uses config correctly
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    @pytest.mark.unit
+    def test_backwards_compatible_kwargs(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - No setup needed
+
+        # Act - Initialize agent with kwargs
+        agent = ActorCriticAgent(state_size=4, action_size=2)
+
+        # Assert - Verify agent initialized correctly
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    @pytest.mark.unit
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_size."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=-1, action_size=4)
+
+    @pytest.mark.unit
+    def test_config_validates_negative_action_size(self) -> None:
+        """Test that Config rejects negative action_size."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=-1)
+
+    @pytest.mark.unit
+    def test_config_validates_learning_rate_actor(self) -> None:
+        """Test that Config rejects invalid learning_rate_actor."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for zero
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, learning_rate_actor=0.0)
+
+        # Act & Assert - Verify validation error is raised for too large
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, learning_rate_actor=1.5)
+
+    @pytest.mark.unit
+    def test_config_validates_learning_rate_critic(self) -> None:
+        """Test that Config rejects invalid learning_rate_critic."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for zero
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, learning_rate_critic=0.0)
+
+        # Act & Assert - Verify validation error is raised for too large
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, learning_rate_critic=1.5)
+
+    @pytest.mark.unit
+    def test_config_validates_discount_factor(self) -> None:
+        """Test that Config rejects invalid discount_factor."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for negative
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, discount_factor=-0.1)
+
+        # Act & Assert - Verify validation error is raised for too large
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, discount_factor=1.5)
+
+    @pytest.mark.unit
+    def test_config_validates_dropout_rate(self) -> None:
+        """Test that Config rejects invalid dropout_rate."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for negative
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, dropout_rate=-0.1)
+
+        # Act & Assert - Verify validation error is raised for 1.0
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, dropout_rate=1.0)
+
+    @pytest.mark.unit
+    def test_config_validates_entropy_coefficient(self) -> None:
+        """Test that Config rejects invalid entropy_coefficient."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for negative
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, entropy_coefficient=-0.1)
+
+    @pytest.mark.unit
+    def test_config_validates_gae_lambda(self) -> None:
+        """Test that Config rejects invalid gae_lambda."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for negative
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, gae_lambda=-0.1)
+
+        # Act & Assert - Verify validation error is raised for too large
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, gae_lambda=1.5)
+
+    @pytest.mark.unit
+    def test_config_validates_gradient_clip_norm(self) -> None:
+        """Test that Config rejects invalid gradient_clip_norm."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for negative
+        with pytest.raises(ValidationError):
+            ActorCriticConfig(state_size=4, action_size=2, gradient_clip_norm=-0.1)
+
+    @pytest.mark.unit
+    def test_config_validates_empty_hidden_sizes(self) -> None:
+        """Test that Config rejects empty hidden_sizes."""
+        # Arrange - No setup needed
+
+        # Act & Assert - Verify validation error is raised for empty list
+        with pytest.raises(ValidationError, match="hidden_sizes cannot be empty"):
+            ActorCriticConfig(state_size=4, action_size=2, hidden_sizes=[])
+
+    @pytest.mark.unit
+    def test_config_default_hidden_sizes(self) -> None:
+        """Test that Config sets default hidden_sizes when None is provided."""
+        # Arrange - No setup needed
+
+        # Act - Create config with None for hidden_sizes
+        config = ActorCriticConfig(state_size=4, action_size=2, hidden_sizes=None)
+
+        # Assert - Verify default value is set
+        assert config.hidden_sizes == [128, 128]

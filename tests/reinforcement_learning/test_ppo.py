@@ -3,10 +3,12 @@
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.ppo import (
     PolicyNetwork,
     PPOAgent,
+    PPOConfig,
     RolloutBuffer,
     RolloutExperience,
     ValueNetwork,
@@ -210,20 +212,77 @@ class TestPPOAgent:
     def test_agent_initialization_with_invalid_params(self) -> None:
         """Test that PPOAgent raises errors for invalid parameters."""
         # Arrange & Act & Assert - Test various invalid parameter combinations
-        with pytest.raises(ValueError, match="state_size must be positive"):
+        with pytest.raises(ValidationError):
             PPOAgent(0, 2)
 
-        with pytest.raises(ValueError, match="action_size must be positive"):
+        with pytest.raises(ValidationError):
             PPOAgent(4, 0)
 
-        with pytest.raises(ValueError, match="learning_rate must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             PPOAgent(4, 2, learning_rate=1.5)
 
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             PPOAgent(4, 2, discount_factor=1.5)
 
-        with pytest.raises(ValueError, match="clip_ratio must be between 0 and 1"):
+        with pytest.raises(ValidationError):
             PPOAgent(4, 2, clip_ratio=1.5)
+
+    def test_config_object_initialization(self) -> None:
+        """Test that PPOAgent accepts config object."""
+        # Arrange - Create a PPOConfig with valid parameters
+        config = PPOConfig(state_size=4, action_size=2)
+
+        # Act - Initialize agent with config object
+        agent = PPOAgent(config=config)
+
+        # Assert - Verify agent uses the config and parameters are set
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    def test_backwards_compatible_kwargs(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - Prepare kwargs parameters
+
+        # Act - Create agent with kwargs (old style)
+        agent = PPOAgent(state_size=4, action_size=2, learning_rate=0.001)
+
+        # Assert - Verify parameters are set correctly
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.learning_rate == 0.001
+
+    def test_config_validates_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_size."""
+        # Arrange - Prepare invalid parameters with negative state_size
+
+        # Act & Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError):
+            PPOConfig(state_size=-1, action_size=4)
+
+    def test_config_validates_negative_action_size(self) -> None:
+        """Test that Config rejects negative action_size."""
+        # Arrange - Prepare invalid parameters with negative action_size
+
+        # Act & Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError):
+            PPOConfig(state_size=4, action_size=-1)
+
+    def test_config_validates_invalid_learning_rate(self) -> None:
+        """Test that Config rejects invalid learning_rate."""
+        # Arrange - Prepare invalid learning_rate above 1.0
+
+        # Act & Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError):
+            PPOConfig(state_size=4, action_size=2, learning_rate=1.5)
+
+    def test_config_validates_invalid_clip_ratio(self) -> None:
+        """Test that Config rejects invalid clip_ratio."""
+        # Arrange - Prepare invalid clip_ratio above 1.0
+
+        # Act & Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError):
+            PPOConfig(state_size=4, action_size=2, clip_ratio=1.5)
 
     def test_get_action_training_mode(self) -> None:
         """Test that get_action works in training mode."""
