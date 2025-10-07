@@ -30,6 +30,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.13.0 (2025-10-07)
+
+### Feat
+
+- Complete state-of-the-art hierarchical RL implementations with refinements
+- add hierarchical reinforcement learning algorithms
+
+### Fix
+
+- add missing rl markers to pytest-algorithms.ini
+
+### Refactor
+
+- ActorCritic to Pydantic config pattern
+
 ## v0.12.0 (2025-10-03)
 
 ### Feat
