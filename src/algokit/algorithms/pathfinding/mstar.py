@@ -26,6 +26,7 @@ from collections.abc import Hashable
 from typing import Any
 
 import networkx as nx
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Pos = Hashable  # a node in the graph (e.g., tuple[int,int] or any hashable)
 Agent = Hashable  # e.g., "robot1"
@@ -502,18 +503,204 @@ def coupled_astar_repair(
 # ----------------------------- M* -------------------------------
 
 
+class MStarConfig(BaseModel):
+    """Configuration parameters for M* algorithm with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    ensuring type safety and comprehensive validation for multi-robot
+    path planning parameters.
+
+    Attributes:
+        collision_radius: Minimum safe distance between robots (must be positive)
+        max_extra_steps: Maximum extra steps allowed during coupled repair (must be positive)
+        safety_cap: Maximum iterations to prevent infinite loops (must be positive)
+    """
+
+    collision_radius: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Minimum safe distance between robots for collision detection",
+    )
+    max_extra_steps: int = Field(
+        default=200,
+        gt=0,
+        description="Maximum extra steps allowed during coupled A* repair",
+    )
+    safety_cap: int = Field(
+        default=2000,
+        gt=0,
+        description="Maximum iterations to prevent infinite loops in main planning loop",
+    )
+
+    model_config = ConfigDict(frozen=False, validate_assignment=True)
+
+    @field_validator("collision_radius")
+    @classmethod
+    def validate_collision_radius(cls, v: float) -> float:
+        """Validate that collision_radius is a reasonable value.
+
+        Args:
+            v: The collision radius value to validate
+
+        Returns:
+            The validated collision radius
+
+        Raises:
+            ValueError: If collision_radius is unreasonably large (>100)
+        """
+        if v > 100.0:
+            raise ValueError(
+                f"collision_radius ({v}) is unreasonably large (>100); "
+                "please check your units and scale"
+            )
+        return v
+
+
+class MStar:
+    """M* multi-robot path planning algorithm with subdimensional expansion.
+
+    This class provides a clean API for the M* algorithm, which efficiently
+    plans collision-free paths for multiple robots by using subdimensional
+    expansion to avoid exponential complexity.
+
+    The algorithm starts with independent single-agent plans and couples robots
+    only when conflicts are detected, making it much more efficient than
+    approaches that plan for all robots simultaneously.
+
+    Examples:
+        Using configuration object (recommended):
+        >>> import networkx as nx
+        >>> G = nx.grid_2d_graph(5, 5)
+        >>> config = MStarConfig(collision_radius=1.5)
+        >>> planner = MStar(config=config)
+        >>> starts = {"r1": (0, 0), "r2": (4, 4)}
+        >>> goals = {"r1": (4, 4), "r2": (0, 0)}
+        >>> plan = planner.plan(G, starts, goals)
+
+        Using keyword arguments (backwards compatible):
+        >>> planner = MStar(collision_radius=1.5)
+        >>> plan = planner.plan(G, starts, goals)
+    """
+
+    def __init__(self, config: MStarConfig | None = None, **kwargs: Any) -> None:
+        """Initialize M* planner.
+
+        Args:
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+                - collision_radius: Minimum safe distance between robots (default: 1.0)
+                - max_extra_steps: Max extra steps for repair (default: 200)
+                - safety_cap: Max iterations for main loop (default: 2000)
+
+        Examples:
+            New style (recommended):
+            >>> config = MStarConfig(collision_radius=1.5)
+            >>> planner = MStar(config=config)
+
+            Old style (backwards compatible):
+            >>> planner = MStar(collision_radius=1.5)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
+        """
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = MStarConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Extract parameters for convenience
+        self.collision_radius = config.collision_radius
+        self.max_extra_steps = config.max_extra_steps
+        self.safety_cap = config.safety_cap
+
+    def plan(
+        self,
+        graph: nx.Graph,
+        starts: dict[Agent, Pos],
+        goals: dict[Agent, Pos],
+    ) -> Plan | None:
+        """Plan collision-free paths for multiple robots.
+
+        Args:
+            graph: NetworkX graph representing the environment (weighted or unweighted)
+            starts: Dictionary mapping each agent to its starting position
+            goals: Dictionary mapping each agent to its goal position
+
+        Returns:
+            Dictionary mapping each agent to its path (list of positions),
+            or None if no collision-free solution exists
+
+        Raises:
+            ValueError: If starts and goals don't have matching agent sets
+            ValueError: If any start or goal position is not in the graph
+
+        Example:
+            >>> import networkx as nx
+            >>> G = nx.grid_2d_graph(5, 5)
+            >>> planner = MStar()
+            >>> starts = {"r1": (0, 0), "r2": (4, 4)}
+            >>> goals = {"r1": (4, 4), "r2": (0, 0)}
+            >>> plan = planner.plan(G, starts, goals)
+            >>> if plan:
+            ...     for agent, path in plan.items():
+            ...         print(f"{agent}: {path}")
+        """
+        # Validate inputs
+        if set(starts.keys()) != set(goals.keys()):
+            raise ValueError("starts and goals must have the same set of agents")
+
+        for agent, pos in starts.items():
+            if pos not in graph.nodes:
+                raise ValueError(f"Start position {pos} for agent {agent} not in graph")
+
+        for agent, pos in goals.items():
+            if pos not in graph.nodes:
+                raise ValueError(f"Goal position {pos} for agent {agent} not in graph")
+
+        # Call the functional API with configured parameters
+        return mstar_plan_paths(
+            graph=graph,
+            starts=starts,
+            goals=goals,
+            collision_radius=self.collision_radius,
+            max_extra_steps=self.max_extra_steps,
+            safety_cap=self.safety_cap,
+        )
+
+
 def mstar_plan_paths(
     graph: nx.Graph,
     starts: dict[Agent, Pos],
     goals: dict[Agent, Pos],
     collision_radius: float = 1.0,
+    max_extra_steps: int = 200,
+    safety_cap: int = 2000,
 ) -> Plan | None:
-    """
-    Subdimensional Expansion (M*) planner.
-    - graph: networkx Graph with weighted edges (weight=...), undirected or directed.
-    - starts/goals: mapping agent -> node.
-    - collision_radius: if nodes are numeric tuples, robots colliding if distance < radius (also treats same-node as collision).
-    Returns dict agent -> path (list of nodes), or None if unsolvable.
+    """Subdimensional Expansion (M*) planner - functional API.
+
+    This is the functional API for M* planning. For a cleaner object-oriented
+    interface with better parameter validation, use the MStar class instead.
+
+    Args:
+        graph: NetworkX graph with weighted edges (weight=...), undirected or directed
+        starts: Mapping from agent to starting node
+        goals: Mapping from agent to goal node
+        collision_radius: If nodes are numeric tuples, robots collide if distance < radius
+            (also treats same-node as collision). Default: 1.0
+        max_extra_steps: Maximum extra steps allowed during coupled repair. Default: 200
+        safety_cap: Maximum iterations to prevent infinite loops. Default: 2000
+
+    Returns:
+        Dictionary mapping agent to path (list of nodes), or None if unsolvable
+
+    Example:
+        >>> import networkx as nx
+        >>> G = nx.grid_2d_graph(5, 5)
+        >>> starts = {"r1": (0, 0), "r2": (4, 4)}
+        >>> goals = {"r1": (4, 4), "r2": (0, 0)}
+        >>> plan = mstar_plan_paths(G, starts, goals, collision_radius=1.5)
     """
     agents: list[Agent] = list(starts.keys())
 
@@ -532,7 +719,6 @@ def mstar_plan_paths(
 
     # Main loop: extend time and repair when conflicts appear
     # We iteratively look for earliest conflict, repair from that time, and continue.
-    safety_cap = 2000  # guard against infinite loops
     iters = 0
 
     while iters < safety_cap:
@@ -569,6 +755,7 @@ def mstar_plan_paths(
             start_time=conflicted_time,
             h_costs_per_agent=h_costs_per_agent,
             collision_radius=collision_radius,
+            max_extra_steps=max_extra_steps,
         )
         if tails is None:
             return None

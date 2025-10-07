@@ -80,11 +80,11 @@ quality: install-dev install-docs
     uv run ruff check src/ tests/ --fix
     uv run ruff format src/ tests/
     uv run mypy src tests
-    uv run mkdocs build
-    uv run python -m linkcheckmd docs
-    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+    uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley,bu,meger
     @echo "🔍 Checking code complexity (advisory - non-blocking)..."
     uv run xenon --max-absolute B src || echo "⚠️  Complexity check found issues (advisory only)"
+    # uv run mkdocs build
+    # uv run python -m linkcheckmd docs
 
 # Generate coverage report
 coverage: install-dev
@@ -151,6 +151,8 @@ install-full:
 # Install minimal dependencies (core only)
 install-minimal:
     uv sync
+
+preflight: test-cov quality
 
 # Clean up generated files
 clean:

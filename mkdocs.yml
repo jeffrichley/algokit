@@ -100,11 +100,11 @@ nav:
     - Overview: families.md
     - Control:
       - Overview: control/index.md
-      - Adaptive Control: control/adaptive-control.md
-      - H-Infinity Control: control/h-infinity-control.md
-      - PID Control: control/pid-control.md
-      - Robust Control: control/robust-control.md
-      - Sliding Mode Control: control/sliding-mode-control.md
+      - Adaptive Control 🚧: control/adaptive-control.md
+      - H-Infinity Control 🚧: control/h-infinity-control.md
+      - PID Control 🚧: control/pid-control.md
+      - Robust Control 🚧: control/robust-control.md
+      - Sliding Mode Control 🚧: control/sliding-mode-control.md
     - Dynamic Movement Primitives:
       - Overview: dynamic-movement-primitives/index.md
       - Basic DMPs: dynamic-movement-primitives/basic-dmps.md
@@ -123,7 +123,7 @@ nav:
       - Temporal DMPs: dynamic-movement-primitives/temporal-dmps.md
     - Dynamic Programming:
       - Overview: dynamic-programming/index.md
-      - Fibonacci Sequence: dynamic-programming/fibonacci.md
+      - Fibonacci Sequence ⚠️: dynamic-programming/fibonacci.md
       - Coin Change Problem: dynamic-programming/coin-change.md
       - 0/1 Knapsack Problem: dynamic-programming/knapsack.md
     - Gaussian Process:
@@ -147,7 +147,7 @@ nav:
       - Distributed MPC: model-predictive-control/distributed-mpc.md
       - Economic MPC: model-predictive-control/economic-mpc.md
       - Learning MPC: model-predictive-control/learning-mpc.md
-      - Linear MPC: model-predictive-control/linear-mpc.md
+      - Linear MPC 🚧: model-predictive-control/linear-mpc.md
       - Model Predictive Control: model-predictive-control/model-predictive-control.md
       - Nonlinear MPC: model-predictive-control/nonlinear-mpc.md
       - Robust MPC: model-predictive-control/robust-mpc.md

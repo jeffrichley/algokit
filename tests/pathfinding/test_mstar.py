@@ -5,8 +5,9 @@ This module contains comprehensive tests for the M* algorithm implementation.
 
 import networkx as nx
 import pytest
+from pydantic import ValidationError
 
-from algokit.algorithms.pathfinding.mstar import mstar_plan_paths
+from algokit.algorithms.pathfinding.mstar import MStar, MStarConfig, mstar_plan_paths
 from algokit.core.helpers import create_grid_graph
 
 
@@ -315,3 +316,295 @@ class TestMStar:
         if result is not None:
             assert "robot1" in result
             assert "robot2" in result
+
+
+class TestMStarConfig:
+    """Test MStarConfig Pydantic validation."""
+
+    @pytest.mark.unit
+    def test_config_default_values(self) -> None:
+        """Test that MStarConfig has correct default values."""
+        # Arrange - no setup needed for default config test
+
+        # Act - create config with default values
+        config = MStarConfig()
+
+        # Assert - verify all default values match specification
+        assert config.collision_radius == 1.0
+        assert config.max_extra_steps == 200
+        assert config.safety_cap == 2000
+
+    @pytest.mark.unit
+    def test_config_custom_values(self) -> None:
+        """Test that MStarConfig accepts custom values."""
+        # Arrange - define custom parameter values
+
+        # Act - create config with custom values
+        config = MStarConfig(collision_radius=2.5, max_extra_steps=300, safety_cap=3000)
+
+        # Assert - verify custom values were set correctly
+        assert config.collision_radius == 2.5
+        assert config.max_extra_steps == 300
+        assert config.safety_cap == 3000
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_collision_radius(self) -> None:
+        """Test that MStarConfig rejects negative collision_radius."""
+        # Arrange - prepare invalid negative collision radius
+
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="collision_radius"):
+            MStarConfig(collision_radius=-1.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_collision_radius(self) -> None:
+        """Test that MStarConfig rejects zero collision_radius."""
+        # Arrange - prepare invalid zero collision radius
+
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="collision_radius"):
+            MStarConfig(collision_radius=0.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_unreasonably_large_collision_radius(self) -> None:
+        """Test that MStarConfig rejects unreasonably large collision_radius."""
+        # Arrange - prepare unreasonably large collision radius value
+
+        # Act - attempt to create config with unreasonably large value
+        # Assert - verify ValidationError is raised with appropriate message
+        with pytest.raises(ValidationError, match="unreasonably large"):
+            MStarConfig(collision_radius=150.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_max_extra_steps(self) -> None:
+        """Test that MStarConfig rejects negative max_extra_steps."""
+        # Arrange - prepare invalid negative max_extra_steps
+
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="max_extra_steps"):
+            MStarConfig(max_extra_steps=-1)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_max_extra_steps(self) -> None:
+        """Test that MStarConfig rejects zero max_extra_steps."""
+        # Arrange - prepare invalid zero max_extra_steps
+
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="max_extra_steps"):
+            MStarConfig(max_extra_steps=0)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_safety_cap(self) -> None:
+        """Test that MStarConfig rejects negative safety_cap."""
+        # Arrange - prepare invalid negative safety_cap
+
+        # Act - attempt to create config with negative value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="safety_cap"):
+            MStarConfig(safety_cap=-1)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_safety_cap(self) -> None:
+        """Test that MStarConfig rejects zero safety_cap."""
+        # Arrange - prepare invalid zero safety_cap
+
+        # Act - attempt to create config with zero value
+        # Assert - verify ValidationError is raised
+        with pytest.raises(ValidationError, match="safety_cap"):
+            MStarConfig(safety_cap=0)
+
+    @pytest.mark.unit
+    def test_config_accepts_small_positive_collision_radius(self) -> None:
+        """Test that MStarConfig accepts small positive collision_radius."""
+        # Arrange - prepare small but valid collision radius
+
+        # Act - create config with small positive collision radius
+        config = MStarConfig(collision_radius=0.1)
+
+        # Assert - verify small positive value is accepted
+        assert config.collision_radius == 0.1
+
+    @pytest.mark.unit
+    def test_config_accepts_large_but_reasonable_collision_radius(self) -> None:
+        """Test that MStarConfig accepts large but reasonable collision_radius."""
+        # Arrange - prepare large but reasonable collision radius
+
+        # Act - create config with large but reasonable collision radius
+        config = MStarConfig(collision_radius=50.0)
+
+        # Assert - verify large reasonable value is accepted
+        assert config.collision_radius == 50.0
+
+
+class TestMStarClass:
+    """Test MStar class API."""
+
+    @pytest.mark.unit
+    def test_mstar_class_with_config_object(self) -> None:
+        """Test that MStar class accepts config object."""
+        # Arrange - create a config object with custom values
+        config = MStarConfig(collision_radius=1.5)
+
+        # Act - initialize MStar with config object
+        planner = MStar(config=config)
+
+        # Assert - verify planner stores config and extracts parameters correctly
+        assert planner.config == config
+        assert planner.collision_radius == 1.5
+        assert planner.max_extra_steps == 200
+        assert planner.safety_cap == 2000
+
+    @pytest.mark.unit
+    def test_mstar_class_with_kwargs(self) -> None:
+        """Test that MStar class accepts kwargs for backwards compatibility."""
+        # Arrange - prepare kwargs for backwards compatibility test
+
+        # Act - initialize MStar with kwargs
+        planner = MStar(collision_radius=1.5, max_extra_steps=300)
+
+        # Assert - verify parameters were set correctly from kwargs
+        assert planner.collision_radius == 1.5
+        assert planner.max_extra_steps == 300
+        assert planner.safety_cap == 2000
+
+    @pytest.mark.unit
+    def test_mstar_class_default_initialization(self) -> None:
+        """Test that MStar class can be initialized with defaults."""
+        # Arrange - no setup needed for default initialization
+
+        # Act - initialize MStar with no parameters
+        planner = MStar()
+
+        # Assert - verify all defaults are set correctly
+        assert planner.collision_radius == 1.0
+        assert planner.max_extra_steps == 200
+        assert planner.safety_cap == 2000
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_single_robot(self) -> None:
+        """Test that MStar.plan() works for single robot."""
+        # Arrange - create planner, graph, and single robot scenario
+        planner = MStar()
+        graph = create_grid_graph(3, 3)
+        starts = {"robot1": (0, 0)}
+        goals = {"robot1": (2, 2)}
+
+        # Act - plan path for single robot
+        result = planner.plan(graph, starts, goals)
+
+        # Assert - verify path is found and correct
+        assert result is not None
+        assert "robot1" in result
+        assert result["robot1"][0] == (0, 0)
+        assert result["robot1"][-1] == (2, 2)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_two_robots(self) -> None:
+        """Test that MStar.plan() works for two robots."""
+        # Arrange - create planner, graph, and two robot scenario
+        planner = MStar(collision_radius=0.5)  # Smaller radius for reliable test
+        graph = create_grid_graph(5, 5)  # Larger graph for more space
+        starts = {"robot1": (0, 0), "robot2": (0, 1)}
+        goals = {"robot1": (4, 4), "robot2": (4, 3)}
+
+        # Act - plan paths for two robots
+        result = planner.plan(graph, starts, goals)
+
+        # Assert - verify paths are found for both robots
+        assert result is not None
+        assert "robot1" in result
+        assert "robot2" in result
+        assert result["robot1"][0] == (0, 0)
+        assert result["robot1"][-1] == (4, 4)
+        assert result["robot2"][0] == (0, 1)
+        assert result["robot2"][-1] == (4, 3)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_validates_mismatched_agents(self) -> None:
+        """Test that MStar.plan() validates mismatched agents in starts/goals."""
+        # Arrange - create planner, graph, and mismatched agent scenario
+        planner = MStar()
+        graph = create_grid_graph(3, 3)
+        starts = {"robot1": (0, 0)}
+        goals = {"robot2": (2, 2)}  # Different agent
+
+        # Act - attempt to plan with mismatched agents
+        # Assert - verify ValueError is raised for mismatched agents
+        with pytest.raises(ValueError, match="same set of agents"):
+            planner.plan(graph, starts, goals)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_validates_start_not_in_graph(self) -> None:
+        """Test that MStar.plan() validates start position is in graph."""
+        # Arrange - create planner, graph, and invalid start position
+        planner = MStar()
+        graph = create_grid_graph(3, 3)
+        starts = {"robot1": (10, 10)}  # Not in graph
+        goals = {"robot1": (2, 2)}
+
+        # Act - attempt to plan with invalid start position
+        # Assert - verify ValueError is raised for invalid start position
+        with pytest.raises(ValueError, match="Start position"):
+            planner.plan(graph, starts, goals)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_validates_goal_not_in_graph(self) -> None:
+        """Test that MStar.plan() validates goal position is in graph."""
+        # Arrange - create planner, graph, and invalid goal position
+        planner = MStar()
+        graph = create_grid_graph(3, 3)
+        starts = {"robot1": (0, 0)}
+        goals = {"robot1": (10, 10)}  # Not in graph
+
+        # Act - attempt to plan with invalid goal position
+        # Assert - verify ValueError is raised for invalid goal position
+        with pytest.raises(ValueError, match="Goal position"):
+            planner.plan(graph, starts, goals)
+
+    @pytest.mark.unit
+    def test_mstar_class_invalid_config_via_kwargs(self) -> None:
+        """Test that MStar class validates invalid params via kwargs."""
+        # Arrange - prepare invalid parameter value
+
+        # Act - attempt to initialize with invalid kwargs
+        # Assert - verify ValidationError is raised for invalid parameter
+        with pytest.raises(ValidationError, match="collision_radius"):
+            MStar(collision_radius=-1.0)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_with_custom_safety_cap(self) -> None:
+        """Test that MStar.plan() uses custom safety_cap."""
+        # Arrange - create planner with very low safety cap and test scenario
+        planner = MStar(safety_cap=10)  # Very low safety cap
+        graph = create_grid_graph(3, 3)
+        starts = {"robot1": (0, 0), "robot2": (0, 1)}
+        goals = {"robot1": (2, 2), "robot2": (2, 1)}
+
+        # Act - attempt to plan with limited safety cap
+        result = planner.plan(graph, starts, goals)
+
+        # Assert - verify result is either valid plan or None without crash
+        # May or may not succeed depending on conflict resolution,
+        # but should not crash or hang
+        assert result is None or isinstance(result, dict)
+
+    @pytest.mark.unit
+    def test_mstar_class_plan_with_custom_max_extra_steps(self) -> None:
+        """Test that MStar.plan() uses custom max_extra_steps."""
+        # Arrange - create planner with custom max_extra_steps and test scenario
+        planner = MStar(max_extra_steps=50)
+        graph = create_grid_graph(4, 4)
+        starts = {"robot1": (0, 0), "robot2": (0, 1)}
+        goals = {"robot1": (3, 3), "robot2": (3, 2)}
+
+        # Act - plan paths with custom max_extra_steps
+        result = planner.plan(graph, starts, goals)
+
+        # Assert - verify paths are found
+        assert result is not None
+        assert "robot1" in result
+        assert "robot2" in result

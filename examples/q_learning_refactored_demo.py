@@ -2,7 +2,10 @@
 """Demo script showcasing the refactored Q-Learning agent features."""
 
 import numpy as np
-from algokit.algorithms.reinforcement_learning.q_learning import QLearningAgent
+from algokit.algorithms.reinforcement_learning.q_learning import (
+    QLearningAgent,
+    QLearningConfig,
+)
 
 
 def main() -> None:
@@ -15,9 +18,9 @@ def main() -> None:
     state_space_size = 9
     action_space_size = 4
 
-    print("\n1. Basic Agent Creation")
+    print("\n1. Basic Agent Creation (New Config Style)")
     print("-" * 30)
-    agent = QLearningAgent(
+    config = QLearningConfig(
         state_space_size=state_space_size,
         action_space_size=action_space_size,
         learning_rate=0.1,
@@ -27,7 +30,22 @@ def main() -> None:
         epsilon_decay=0.995,
         random_seed=42,
     )
-    print(f"Created agent: {agent}")
+    agent = QLearningAgent(config=config)
+    print(f"Created agent with config: {agent}")
+
+    print("\n1b. Old Style Still Works (Backwards Compatible)")
+    print("-" * 30)
+    agent_old = QLearningAgent(
+        state_space_size=state_space_size,
+        action_space_size=action_space_size,
+        learning_rate=0.1,
+        discount_factor=0.95,
+        epsilon_start=0.9,
+        epsilon_end=0.01,
+        epsilon_decay=0.995,
+        random_seed=42,
+    )
+    print(f"Created agent with kwargs: {agent_old}")
 
     print("\n2. Random Tie-Breaking Demo")
     print("-" * 30)
@@ -119,16 +137,28 @@ def main() -> None:
         agent.decay_epsilon()
         print(f"After decay {i+1}: {agent.epsilon:.3f}")
 
-    print("\n9. Parameter Validation Demo")
+    print("\n9. Parameter Validation Demo (Pydantic)")
     print("-" * 30)
+    try:
+        # This will fail validation through Pydantic
+        invalid_config = QLearningConfig(
+            state_space_size=3,
+            action_space_size=2,
+            learning_rate=0.0,  # Invalid: must be > 0
+        )
+    except Exception as e:
+        print(f"Caught expected error from config validation: {type(e).__name__}")
+        print(f"  Error details: {str(e)[:100]}...")
+
+    print("\nOld-style validation also works:")
     try:
         invalid_agent = QLearningAgent(
             state_space_size=3,
             action_space_size=2,
             learning_rate=0.0,  # Invalid: must be > 0
         )
-    except ValueError as e:
-        print(f"Caught expected error: {e}")
+    except Exception as e:
+        print(f"Caught expected error: {type(e).__name__}")
 
     print("\n10. Backward Compatibility Demo")
     print("-" * 30)
@@ -148,6 +178,7 @@ def main() -> None:
 
     print("\n✅ Demo completed successfully!")
     print("\nKey Features Demonstrated:")
+    print("• NEW: Pydantic-based configuration with QLearningConfig")
     print("• Random tie-breaking in action selection")
     print("• Reproducible results with set_seed()")
     print("• Double Q-Learning for bias reduction")
@@ -155,8 +186,16 @@ def main() -> None:
     print("• Introspection methods for Q-values and policies")
     print("• Pretty printing with custom state/action names")
     print("• Configurable epsilon scheduling")
-    print("• Strict parameter validation")
-    print("• Full backward compatibility")
+    print("• NEW: Declarative parameter validation with better error messages")
+    print("• Full backward compatibility with kwargs-based initialization")
+
+    print("\n🎯 Benefits of New Config Pattern:")
+    print("  ✅ Reduced cyclomatic complexity (cleaner code)")
+    print("  ✅ Automatic type checking and validation")
+    print("  ✅ Reusable configuration objects")
+    print("  ✅ Better error messages from Pydantic")
+    print("  ✅ Config serialization support")
+    print("  ✅ 100% backwards compatible - old code still works!")
 
 
 if __name__ == "__main__":

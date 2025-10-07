@@ -3,10 +3,12 @@
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.policy_gradient import (
     BaselineNetwork,
     PolicyGradientAgent,
+    PolicyGradientConfig,
     PolicyNetwork,
     RolloutExperience,
 )
@@ -650,3 +652,286 @@ class TestPolicyGradientIntegration:
         # Assert - Verify training progress
         assert all(np.isfinite(loss) for loss in initial_losses)
         assert all(np.isfinite(loss) for loss in final_losses)
+
+
+@pytest.mark.unit
+class TestPolicyGradientConfig:
+    """Test PolicyGradientConfig validation."""
+
+    @pytest.mark.unit
+    def test_config_valid_parameters(self) -> None:
+        """Test that valid parameters create a config successfully."""
+        # Arrange - Setup config parameters
+
+        # Act - Create config with valid parameters
+        config = PolicyGradientConfig(state_size=4, action_size=2)
+
+        # Assert - Verify config properties
+        assert config.state_size == 4
+        assert config.action_size == 2
+        assert config.learning_rate == 0.001  # Default
+        assert config.gamma == 0.99  # Default
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_size."""
+        # Arrange - Setup invalid state_size
+
+        # Act - Create config with negative state_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_size"):
+            PolicyGradientConfig(state_size=-1, action_size=4)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_state_size(self) -> None:
+        """Test that Config rejects zero state_size."""
+        # Arrange - Setup zero state_size
+
+        # Act - Create config with zero state_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_size"):
+            PolicyGradientConfig(state_size=0, action_size=4)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_action_size(self) -> None:
+        """Test that Config rejects negative action_size."""
+        # Arrange - Setup invalid action_size
+
+        # Act - Create config with negative action_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="action_size"):
+            PolicyGradientConfig(state_size=4, action_size=-1)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_action_size(self) -> None:
+        """Test that Config rejects zero action_size."""
+        # Arrange - Setup zero action_size
+
+        # Act - Create config with zero action_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="action_size"):
+            PolicyGradientConfig(state_size=4, action_size=0)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_learning_rate(self) -> None:
+        """Test that Config rejects negative learning_rate."""
+        # Arrange - Setup invalid learning_rate
+
+        # Act - Create config with negative learning_rate
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="learning_rate"):
+            PolicyGradientConfig(state_size=4, action_size=2, learning_rate=-0.001)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_learning_rate(self) -> None:
+        """Test that Config rejects zero learning_rate."""
+        # Arrange - Setup zero learning_rate
+
+        # Act - Create config with zero learning_rate
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="learning_rate"):
+            PolicyGradientConfig(state_size=4, action_size=2, learning_rate=0.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_gamma_above_one(self) -> None:
+        """Test that Config rejects gamma > 1."""
+        # Arrange - Setup invalid gamma > 1
+
+        # Act - Create config with gamma > 1
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gamma"):
+            PolicyGradientConfig(state_size=4, action_size=2, gamma=1.5)
+
+    @pytest.mark.unit
+    def test_config_rejects_gamma_zero(self) -> None:
+        """Test that Config rejects gamma = 0."""
+        # Arrange - Setup invalid gamma = 0
+
+        # Act - Create config with gamma = 0
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gamma"):
+            PolicyGradientConfig(state_size=4, action_size=2, gamma=0.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_dropout_rate_above_one(self) -> None:
+        """Test that Config rejects dropout_rate > 1."""
+        # Arrange - Setup invalid dropout_rate > 1
+
+        # Act - Create config with dropout_rate > 1
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="dropout_rate"):
+            PolicyGradientConfig(state_size=4, action_size=2, dropout_rate=1.5)
+
+    @pytest.mark.unit
+    def test_config_rejects_dropout_rate_negative(self) -> None:
+        """Test that Config rejects negative dropout_rate."""
+        # Arrange - Setup invalid negative dropout_rate
+
+        # Act - Create config with negative dropout_rate
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="dropout_rate"):
+            PolicyGradientConfig(state_size=4, action_size=2, dropout_rate=-0.1)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_entropy_coefficient(self) -> None:
+        """Test that Config rejects negative entropy_coefficient."""
+        # Arrange - Setup invalid negative entropy_coefficient
+
+        # Act - Create config with negative entropy_coefficient
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="entropy_coefficient"):
+            PolicyGradientConfig(state_size=4, action_size=2, entropy_coefficient=-0.01)
+
+    @pytest.mark.unit
+    def test_config_rejects_gae_lambda_above_one(self) -> None:
+        """Test that Config rejects gae_lambda > 1."""
+        # Arrange - Setup invalid gae_lambda > 1
+
+        # Act - Create config with gae_lambda > 1
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gae_lambda"):
+            PolicyGradientConfig(state_size=4, action_size=2, gae_lambda=1.5)
+
+    @pytest.mark.unit
+    def test_config_rejects_gae_lambda_zero(self) -> None:
+        """Test that Config rejects gae_lambda = 0."""
+        # Arrange - Setup invalid gae_lambda = 0
+
+        # Act - Create config with gae_lambda = 0
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="gae_lambda"):
+            PolicyGradientConfig(state_size=4, action_size=2, gae_lambda=0.0)
+
+    @pytest.mark.unit
+    def test_config_rejects_empty_hidden_sizes(self) -> None:
+        """Test that Config rejects empty hidden_sizes list."""
+        # Arrange - Setup empty hidden_sizes list
+
+        # Act - Create config with empty hidden_sizes
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="hidden_sizes"):
+            PolicyGradientConfig(state_size=4, action_size=2, hidden_sizes=[])
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_hidden_size(self) -> None:
+        """Test that Config rejects negative values in hidden_sizes."""
+        # Arrange - Setup hidden_sizes with negative value
+
+        # Act - Create config with negative hidden_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="hidden_sizes"):
+            PolicyGradientConfig(state_size=4, action_size=2, hidden_sizes=[64, -32])
+
+    @pytest.mark.unit
+    def test_config_sets_default_hidden_sizes(self) -> None:
+        """Test that Config sets default hidden_sizes when None."""
+        # Arrange - Setup config parameters without hidden_sizes
+
+        # Act - Create config with default hidden_sizes
+        config = PolicyGradientConfig(state_size=4, action_size=2)
+
+        # Assert - Verify default hidden_sizes is set
+        assert config.hidden_sizes == [128, 128]
+
+    @pytest.mark.unit
+    def test_config_custom_hidden_sizes(self) -> None:
+        """Test that Config accepts custom hidden_sizes."""
+        # Arrange - Setup custom hidden_sizes
+
+        # Act - Create config with custom hidden_sizes
+        config = PolicyGradientConfig(
+            state_size=4, action_size=2, hidden_sizes=[64, 32]
+        )
+
+        # Assert - Verify custom hidden_sizes is set
+        assert config.hidden_sizes == [64, 32]
+
+
+@pytest.mark.unit
+class TestPolicyGradientBackwardsCompatibility:
+    """Test backwards compatibility with both config and kwargs initialization."""
+
+    @pytest.mark.unit
+    def test_agent_initialization_with_config_object(self) -> None:
+        """Test that agent accepts config object."""
+        # Arrange - Create config object
+        config = PolicyGradientConfig(state_size=4, action_size=2)
+
+        # Act - Initialize agent with config
+        agent = PolicyGradientAgent(config=config)
+
+        # Assert - Verify agent uses config
+        assert agent.config == config
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+
+    @pytest.mark.unit
+    def test_agent_initialization_with_kwargs(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - Setup kwargs parameters
+
+        # Act - Initialize agent with kwargs
+        agent = PolicyGradientAgent(state_size=4, action_size=2)
+
+        # Assert - Verify agent creates config from kwargs
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert isinstance(agent.config, PolicyGradientConfig)
+
+    @pytest.mark.unit
+    def test_agent_initialization_with_kwargs_all_parameters(self) -> None:
+        """Test that agent accepts all kwargs for backwards compatibility."""
+        # Arrange - Setup all kwargs parameters
+
+        # Act - Initialize agent with all kwargs
+        agent = PolicyGradientAgent(
+            state_size=4,
+            action_size=2,
+            learning_rate=0.002,
+            gamma=0.95,
+            use_baseline=False,
+            hidden_sizes=[64, 32],
+            dropout_rate=0.1,
+            continuous_actions=True,
+            device="cpu",
+            seed=42,
+            entropy_coefficient=0.02,
+            use_gae=True,
+            gae_lambda=0.9,
+            normalize_advantages=False,
+            normalize_rewards=True,
+        )
+
+        # Assert - Verify all parameters are set correctly
+        assert agent.state_size == 4
+        assert agent.action_size == 2
+        assert agent.learning_rate == 0.002
+        assert agent.gamma == 0.95
+        assert agent.use_baseline is False
+        assert agent.continuous_actions is True
+        assert agent.entropy_coefficient == 0.02
+        assert agent.use_gae is True
+        assert agent.gae_lambda == 0.9
+        assert agent.normalize_advantages is False
+        assert agent.normalize_rewards is True
+
+    @pytest.mark.unit
+    def test_agent_validation_via_kwargs(self) -> None:
+        """Test that agent validates parameters when using kwargs."""
+        # Arrange - Setup invalid kwargs
+
+        # Act - Initialize agent with invalid state_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="state_size"):
+            PolicyGradientAgent(state_size=-1, action_size=2)
+
+    @pytest.mark.unit
+    def test_agent_validation_via_config(self) -> None:
+        """Test that agent validates parameters when using config."""
+        # Arrange - Create invalid config
+
+        # Act - Create config with invalid action_size
+        # Assert - Verify ValidationError is raised
+        with pytest.raises(ValidationError, match="action_size"):
+            config = PolicyGradientConfig(state_size=4, action_size=-1)
+            PolicyGradientAgent(config=config)

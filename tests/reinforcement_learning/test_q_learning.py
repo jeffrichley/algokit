@@ -2,8 +2,12 @@
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
-from algokit.algorithms.reinforcement_learning.q_learning import QLearningAgent
+from algokit.algorithms.reinforcement_learning.q_learning import (
+    QLearningAgent,
+    QLearningConfig,
+)
 
 
 class TestQLearningAgent:
@@ -58,28 +62,28 @@ class TestQLearningAgent:
     def test_invalid_initialization_parameters(self) -> None:
         """Test Q-Learning agent raises errors for invalid parameters."""
         # Arrange & Act & Assert - Test invalid state space size
-        with pytest.raises(ValueError, match="state_space_size must be positive"):
+        with pytest.raises(ValidationError, match="state_space_size"):
             QLearningAgent(state_space_size=0, action_space_size=2)
 
         # Arrange & Act & Assert - Test invalid action space size
-        with pytest.raises(ValueError, match="action_space_size must be positive"):
+        with pytest.raises(ValidationError, match="action_space_size"):
             QLearningAgent(state_space_size=3, action_space_size=0)
 
         # Arrange & Act & Assert - Test invalid learning rate
-        with pytest.raises(ValueError, match="learning_rate must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="learning_rate"):
             QLearningAgent(state_space_size=3, action_space_size=2, learning_rate=1.5)
 
         # Arrange & Act & Assert - Test invalid discount factor
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="discount_factor"):
             QLearningAgent(state_space_size=3, action_space_size=2, discount_factor=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon
-        with pytest.raises(ValueError, match="epsilon_start must be between 0 and 1"):
+        with pytest.raises(ValidationError, match="epsilon_start"):
             QLearningAgent(state_space_size=3, action_space_size=2, epsilon=1.5)
 
         # Arrange & Act & Assert - Test invalid epsilon min
         with pytest.raises(
-            ValueError, match="epsilon_end must be less than or equal to epsilon_start"
+            ValidationError, match="epsilon_end.*must be less than or equal"
         ):
             QLearningAgent(
                 state_space_size=3, action_space_size=2, epsilon=0.1, epsilon_min=0.2
@@ -355,3 +359,260 @@ class TestQLearningAgent:
         assert "learning_rate=0.1" in repr_str
         assert "discount_factor=0.95" in repr_str
         assert "epsilon=0.200" in repr_str
+
+
+class TestQLearningConfig:
+    """Test the QLearningConfig Pydantic model."""
+
+    @pytest.mark.unit
+    def test_config_valid_parameters(self) -> None:
+        """Test that Config accepts valid parameters."""
+        # Arrange - Set up valid parameters
+        state_space_size = 5
+        action_space_size = 3
+
+        # Act - Create config with valid parameters
+        config = QLearningConfig(
+            state_space_size=state_space_size,
+            action_space_size=action_space_size,
+            learning_rate=0.1,
+            discount_factor=0.95,
+            epsilon_start=1.0,
+            epsilon_end=0.01,
+        )
+
+        # Assert - Verify config was created correctly
+        assert config.state_space_size == 5
+        assert config.action_space_size == 3
+        assert config.learning_rate == 0.1
+        assert config.discount_factor == 0.95
+        assert config.epsilon_start == 1.0
+        assert config.epsilon_end == 0.01
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_state_size(self) -> None:
+        """Test that Config rejects negative state_space_size."""
+        # Arrange - Set up invalid state_space_size
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError, match="state_space_size"):
+            QLearningConfig(state_space_size=-1, action_space_size=4)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_state_size(self) -> None:
+        """Test that Config rejects zero state_space_size."""
+        # Arrange - Set up zero state_space_size
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError, match="state_space_size"):
+            QLearningConfig(state_space_size=0, action_space_size=4)
+
+    @pytest.mark.unit
+    def test_config_rejects_negative_action_size(self) -> None:
+        """Test that Config rejects negative action_space_size."""
+        # Arrange - Set up invalid action_space_size
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError, match="action_space_size"):
+            QLearningConfig(state_space_size=4, action_space_size=-1)
+
+    @pytest.mark.unit
+    def test_config_rejects_zero_action_size(self) -> None:
+        """Test that Config rejects zero action_space_size."""
+        # Arrange - Set up zero action_space_size
+
+        # Act & Assert - Verify validation error is raised
+        with pytest.raises(ValidationError, match="action_space_size"):
+            QLearningConfig(state_space_size=4, action_space_size=0)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_learning_rate(self) -> None:
+        """Test that Config rejects invalid learning_rate."""
+        # Arrange & Act & Assert - Test too high
+        with pytest.raises(ValidationError, match="learning_rate"):
+            QLearningConfig(state_space_size=4, action_space_size=2, learning_rate=1.5)
+
+        # Arrange & Act & Assert - Test zero
+        with pytest.raises(ValidationError, match="learning_rate"):
+            QLearningConfig(state_space_size=4, action_space_size=2, learning_rate=0.0)
+
+        # Arrange & Act & Assert - Test negative
+        with pytest.raises(ValidationError, match="learning_rate"):
+            QLearningConfig(state_space_size=4, action_space_size=2, learning_rate=-0.1)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_discount_factor(self) -> None:
+        """Test that Config rejects invalid discount_factor."""
+        # Arrange & Act & Assert - Test too high
+        with pytest.raises(ValidationError, match="discount_factor"):
+            QLearningConfig(
+                state_space_size=4, action_space_size=2, discount_factor=1.5
+            )
+
+        # Arrange & Act & Assert - Test zero
+        with pytest.raises(ValidationError, match="discount_factor"):
+            QLearningConfig(
+                state_space_size=4, action_space_size=2, discount_factor=0.0
+            )
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_epsilon_start(self) -> None:
+        """Test that Config rejects invalid epsilon_start."""
+        # Arrange & Act & Assert - Test too high
+        with pytest.raises(ValidationError, match="epsilon_start"):
+            QLearningConfig(state_space_size=4, action_space_size=2, epsilon_start=1.5)
+
+        # Arrange & Act & Assert - Test negative
+        with pytest.raises(ValidationError, match="epsilon_start"):
+            QLearningConfig(state_space_size=4, action_space_size=2, epsilon_start=-0.1)
+
+    @pytest.mark.unit
+    def test_config_rejects_invalid_epsilon_end(self) -> None:
+        """Test that Config rejects invalid epsilon_end."""
+        # Arrange & Act & Assert - Test too high
+        with pytest.raises(ValidationError, match="epsilon_end"):
+            QLearningConfig(state_space_size=4, action_space_size=2, epsilon_end=1.5)
+
+        # Arrange & Act & Assert - Test negative
+        with pytest.raises(ValidationError, match="epsilon_end"):
+            QLearningConfig(state_space_size=4, action_space_size=2, epsilon_end=-0.1)
+
+    @pytest.mark.unit
+    def test_config_validates_epsilon_end_less_than_start(self) -> None:
+        """Test that Config validates epsilon_end <= epsilon_start."""
+        # Arrange - Set up epsilon_end > epsilon_start
+
+        # Act & Assert - Verify cross-field validation error is raised
+        with pytest.raises(
+            ValidationError, match="epsilon_end.*must be less than or equal"
+        ):
+            QLearningConfig(
+                state_space_size=4,
+                action_space_size=2,
+                epsilon_start=0.1,
+                epsilon_end=0.5,
+            )
+
+    @pytest.mark.unit
+    def test_config_accepts_epsilon_end_equal_to_start(self) -> None:
+        """Test that Config accepts epsilon_end equal to epsilon_start."""
+        # Arrange - Set up epsilon_end equal to epsilon_start
+        epsilon_value = 0.5
+
+        # Act - Create config with equal epsilon values
+        config = QLearningConfig(
+            state_space_size=4,
+            action_space_size=2,
+            epsilon_start=epsilon_value,
+            epsilon_end=epsilon_value,
+        )
+
+        # Assert - Verify config was created correctly
+        assert config.epsilon_start == 0.5
+        assert config.epsilon_end == 0.5
+
+    @pytest.mark.unit
+    def test_config_default_values(self) -> None:
+        """Test that Config provides correct default values."""
+        # Arrange - Set up minimal required parameters
+
+        # Act - Create config with only required parameters
+        config = QLearningConfig(state_space_size=4, action_space_size=2)
+
+        # Assert - Verify all default values are correct
+        assert config.learning_rate == 0.1
+        assert config.discount_factor == 0.95
+        assert config.epsilon_start == 1.0
+        assert config.epsilon_end == 0.01
+        assert config.epsilon_decay == 0.995
+        assert config.use_double_q is False
+        assert config.debug is False
+        assert config.random_seed is None
+
+    @pytest.mark.unit
+    def test_agent_with_config_object(self) -> None:
+        """Test that agent accepts config object."""
+        # Arrange - Create config object
+        config = QLearningConfig(
+            state_space_size=5,
+            action_space_size=3,
+            learning_rate=0.2,
+            discount_factor=0.9,
+        )
+
+        # Act - Create agent with config object
+        agent = QLearningAgent(config=config)
+
+        # Assert - Verify agent was initialized correctly
+        assert agent.config == config
+        assert agent.state_space_size == 5
+        assert agent.action_space_size == 3
+        assert agent.learning_rate == 0.2
+        assert agent.discount_factor == 0.9
+
+    @pytest.mark.unit
+    def test_agent_backwards_compatible_kwargs(self) -> None:
+        """Test that agent accepts kwargs for backwards compatibility."""
+        # Arrange - Set up agent parameters
+
+        # Act - Create agent using old kwargs style
+        agent = QLearningAgent(
+            state_space_size=5,
+            action_space_size=3,
+            learning_rate=0.2,
+            discount_factor=0.9,
+        )
+
+        # Assert - Verify agent was initialized correctly
+        assert agent.state_space_size == 5
+        assert agent.action_space_size == 3
+        assert agent.learning_rate == 0.2
+        assert agent.discount_factor == 0.9
+
+    @pytest.mark.unit
+    def test_agent_kwargs_validation_through_pydantic(self) -> None:
+        """Test that kwargs are validated through Pydantic."""
+        # Arrange - Set up invalid parameters
+
+        # Act & Assert - Verify validation errors for negative state_space_size
+        with pytest.raises(ValidationError, match="state_space_size"):
+            QLearningAgent(state_space_size=-1, action_space_size=4)
+
+        # Act & Assert - Verify validation errors for invalid learning_rate
+        with pytest.raises(ValidationError, match="learning_rate"):
+            QLearningAgent(state_space_size=4, action_space_size=2, learning_rate=1.5)
+
+    @pytest.mark.unit
+    def test_agent_both_config_styles_produce_same_result(self) -> None:
+        """Test that config object and kwargs produce identical agents."""
+        # Arrange - Create config object with specific parameters
+        config = QLearningConfig(
+            state_space_size=5,
+            action_space_size=3,
+            learning_rate=0.2,
+            discount_factor=0.9,
+            epsilon_start=0.8,
+            epsilon_end=0.05,
+            random_seed=42,
+        )
+
+        # Act - Create agents using both styles
+        agent1 = QLearningAgent(config=config)
+        agent2 = QLearningAgent(
+            state_space_size=5,
+            action_space_size=3,
+            learning_rate=0.2,
+            discount_factor=0.9,
+            epsilon_start=0.8,
+            epsilon_end=0.05,
+            random_seed=42,
+        )
+
+        # Assert - Verify both agents have identical parameters
+        assert agent1.state_space_size == agent2.state_space_size
+        assert agent1.action_space_size == agent2.action_space_size
+        assert agent1.learning_rate == agent2.learning_rate
+        assert agent1.discount_factor == agent2.discount_factor
+        assert agent1.epsilon == agent2.epsilon
+        assert agent1.epsilon_start == agent2.epsilon_start
+        assert agent1.epsilon_end == agent2.epsilon_end

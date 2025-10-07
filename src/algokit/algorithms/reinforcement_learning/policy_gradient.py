@@ -21,6 +21,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pydantic import BaseModel, Field, field_validator
 
 # Define experience tuple for trajectory storage
 RolloutExperience = namedtuple(
@@ -183,6 +184,101 @@ class BaselineNetwork(nn.Module):
         return self.network(state).squeeze(-1)
 
 
+class PolicyGradientConfig(BaseModel):
+    """Configuration parameters for PolicyGradient with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    Attributes:
+        state_size: Dimension of the state space (must be > 0)
+        action_size: Dimension of the action space (must be > 0)
+        learning_rate: Learning rate for optimizers (must be > 0)
+        gamma: Discount factor for future rewards (must be in (0, 1])
+        use_baseline: Whether to use baseline for variance reduction
+        hidden_sizes: List of hidden layer sizes (defaults to [128, 128])
+        dropout_rate: Dropout rate for regularization (must be in [0, 1])
+        continuous_actions: Whether to use continuous action space
+        device: Device to run computations on ('cpu' or 'cuda')
+        seed: Random seed for reproducibility
+        entropy_coefficient: Coefficient for entropy bonus (must be >= 0)
+        use_gae: Whether to use Generalized Advantage Estimation
+        gae_lambda: GAE lambda parameter (must be in (0, 1])
+        normalize_advantages: Whether to normalize advantages
+        normalize_rewards: Whether to normalize rewards for stability
+
+    Examples:
+        >>> config = PolicyGradientConfig(state_size=4, action_size=2)
+        >>> agent = PolicyGradientAgent(config=config)
+
+        >>> # Or use kwargs for backwards compatibility
+        >>> agent = PolicyGradientAgent(state_size=4, action_size=2)
+    """
+
+    state_size: int = Field(..., gt=0, description="Dimension of the state space")
+    action_size: int = Field(..., gt=0, description="Dimension of the action space")
+    learning_rate: float = Field(
+        default=0.001, gt=0.0, description="Learning rate for optimizers"
+    )
+    gamma: float = Field(
+        default=0.99,
+        gt=0.0,
+        le=1.0,
+        description="Discount factor for future rewards",
+    )
+    use_baseline: bool = Field(
+        default=True, description="Whether to use baseline for variance reduction"
+    )
+    hidden_sizes: list[int] = Field(
+        default_factory=lambda: [128, 128],
+        description="List of hidden layer sizes",
+    )
+    dropout_rate: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Dropout rate for regularization",
+    )
+    continuous_actions: bool = Field(
+        default=False, description="Whether to use continuous action space"
+    )
+    device: str = Field(default="cpu", description="Device to run computations on")
+    seed: int | None = Field(
+        default=None, description="Random seed for reproducibility"
+    )
+    entropy_coefficient: float = Field(
+        default=0.01, ge=0.0, description="Coefficient for entropy bonus in policy loss"
+    )
+    use_gae: bool = Field(
+        default=False, description="Whether to use Generalized Advantage Estimation"
+    )
+    gae_lambda: float = Field(
+        default=0.95,
+        gt=0.0,
+        le=1.0,
+        description="GAE lambda parameter for variance reduction",
+    )
+    normalize_advantages: bool = Field(
+        default=True, description="Whether to normalize advantages"
+    )
+    normalize_rewards: bool = Field(
+        default=False, description="Whether to normalize rewards for stability"
+    )
+
+    @field_validator("hidden_sizes")
+    @classmethod
+    def validate_hidden_sizes(cls, v: list[int]) -> list[int]:
+        """Validate hidden_sizes list."""
+        if len(v) == 0:
+            raise ValueError("hidden_sizes must contain at least one layer")
+        if any(size <= 0 for size in v):
+            raise ValueError("All hidden layer sizes must be positive")
+        return v
+
+    model_config = {"arbitrary_types_allowed": True}  # Allow torch.device
+
+
 class PolicyGradientAgent:
     """Policy Gradient agent implementing REINFORCE algorithm.
 
@@ -201,81 +297,75 @@ class PolicyGradientAgent:
     baseline: BaselineNetwork | None
 
     def __init__(
-        self,
-        state_size: int,
-        action_size: int,
-        learning_rate: float = 0.001,
-        gamma: float = 0.99,
-        use_baseline: bool = True,
-        hidden_sizes: list[int] | None = None,
-        dropout_rate: float = 0.0,
-        continuous_actions: bool = False,
-        device: str = "cpu",
-        seed: int | None = None,
-        entropy_coefficient: float = 0.01,
-        use_gae: bool = False,
-        gae_lambda: float = 0.95,
-        normalize_advantages: bool = True,
-        normalize_rewards: bool = False,
+        self, config: PolicyGradientConfig | None = None, **kwargs: Any
     ) -> None:
         """Initialize the Policy Gradient agent.
 
         Args:
-            state_size: Dimension of the state space
-            action_size: Dimension of the action space
-            learning_rate: Learning rate for optimizers
-            gamma: Discount factor for future rewards
-            use_baseline: Whether to use baseline for variance reduction
-            hidden_sizes: List of hidden layer sizes
-            dropout_rate: Dropout rate for regularization
-            continuous_actions: Whether to use continuous action space
-            device: Device to run computations on
-            seed: Random seed for reproducibility
-            entropy_coefficient: Coefficient for entropy bonus in policy loss
-            use_gae: Whether to use Generalized Advantage Estimation
-            gae_lambda: GAE lambda parameter for variance reduction
-            normalize_advantages: Whether to normalize advantages
-            normalize_rewards: Whether to normalize rewards for stability
-        """
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.learning_rate = learning_rate
-        self.gamma = gamma
-        self.use_baseline = use_baseline
-        self.continuous_actions = continuous_actions
-        self.device = torch.device(device)
-        self.entropy_coefficient = entropy_coefficient
-        self.use_gae = use_gae
-        self.gae_lambda = gae_lambda
-        self.normalize_advantages = normalize_advantages
-        self.normalize_rewards = normalize_rewards
+        Examples:
+            # New style (recommended)
+            >>> config = PolicyGradientConfig(state_size=4, action_size=2)
+            >>> agent = PolicyGradientAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = PolicyGradientAgent(state_size=4, action_size=2)
+
+        Raises:
+            ValidationError: If parameters are invalid (via Pydantic)
+        """
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = PolicyGradientConfig(**kwargs)
+
+        # Store config
+        self.config = config
+
+        # Extract all parameters from config
+        self.state_size = config.state_size
+        self.action_size = config.action_size
+        self.learning_rate = config.learning_rate
+        self.gamma = config.gamma
+        self.use_baseline = config.use_baseline
+        self.continuous_actions = config.continuous_actions
+        self.device = torch.device(config.device)
+        self.entropy_coefficient = config.entropy_coefficient
+        self.use_gae = config.use_gae
+        self.gae_lambda = config.gae_lambda
+        self.normalize_advantages = config.normalize_advantages
+        self.normalize_rewards = config.normalize_rewards
+
+        # Set random seeds if provided
+        if config.seed is not None:
+            torch.manual_seed(config.seed)
+            np.random.seed(config.seed)
+            random.seed(config.seed)
 
         # Initialize policy network
         self.policy = PolicyNetwork(
-            state_size=state_size,
-            action_size=action_size,
-            hidden_sizes=hidden_sizes,
-            dropout_rate=dropout_rate,
-            continuous_actions=continuous_actions,
+            state_size=config.state_size,
+            action_size=config.action_size,
+            hidden_sizes=config.hidden_sizes,
+            dropout_rate=config.dropout_rate,
+            continuous_actions=config.continuous_actions,
         ).to(self.device)
 
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
+        self.policy_optimizer = optim.Adam(
+            self.policy.parameters(), lr=config.learning_rate
+        )
 
         # Initialize baseline network if using baseline
         if self.use_baseline:
             self.baseline = BaselineNetwork(
-                state_size=state_size,
-                hidden_sizes=hidden_sizes,
-                dropout_rate=dropout_rate,
+                state_size=config.state_size,
+                hidden_sizes=config.hidden_sizes,
+                dropout_rate=config.dropout_rate,
             ).to(self.device)
 
             self.baseline_optimizer = optim.Adam(
-                self.baseline.parameters(), lr=learning_rate
+                self.baseline.parameters(), lr=config.learning_rate
             )
         else:
             self.baseline = None

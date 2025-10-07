@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from algokit.algorithms.reinforcement_learning.ppo import PPOAgent
+from algokit.algorithms.reinforcement_learning.ppo import PPOAgent, PPOConfig
 
 
 class SimpleEnvironment:
@@ -165,7 +165,8 @@ def train_ppo_agent(
     state_size = env.size * env.size * 2  # One-hot encoding for agent and goal positions
     action_size = 4  # Up, down, left, right
 
-    agent = PPOAgent(
+    # New style: using PPOConfig (recommended)
+    config = PPOConfig(
         state_size=state_size,
         action_size=action_size,
         learning_rate=learning_rate,
@@ -176,6 +177,20 @@ def train_ppo_agent(
         entropy_coef=entropy_coef,
         random_seed=random_seed,
     )
+    agent = PPOAgent(config=config)
+
+    # Old style still works (backwards compatible):
+    # agent = PPOAgent(
+    #     state_size=state_size,
+    #     action_size=action_size,
+    #     learning_rate=learning_rate,
+    #     hidden_sizes=hidden_sizes,
+    #     batch_size=batch_size,
+    #     clip_ratio=clip_ratio,
+    #     value_coef=value_coef,
+    #     entropy_coef=entropy_coef,
+    #     random_seed=random_seed,
+    # )
 
     # Training metrics
     episode_rewards = []
@@ -389,7 +404,7 @@ def main() -> None:
 
     # Load and test the saved model
     print("\nTesting model loading...")
-    new_agent = PPOAgent(
+    new_config = PPOConfig(
         state_size=50,  # 5x5 grid * 2 (agent + goal positions)
         action_size=4,
         learning_rate=learning_rate,
@@ -399,6 +414,7 @@ def main() -> None:
         value_coef=value_coef,
         entropy_coef=entropy_coef,
     )
+    new_agent = PPOAgent(config=new_config)
     new_agent.load(model_path)
 
     # Quick test of loaded model

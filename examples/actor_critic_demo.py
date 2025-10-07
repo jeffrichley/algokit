@@ -8,7 +8,10 @@ a continuous state space problem using neural networks.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from algokit.algorithms.reinforcement_learning.actor_critic import ActorCriticAgent
+from algokit.algorithms.reinforcement_learning.actor_critic import (
+    ActorCriticAgent,
+    ActorCriticConfig,
+)
 
 
 class ContinuousGridWorld:
@@ -192,7 +195,9 @@ def train_actor_critic_agent(
     """
     # Create environment and agent
     env = ContinuousGridWorld()
-    agent = ActorCriticAgent(
+
+    # New style with config (recommended)
+    config = ActorCriticConfig(
         state_size=env.state_size,
         action_size=env.action_size,
         learning_rate_actor=0.001,
@@ -201,6 +206,18 @@ def train_actor_critic_agent(
         hidden_sizes=[64, 64],
         entropy_coefficient=0.01
     )
+    agent = ActorCriticAgent(config=config)
+
+    # Old style still works (backwards compatible)
+    # agent = ActorCriticAgent(
+    #     state_size=env.state_size,
+    #     action_size=env.action_size,
+    #     learning_rate_actor=0.001,
+    #     learning_rate_critic=0.001,
+    #     discount_factor=0.99,
+    #     hidden_sizes=[64, 64],
+    #     entropy_coefficient=0.01
+    # )
 
     episode_rewards = []
     recent_rewards = []

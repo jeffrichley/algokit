@@ -16,8 +16,103 @@ This implementation includes:
 
 import logging
 import random
+from typing import Any
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_core.core_schema import ValidationInfo
+
+
+class SarsaConfig(BaseModel):
+    """Configuration parameters for SARSA with automatic validation.
+
+    This model uses Pydantic for declarative parameter validation,
+    reducing complexity while maintaining strict type safety and
+    comprehensive validation.
+
+    All parameters are validated at instantiation time, ensuring that
+    the SARSA agent is configured correctly before training begins.
+
+    Attributes:
+        state_space_size: Number of possible states (must be positive)
+        action_space_size: Number of possible actions (must be positive)
+        learning_rate: Learning rate (alpha) for Q-value updates (0, 1]
+        discount_factor: Discount factor (gamma) for future rewards (0, 1]
+        epsilon_start: Initial exploration rate for epsilon-greedy policy [0, 1]
+        epsilon_end: Final exploration rate for epsilon-greedy policy [0, 1]
+        epsilon_decay: Rate of epsilon decay over time [0, 1]
+        use_expected_sarsa: Whether to use Expected SARSA variant
+        debug: Whether to enable debug logging
+        random_seed: Optional random seed for reproducible results
+    """
+
+    state_space_size: int = Field(
+        ..., gt=0, description="Number of possible states (must be positive)"
+    )
+    action_space_size: int = Field(
+        ..., gt=0, description="Number of possible actions (must be positive)"
+    )
+    learning_rate: float = Field(
+        default=0.1,
+        gt=0.0,
+        le=1.0,
+        description="Learning rate (alpha) for Q-value updates",
+    )
+    discount_factor: float = Field(
+        default=0.95,
+        gt=0.0,
+        le=1.0,
+        description="Discount factor (gamma) for future rewards",
+    )
+    epsilon_start: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Initial exploration rate for epsilon-greedy policy",
+    )
+    epsilon_end: float = Field(
+        default=0.01,
+        ge=0.0,
+        le=1.0,
+        description="Final exploration rate for epsilon-greedy policy",
+    )
+    epsilon_decay: float = Field(
+        default=0.995,
+        ge=0.0,
+        le=1.0,
+        description="Rate of epsilon decay over time",
+    )
+    use_expected_sarsa: bool = Field(
+        default=False, description="Whether to use Expected SARSA variant"
+    )
+    debug: bool = Field(default=False, description="Whether to enable debug logging")
+    random_seed: int | None = Field(
+        default=None, description="Optional random seed for reproducible results"
+    )
+
+    @field_validator("epsilon_end")
+    @classmethod
+    def validate_epsilon_end(cls, v: float, info: ValidationInfo) -> float:
+        """Validate that epsilon_end is not greater than epsilon_start.
+
+        Args:
+            v: The epsilon_end value to validate
+            info: Validation context containing other field values
+
+        Returns:
+            The validated epsilon_end value
+
+        Raises:
+            ValueError: If epsilon_end > epsilon_start
+        """
+        epsilon_start = info.data.get("epsilon_start", 1.0)
+        if v > epsilon_start:
+            raise ValueError(
+                f"epsilon_end ({v}) must be <= epsilon_start ({epsilon_start})"
+            )
+        return v
+
+    model_config = ConfigDict(frozen=False)
 
 
 class SarsaAgent:
@@ -52,88 +147,67 @@ class SarsaAgent:
         _logger: Logger instance for debug output
     """
 
-    def __init__(
-        self,
-        state_space_size: int,
-        action_space_size: int,
-        learning_rate: float = 0.1,
-        discount_factor: float = 0.95,
-        epsilon_start: float = 1.0,
-        epsilon_end: float = 0.01,
-        epsilon_decay: float = 0.995,
-        use_expected_sarsa: bool = False,
-        debug: bool = False,
-        random_seed: int | None = None,
-        # Backward compatibility parameters
-        epsilon: float | None = None,
-        epsilon_min: float | None = None,
-    ) -> None:
+    def __init__(self, config: SarsaConfig | None = None, **kwargs: Any) -> None:
         """Initialize SARSA agent.
 
+        Supports both new config-based initialization and legacy kwargs
+        for backwards compatibility.
+
         Args:
-            state_space_size: Number of possible states
-            action_space_size: Number of possible actions
-            learning_rate: Learning rate (alpha) for Q-value updates
-            discount_factor: Discount factor (gamma) for future rewards
-            epsilon_start: Initial exploration rate for epsilon-greedy policy
-            epsilon_end: Final exploration rate for epsilon-greedy policy
-            epsilon_decay: Rate of epsilon decay over time
-            use_expected_sarsa: Whether to use Expected SARSA
-            debug: Whether to enable debug logging
-            random_seed: Random seed for reproducible results
-            epsilon: Backward compatibility - maps to epsilon_start
-            epsilon_min: Backward compatibility - maps to epsilon_end
+            config: Pre-validated configuration object (recommended)
+            **kwargs: Individual parameters for backwards compatibility
+
+        Examples:
+            # New style (recommended)
+            >>> config = SarsaConfig(state_space_size=4, action_space_size=2)
+            >>> agent = SarsaAgent(config=config)
+
+            # Old style (backwards compatible)
+            >>> agent = SarsaAgent(state_space_size=4, action_space_size=2)
+
+            # Backwards compatible epsilon/epsilon_min parameters
+            >>> agent = SarsaAgent(state_space_size=4, action_space_size=2,
+            ...                    epsilon=1.0, epsilon_min=0.01)
 
         Raises:
-            ValueError: If any parameter is invalid
+            ValidationError: If parameters are invalid (via Pydantic)
         """
-        # Handle backward compatibility
-        if epsilon is not None:
-            epsilon_start = epsilon
-        if epsilon_min is not None:
-            epsilon_end = epsilon_min
+        # Handle backward compatibility for epsilon/epsilon_min parameters
+        if "epsilon" in kwargs and "epsilon_start" not in kwargs:
+            kwargs["epsilon_start"] = kwargs.pop("epsilon")
+        if "epsilon_min" in kwargs and "epsilon_end" not in kwargs:
+            kwargs["epsilon_end"] = kwargs.pop("epsilon_min")
 
-        # Validate parameters
-        if state_space_size <= 0:
-            raise ValueError("state_space_size must be positive")
-        if action_space_size <= 0:
-            raise ValueError("action_space_size must be positive")
-        if not 0 < learning_rate <= 1:
-            raise ValueError("learning_rate must be between 0 and 1")
-        if not 0 < discount_factor <= 1:
-            raise ValueError("discount_factor must be between 0 and 1")
-        if not 0 <= epsilon_start <= 1:
-            raise ValueError("epsilon must be between 0 and 1")
-        if not 0 <= epsilon_end <= 1:
-            raise ValueError("epsilon_min must be between 0 and epsilon")
-        if not 0 <= epsilon_decay <= 1:
-            raise ValueError("epsilon_decay must be between 0 and 1")
-        if not epsilon_end <= epsilon_start:
-            raise ValueError("epsilon_min must be between 0 and epsilon")
+        # Validate parameters (automatic via Pydantic)
+        if config is None:
+            config = SarsaConfig(**kwargs)
 
-        # Store parameters
-        self.state_space_size = state_space_size
-        self.action_space_size = action_space_size
-        self.learning_rate = learning_rate
-        self.discount_factor = discount_factor
-        self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end
-        self.epsilon_decay = epsilon_decay
-        self.use_expected_sarsa = use_expected_sarsa
-        self.debug = debug
+        # Store config
+        self.config = config
+
+        # Extract all parameters
+        self.state_space_size = config.state_space_size
+        self.action_space_size = config.action_space_size
+        self.learning_rate = config.learning_rate
+        self.discount_factor = config.discount_factor
+        self.epsilon_start = config.epsilon_start
+        self.epsilon_end = config.epsilon_end
+        self.epsilon_decay = config.epsilon_decay
+        self.use_expected_sarsa = config.use_expected_sarsa
+        self.debug = config.debug
 
         # Current epsilon (starts at epsilon_start)
-        self.epsilon = epsilon_start
+        self.epsilon = self.epsilon_start
 
         # Initialize Q-table with zeros
-        self.q_table = np.zeros((state_space_size, action_space_size))
+        self.q_table = np.zeros((self.state_space_size, self.action_space_size))
 
         # Initialize actions list
-        self.actions = list(range(action_space_size))
+        self.actions = list(range(self.action_space_size))
 
         # Set up logging
         self._logger = logging.getLogger(f"{self.__class__.__name__}_{id(self)}")
-        if debug:
+        if self.debug:
             self._logger.setLevel(logging.DEBUG)
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
@@ -143,8 +217,8 @@ class SarsaAgent:
             self._logger.addHandler(handler)
 
         # Set random seed if provided
-        if random_seed is not None:
-            self.set_seed(random_seed)
+        if config.random_seed is not None:
+            self.set_seed(config.random_seed)
 
     def set_seed(self, seed: int) -> None:
         """Set random seed for reproducible results.

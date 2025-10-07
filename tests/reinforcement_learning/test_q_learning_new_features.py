@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from algokit.algorithms.reinforcement_learning.q_learning import QLearningAgent
 
@@ -273,17 +274,17 @@ class TestQLearningNewFeatures:
         """Test strict parameter validation."""
         # Arrange - Set up test cases for invalid parameters
 
-        # Act & Assert - Test learning_rate = 0 (should fail)
-        with pytest.raises(ValueError, match="learning_rate must be between 0 and 1"):
+        # Act & Assert - Test learning_rate = 0 (should fail via Pydantic)
+        with pytest.raises(ValidationError, match="learning_rate"):
             QLearningAgent(state_space_size=3, action_space_size=2, learning_rate=0.0)
 
-        # Act & Assert - Test discount_factor = 0 (should fail)
-        with pytest.raises(ValueError, match="discount_factor must be between 0 and 1"):
+        # Act & Assert - Test discount_factor = 0 (should fail via Pydantic)
+        with pytest.raises(ValidationError, match="discount_factor"):
             QLearningAgent(state_space_size=3, action_space_size=2, discount_factor=0.0)
 
-        # Act & Assert - Test epsilon_end > epsilon_start (should fail)
+        # Act & Assert - Test epsilon_end > epsilon_start (should fail via Pydantic)
         with pytest.raises(
-            ValueError, match="epsilon_end must be less than or equal to epsilon_start"
+            ValidationError, match="epsilon_end.*must be less than or equal"
         ):
             QLearningAgent(
                 state_space_size=3,

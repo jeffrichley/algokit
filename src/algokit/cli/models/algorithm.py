@@ -64,6 +64,34 @@ class ParameterType(str, Enum):
     PATH = "path"
 
 
+# Type validation mapping for parameter types
+_TYPE_VALIDATORS: dict[ParameterType, type | tuple[type, ...]] = {
+    ParameterType.STRING: str,
+    ParameterType.INTEGER: int,
+    ParameterType.FLOAT: (int, float),
+    ParameterType.BOOLEAN: bool,
+    ParameterType.LIST: list,
+    ParameterType.DICT: dict,
+    ParameterType.PATH: str,
+}
+
+
+def _validate_type_match(param_type: ParameterType, value: Any) -> bool:
+    """Check if value matches expected parameter type.
+
+    Args:
+        param_type: Expected parameter type
+        value: Value to validate
+
+    Returns:
+        True if value matches type, False otherwise
+    """
+    expected_type = _TYPE_VALIDATORS.get(param_type)
+    if expected_type is None:
+        return False
+    return isinstance(value, expected_type)
+
+
 class ParameterDefinition(BaseModel):
     """Definition of an algorithm parameter."""
 
@@ -96,33 +124,11 @@ class ParameterDefinition(BaseModel):
         else:
             return v
 
-        if param_type == ParameterType.STRING and not isinstance(v, str):
+        # Validate using helper function
+        if not _validate_type_match(param_type, v):
             raise ValueError(
-                f"Default value for string parameter must be string, got {type(v)}"
-            )
-        elif param_type == ParameterType.INTEGER and not isinstance(v, int):
-            raise ValueError(
-                f"Default value for integer parameter must be int, got {type(v)}"
-            )
-        elif param_type == ParameterType.FLOAT and not isinstance(v, int | float):
-            raise ValueError(
-                f"Default value for float parameter must be number, got {type(v)}"
-            )
-        elif param_type == ParameterType.BOOLEAN and not isinstance(v, bool):
-            raise ValueError(
-                f"Default value for boolean parameter must be bool, got {type(v)}"
-            )
-        elif param_type == ParameterType.LIST and not isinstance(v, list):
-            raise ValueError(
-                f"Default value for list parameter must be list, got {type(v)}"
-            )
-        elif param_type == ParameterType.DICT and not isinstance(v, dict):
-            raise ValueError(
-                f"Default value for dict parameter must be dict, got {type(v)}"
-            )
-        elif param_type == ParameterType.PATH and not isinstance(v, str):
-            raise ValueError(
-                f"Default value for path parameter must be string, got {type(v)}"
+                f"Default value for {param_type.value} parameter must be "
+                f"{param_type.value}, got {type(v).__name__}"
             )
 
         return v
@@ -386,42 +392,35 @@ class Algorithm(BaseModel):
         if param is None:
             return False
 
-        # Type validation
-        if (
-            param.type == ParameterType.STRING
-            and not isinstance(value, str)
-            or param.type == ParameterType.INTEGER
-            and not isinstance(value, int)
-            or param.type == ParameterType.FLOAT
-            and not isinstance(value, int | float)
-            or param.type == ParameterType.BOOLEAN
-            and not isinstance(value, bool)
-            or param.type == ParameterType.LIST
-            and not isinstance(value, list)
-            or param.type == ParameterType.DICT
-            and not isinstance(value, dict)
-            or param.type == ParameterType.PATH
-            and not isinstance(value, str)
-        ):
+        # Type validation using helper function
+        if not _validate_type_match(param.type, value):
             return False
 
         # Range validation
-        if (
-            param.min_value is not None
-            and isinstance(value, int | float)
-            and value < param.min_value
-        ):
-            return False
-
-        if (
-            param.max_value is not None
-            and isinstance(value, int | float)
-            and value > param.max_value
-        ):
+        if self._is_out_of_range(param, value):
             return False
 
         # Choices validation
         return param.choices is None or value in param.choices
+
+    @staticmethod
+    def _is_out_of_range(param: ParameterDefinition, value: Any) -> bool:
+        """Check if numeric value is outside defined range.
+
+        Args:
+            param: Parameter definition with min/max constraints
+            value: Value to check
+
+        Returns:
+            True if value is out of range, False otherwise
+        """
+        if not isinstance(value, int | float):
+            return False
+
+        if param.min_value is not None and value < param.min_value:
+            return True
+
+        return param.max_value is not None and value > param.max_value
 
     def get_family_directory(self) -> str:
         """Get the family directory name for this algorithm.
