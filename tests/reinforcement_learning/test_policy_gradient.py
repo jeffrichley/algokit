@@ -1,5 +1,7 @@
 """Tests for Policy Gradient reinforcement learning algorithm."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -400,11 +402,11 @@ class TestPolicyGradientAgent:
             assert agent.baseline.training is False
 
     @pytest.mark.unit
-    def test_agent_save_and_load(self) -> None:
+    def test_agent_save_and_load(self, tmp_path: Path) -> None:
         """Test agent save and load methods."""
         # Arrange - Create agent and filepath
         agent = PolicyGradientAgent(state_size=4, action_size=2, use_baseline=True)
-        filepath = "/tmp/test_agent.pth"
+        filepath = str(tmp_path / "test_agent.pth")
 
         # Act - Save and load agent
         agent.save(filepath)

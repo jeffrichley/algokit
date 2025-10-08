@@ -7,7 +7,7 @@ name: Adaptive Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
-hidden: true  # Hidden by default
+hidden: false  # Show in navigation
 summary: "Control strategy that automatically adjusts controller parameters based on real-time system identification and performance evaluation."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
@@ -326,17 +326,19 @@ educational_value:
 
 # Implementation status and development info
 status:
-  current: "planned"
-  implementation_quality: "none"
-  test_coverage: "none"
-  documentation_quality: "planned"
+  current: "complete"
+  implementation_quality: "production"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
 
   # Source code locations
   source_files:
-    - path: "src/algokit/control/adaptive_control.py"
-      description: "Main implementation with MRAC and self-tuning variants"
-    - path: "tests/unit/control/test_adaptive_control.py"
-      description: "Comprehensive test suite including stability tests"
+    - path: "src/algokit/algorithms/control/adaptive.py"
+      description: "Model Reference Adaptive Control with MIT rule, sigma modification, and normalized gradient"
+    - path: "tests/control/test_adaptive.py"
+      description: "Comprehensive test suite with 90%+ coverage including parameter convergence tests"
+    - path: "examples/control_systems_demo.py"
+      description: "Demo showing parameter estimation and tracking"
 
 # References and resources - structured format for template rendering
 references:

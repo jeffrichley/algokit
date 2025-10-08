@@ -11,14 +11,14 @@
 
 # Global metadata and configuration
 metadata:
-  version: "1.0.0"
-  last_updated: "2025-10-07"
+  version: "1.1.0"
+  last_updated: "2025-10-08"
   total_families: 9
   total_algorithms: 47
   implementation_status:
-    complete: 23
-    planned: 24
-    percentage: 48.9
+    complete: 28
+    planned: 19
+    percentage: 59.6
 
 # Algorithm families with overview information
 families:
@@ -94,9 +94,9 @@ families:
       - "mpc"
       - "real-time-control"
       - "optimization"
-    status: "planned"
-    algorithms_count: 0
-    planned_count: 5
+    status: "complete"
+    algorithms_count: 5
+    planned_count: 0
 
   mpc:
     name: "Model Predictive Control"
@@ -1033,13 +1033,13 @@ algorithms:
       - "q-learning"
       - "sarsa"
 
-  # Control Family (Planned)
+  # Control Family (Complete)
   pid-control:
     name: "PID Control"
     family: "control"
-    status: "planned"
-    description: "Proportional-Integral-Derivative controller for system regulation"
-    overview: "PID control is one of the most widely used control algorithms in industry. It combines three control actions: proportional (P), integral (I), and derivative (D) to achieve stable and accurate control of dynamic systems."
+    status: "complete"
+    description: "Proportional-Integral-Derivative controller for system regulation with anti-windup"
+    overview: "PID control is one of the most widely used control algorithms in industry. It combines three control actions: proportional (P), integral (I), and derivative (D) to achieve stable and accurate control of dynamic systems. This implementation includes anti-windup protection and derivative filtering."
     complexity:
       time: "$O(1)$"
       space: "$O(1)$"
@@ -1049,24 +1049,37 @@ algorithms:
       - "pid"
       - "feedback"
       - "regulation"
+      - "anti-windup"
+    implementation:
+      source_file: "src/algokit/algorithms/control/pid.py"
+      test_file: "tests/control/test_pid.py"
+      approaches:
+        - "Classic PID with anti-windup"
+        - "Derivative on measurement"
+        - "Ziegler-Nichols auto-tuning"
+        - "Cohen-Coon auto-tuning"
     applications:
       - "Industrial automation"
       - "Robotics"
       - "Process control"
       - "Automotive systems"
+      - "Temperature control"
     mathematical_formulation:
       control_law: "u(t) = K_p e(t) + K_i ∫e(τ)dτ + K_d de(t)/dt"
       parameters:
         - "K_p: proportional gain"
         - "K_i: integral gain"
         - "K_d: derivative gain"
+    related_algorithms:
+      - "adaptive-control"
+      - "lqr-control"
 
   adaptive-control:
     name: "Adaptive Control"
     family: "control"
-    status: "planned"
-    description: "Control system that adjusts its parameters based on changing system dynamics"
-    overview: "Adaptive control systems automatically adjust their control parameters to maintain optimal performance as system dynamics change. This is particularly useful for systems with uncertain or time-varying parameters."
+    status: "complete"
+    description: "Model reference adaptive control with parameter estimation using MIT rule"
+    overview: "Adaptive control systems automatically adjust their control parameters to maintain optimal performance as system dynamics change. This implementation uses the MIT rule with sigma modification for robustness and normalized gradients for stability."
     complexity:
       time: "$O(n^2)$"
       space: "$O(n)$"
@@ -1075,18 +1088,151 @@ algorithms:
       - "control"
       - "adaptive"
       - "uncertainty"
-      - "optimization"
+      - "parameter-estimation"
+      - "mrac"
+    implementation:
+      source_file: "src/algokit/algorithms/control/adaptive.py"
+      test_file: "tests/control/test_adaptive.py"
+      approaches:
+        - "MIT rule adaptation"
+        - "Sigma modification for robustness"
+        - "Normalized gradient"
+        - "Dead zone for drift prevention"
     applications:
       - "Aerospace systems"
       - "Robotics"
       - "Process control"
       - "Autonomous vehicles"
+      - "Time-varying systems"
     mathematical_formulation:
-      parameter_update: "θ(t+1) = θ(t) + γ φ(t) e(t)"
+      parameter_update: "θ(t+1) = θ(t) + γ φ(t) e(t) / (1 + φᵀφ)"
       parameters:
         - "γ: adaptation gain"
         - "φ(t): regressor vector"
         - "e(t): tracking error"
+        - "θ: adaptive parameters"
+    related_algorithms:
+      - "pid-control"
+      - "robust-control"
+
+  lqr-control:
+    name: "Linear Quadratic Regulator (LQR)"
+    family: "control"
+    status: "complete"
+    description: "Optimal state feedback controller via algebraic Riccati equation"
+    overview: "Linear Quadratic Regulator (LQR) is an optimal control method that minimizes a quadratic cost function for linear time-invariant systems. It provides the optimal state feedback gains by solving the continuous-time Algebraic Riccati Equation."
+    complexity:
+      time: "$O(n^3)$"
+      space: "$O(n^2)$"
+      notes: "n = state dimension (for Riccati solution)"
+    tags:
+      - "control"
+      - "optimal-control"
+      - "lqr"
+      - "state-feedback"
+      - "riccati"
+    implementation:
+      source_file: "src/algokit/algorithms/control/lqr.py"
+      test_file: "tests/control/test_lqr.py"
+      approaches:
+        - "Continuous-time ARE solution"
+        - "Optimal feedback gain computation"
+        - "Controllability verification"
+        - "Closed-loop simulation"
+    applications:
+      - "Aerospace control"
+      - "Robotics stabilization"
+      - "Inverted pendulum"
+      - "Quadrotor control"
+      - "Process optimization"
+    mathematical_formulation:
+      cost_function: "J = ∫(xᵀQx + uᵀRu) dt"
+      control_law: "u = -Kx"
+      riccati_equation: "AᵀP + PA - PBR⁻¹BᵀP + Q = 0"
+      optimal_gain: "K = R⁻¹BᵀP"
+    related_algorithms:
+      - "robust-control"
+      - "mpc"
+
+  robust-control:
+    name: "Robust H-infinity Control"
+    family: "control"
+    status: "complete"
+    description: "H∞ optimal controller for worst-case disturbance rejection"
+    overview: "H-infinity (H∞) control provides robust performance under worst-case disturbances and model uncertainties. It minimizes the maximum gain from disturbances to performance outputs, ensuring guaranteed robustness margins."
+    complexity:
+      time: "$O(n^3)$"
+      space: "$O(n^2)$"
+      notes: "n = state dimension"
+    tags:
+      - "control"
+      - "robust-control"
+      - "h-infinity"
+      - "disturbance-rejection"
+      - "uncertainty"
+    implementation:
+      source_file: "src/algokit/algorithms/control/robust.py"
+      test_file: "tests/control/test_robust.py"
+      approaches:
+        - "Modified Riccati-based synthesis"
+        - "Disturbance attenuation"
+        - "Guaranteed performance level γ"
+        - "Stability verification"
+    applications:
+      - "Aerospace systems"
+      - "Uncertain systems"
+      - "Disturbance rejection"
+      - "Robust stabilization"
+      - "Flight control"
+    mathematical_formulation:
+      objective: "||T_zw||_∞ < γ"
+      system: "dx/dt = Ax + B₁w + B₂u"
+      performance: "z = C₁x + D₁₁w + D₁₂u"
+      control: "u = -Kx"
+    related_algorithms:
+      - "lqr-control"
+      - "adaptive-control"
+      - "sliding-mode-control"
+
+  sliding-mode-control:
+    name: "Sliding Mode Control"
+    family: "control"
+    status: "complete"
+    description: "Robust nonlinear control with chattering reduction via boundary layer"
+    overview: "Sliding Mode Control (SMC) is a robust nonlinear control technique that uses discontinuous control to drive and maintain the system state on a sliding surface. This implementation includes multiple reaching laws and chattering reduction strategies."
+    complexity:
+      time: "$O(n)$"
+      space: "$O(n)$"
+      notes: "n = state dimension"
+    tags:
+      - "control"
+      - "sliding-mode"
+      - "nonlinear-control"
+      - "robust-control"
+      - "variable-structure"
+    implementation:
+      source_file: "src/algokit/algorithms/control/sliding_mode.py"
+      test_file: "tests/control/test_sliding_mode.py"
+      approaches:
+        - "Constant reaching law"
+        - "Exponential reaching law"
+        - "Power reaching law"
+        - "Boundary layer for chattering reduction"
+        - "Saturation function"
+    applications:
+      - "Robotics manipulation"
+      - "Nonlinear systems"
+      - "Uncertain dynamics"
+      - "Motor control"
+      - "Power converters"
+    mathematical_formulation:
+      sliding_surface: "s(x) = cx = 0"
+      control_law: "u = u_eq + u_sw"
+      switching_control: "u_sw = -K sat(s/φ)"
+      reaching_condition: "s ṡ < 0"
+    related_algorithms:
+      - "robust-control"
+      - "adaptive-control"
 
   # MPC Family (Planned)
   linear-mpc:
@@ -1158,10 +1304,10 @@ relationships:
 # Implementation progress tracking
 progress:
   overall:
-    total_algorithms: 44
-    implemented: 14
-    planned: 30
-    percentage: 31.8
+    total_algorithms: 47
+    implemented: 28
+    planned: 19
+    percentage: 59.6
   by_family:
     dynamic-programming:
       total: 6
@@ -1175,9 +1321,9 @@ progress:
       percentage: 100.0
     control:
       total: 5
-      implemented: 0
-      planned: 5
-      percentage: 0.0
+      implemented: 5
+      planned: 0
+      percentage: 100.0
     mpc:
       total: 7
       implemented: 0

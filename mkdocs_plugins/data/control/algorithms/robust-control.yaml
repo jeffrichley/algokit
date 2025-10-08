@@ -7,8 +7,8 @@ name: Robust Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
-hidden: true  # Hidden by default
-summary: "Comprehensive control design methodology that ensures system stability and performance despite model uncertainties, parameter variations, and external disturbances."
+hidden: false  # Show in navigation
+summary: "H-infinity optimal control for worst-case disturbance rejection and guaranteed robustness margins."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
 description: |
@@ -392,17 +392,19 @@ educational_value:
 
 # Implementation status and development info
 status:
-  current: "planned"
-  implementation_quality: "none"
-  test_coverage: "none"
-  documentation_quality: "planned"
+  current: "complete"
+  implementation_quality: "production"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
 
   # Source code locations
   source_files:
-    - path: "src/algokit/control/robust_control.py"
-      description: "Main implementation with μ-synthesis and LMI-based variants"
-    - path: "tests/unit/control/test_robust_control.py"
-      description: "Comprehensive test suite including robustness analysis tests"
+    - path: "src/algokit/algorithms/control/robust.py"
+      description: "H-infinity controller with modified Riccati synthesis and disturbance attenuation"
+    - path: "tests/control/test_robust.py"
+      description: "Comprehensive test suite with 90%+ coverage including disturbance rejection tests"
+    - path: "examples/control_systems_demo.py"
+      description: "Demo showing robust control with sinusoidal disturbances"
 
 # References and resources - structured format for template rendering
 references:

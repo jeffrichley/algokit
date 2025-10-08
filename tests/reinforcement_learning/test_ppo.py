@@ -1,5 +1,7 @@
 """Tests for PPO (Proximal Policy Optimization) algorithm implementation."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -398,11 +400,11 @@ class TestPPOAgent:
         assert "entropy_loss" in metrics
         assert len(agent.rollout_buffer) == 0  # Buffer should be cleared after update
 
-    def test_save_and_load(self) -> None:
+    def test_save_and_load(self, tmp_path: Path) -> None:
         """Test that save and load work correctly."""
         # Arrange - Set up agent and file path
         agent = PPOAgent(4, 2)
-        filepath = "/tmp/test_ppo_model.pth"
+        filepath = str(tmp_path / "test_ppo_model.pth")
 
         # Act - Save agent and load into new agent
         agent.save(filepath)

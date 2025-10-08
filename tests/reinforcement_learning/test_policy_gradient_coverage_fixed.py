@@ -1,5 +1,7 @@
 """Additional tests for Policy Gradient to improve coverage with proper AAA structure."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -680,13 +682,13 @@ class TestPolicyGradientCoverage:
         assert metrics["mean_advantage"] == 0.0
 
     @pytest.mark.unit
-    def test_save_and_load_with_baseline(self) -> None:
+    def test_save_and_load_with_baseline(self, tmp_path: Path) -> None:
         """Test save and load methods with baseline."""
         # Arrange - Set up agent with baseline and filepath
         agent = PolicyGradientAgent(
             state_size=4, action_size=2, use_baseline=True, continuous_actions=False
         )
-        filepath = "/tmp/test_agent_baseline.pth"
+        filepath = str(tmp_path / "test_agent_baseline.pth")
 
         # Act - Save and load agent with baseline
         agent.save(filepath)
@@ -702,13 +704,13 @@ class TestPolicyGradientCoverage:
         assert new_agent.baseline is not None
 
     @pytest.mark.unit
-    def test_save_and_load_without_baseline(self) -> None:
+    def test_save_and_load_without_baseline(self, tmp_path: Path) -> None:
         """Test save and load methods without baseline."""
         # Arrange - Set up agent without baseline and filepath
         agent = PolicyGradientAgent(
             state_size=4, action_size=2, use_baseline=False, continuous_actions=False
         )
-        filepath = "/tmp/test_agent_no_baseline.pth"
+        filepath = str(tmp_path / "test_agent_no_baseline.pth")
 
         # Act - Save and load agent without baseline
         agent.save(filepath)
@@ -724,13 +726,13 @@ class TestPolicyGradientCoverage:
         assert new_agent.baseline is None
 
     @pytest.mark.unit
-    def test_load_with_missing_baseline_optimizer(self) -> None:
+    def test_load_with_missing_baseline_optimizer(self, tmp_path: Path) -> None:
         """Test load method with missing baseline optimizer state."""
         # Arrange - Set up agent and create incomplete save state
         agent = PolicyGradientAgent(
             state_size=4, action_size=2, use_baseline=True, continuous_actions=False
         )
-        filepath = "/tmp/test_agent_incomplete.pth"
+        filepath = str(tmp_path / "test_agent_incomplete.pth")
 
         # Create incomplete state dict (missing baseline optimizer)
         state = {

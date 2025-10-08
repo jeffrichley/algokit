@@ -1,0 +1,229 @@
+# Enhanced Algorithm Schema for Algorithm Documentation
+
+# Basic metadata
+slug: lqr-control
+name: Linear Quadratic Regulator (LQR)
+family_id: control
+
+# Brief one-sentence summary for cards and navigation
+hidden: false  # Show in navigation
+summary: "Optimal state feedback controller that minimizes a quadratic cost function via algebraic Riccati equation."
+
+# Detailed description (markdown supported)
+description: |
+  Linear Quadratic Regulator (LQR) is an optimal control method that minimizes a quadratic cost function for linear time-invariant systems. It provides the optimal state feedback gains by solving the continuous-time Algebraic Riccati Equation (ARE), ensuring optimal performance while balancing state regulation and control effort.
+
+  LQR is fundamental to modern control theory and is widely used in aerospace, robotics, and process control applications where optimal performance is desired. The method guarantees stability for controllable systems and provides a systematic approach to controller design.
+
+# Problem formulation and mathematical details
+formulation:
+  cost_function: |
+    Minimize the infinite-horizon quadratic cost:
+
+    J = ∫₀^∞ (xᵀQx + uᵀRu) dt
+
+    Where:
+    - x is the state vector
+    - u is the control input
+    - Q is the state cost matrix (positive semi-definite)
+    - R is the control cost matrix (positive definite)
+
+  system_dynamics: |
+    Linear time-invariant system:
+
+    ẋ = Ax + Bu
+
+    Where:
+    - A is the system dynamics matrix
+    - B is the control input matrix
+
+  optimal_control: |
+    The optimal control law is:
+
+    u = -Kx
+
+    Where K is the optimal feedback gain:
+
+    K = R⁻¹BᵀP
+
+    And P is the solution to the Algebraic Riccati Equation:
+
+    AᵀP + PA - PBR⁻¹BᵀP + Q = 0
+
+  key_properties:
+    - name: "Optimality"
+      formula: "J* = xᵀ₀Px₀"
+      description: "Minimum cost achieved with optimal control"
+    - name: "Stability"
+      formula: "Re(λᵢ(A - BK)) < 0"
+      description: "Closed-loop system is asymptotically stable"
+    - name: "Guaranteed Margins"
+      formula: "GM ≥ ∞, PM ≥ 60°"
+      description: "Guaranteed gain and phase margins"
+
+# Key properties and characteristics
+properties:
+  - name: "Optimal Performance"
+    description: "Minimizes quadratic cost function"
+    importance: "fundamental"
+  - name: "Guaranteed Stability"
+    description: "Ensures closed-loop stability for controllable systems"
+    importance: "fundamental"
+  - name: "Systematic Design"
+    description: "Design via cost matrix selection (Q, R)"
+    importance: "implementation"
+  - name: "Robustness Margins"
+    description: "Guaranteed gain and phase margins"
+    importance: "fundamental"
+
+# Comprehensive complexity analysis
+complexity:
+  analysis:
+    - approach: "LQR Gain Computation"
+      time: "O(n³)"
+      space: "O(n²)"
+      notes: "Dominated by ARE solution via Schur decomposition"
+    - approach: "Control Computation"
+      time: "O(n²)"
+      space: "O(n²)"
+      notes: "Matrix-vector multiplication per time step"
+
+  performance_notes:
+    - "One-time gain computation, then constant-time control"
+    - "Suitable for real-time applications after offline design"
+    - "Memory requirements scale with state dimension"
+
+# Applications and use cases
+applications:
+  - category: "Aerospace Systems"
+    examples:
+      - "Flight Control: Aircraft attitude and altitude control"
+      - "Satellite Control: Attitude and orbit control"
+      - "Spacecraft: Docking and station-keeping"
+      - "Missile Guidance: Trajectory optimization"
+
+  - category: "Robotics and Mechatronics"
+    examples:
+      - "Robot Stabilization: Joint position and velocity control"
+      - "Inverted Pendulum: Classical benchmark problem"
+      - "Quadrotor Control: Attitude and position stabilization"
+      - "Manipulation: Force and impedance control"
+
+  - category: "Industrial Control"
+    examples:
+      - "Process Control: Multi-variable control of chemical plants"
+      - "Power Systems: Grid stability and frequency regulation"
+      - "Manufacturing: Precision motion control"
+      - "Quality Control: Maintaining product specifications"
+
+  - category: "Automotive Systems"
+    examples:
+      - "Vehicle Dynamics: Stability and traction control"
+      - "Suspension Control: Active suspension systems"
+      - "Powertrain Control: Engine and transmission optimization"
+      - "ADAS: Advanced driver assistance systems"
+
+  - category: "Energy Systems"
+    examples:
+      - "Wind Turbines: Blade pitch control"
+      - "Solar Tracking: Maximum power point tracking"
+      - "Battery Management: State of charge regulation"
+      - "Smart Grid: Demand response and load balancing"
+
+# Educational value and learning objectives
+educational_value:
+  - "Optimal Control Theory: Understanding cost minimization and optimization"
+  - "Riccati Equations: Learning to solve algebraic Riccati equations"
+  - "State Space Methods: Understanding modern control design techniques"
+  - "Controllability: Learning system controllability concepts"
+
+# Implementation status and development info
+status:
+  current: "complete"
+  implementation_quality: "production"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
+
+  # Source code locations
+  source_files:
+    - path: "src/algokit/algorithms/control/lqr.py"
+      description: "LQR controller with continuous-time ARE solver and controllability verification"
+    - path: "tests/control/test_lqr.py"
+      description: "Comprehensive test suite with 90%+ coverage including stability and simulation tests"
+    - path: "examples/control_systems_demo.py"
+      description: "Demo showing inverted pendulum stabilization"
+
+# References and resources
+references:
+  - category: "Core Textbooks"
+    items:
+      - author: "Lewis, F. L., Vrabie, D., & Syrmos, V. L."
+        year: "2012"
+        title: "Optimal Control"
+        publisher: "Wiley"
+        note: "ISBN 978-0-470-63349-6"
+      - author: "Anderson, B. D. O., & Moore, J. B."
+        year: "2007"
+        title: "Optimal Control: Linear Quadratic Methods"
+        publisher: "Dover Publications"
+        note: "ISBN 978-0-486-45762-5"
+
+  - category: "LQR Control"
+    items:
+      - author: "Kalman, R. E."
+        year: "1960"
+        title: "Contributions to the Theory of Optimal Control"
+        publisher: "Boletín de la Sociedad Matemática Mexicana"
+        note: "Volume 5, pages 102-119"
+      - author: "Bryson, A. E., & Ho, Y. C."
+        year: "1975"
+        title: "Applied Optimal Control"
+        publisher: "Hemisphere Publishing"
+        note: "ISBN 978-0-891-16228-5"
+
+  - category: "Online Resources"
+    items:
+      - title: "Linear-Quadratic Regulator"
+        url: "https://en.wikipedia.org/wiki/Linear%E2%80%93quadratic_regulator"
+        note: "Wikipedia article on LQR"
+      - title: "LQR Control"
+        url: "https://www.mathworks.com/help/control/ref/lqr.html"
+        note: "MATLAB documentation on LQR"
+      - title: "Optimal Control Tutorial"
+        url: "https://underactuated.mit.edu/lqr.html"
+        note: "MIT course notes on LQR and optimal control"
+
+  - category: "Implementation & Practice"
+    items:
+      - title: "Python Control Systems Library"
+        url: "https://python-control.readthedocs.io/"
+        note: "Python library with LQR implementation"
+      - title: "Control Systems Toolbox"
+        url: "https://www.mathworks.com/products/control.html"
+        note: "MATLAB toolbox for LQR design"
+      - title: "SciPy Control Module"
+        url: "https://docs.scipy.org/doc/scipy/reference/linalg.html#matrix-equation-solvers"
+        note: "SciPy functions for solving Riccati equations"
+
+# Tags for categorization and search
+tags:
+  - "control"
+  - "lqr"
+  - "optimal-control"
+  - "state-feedback"
+  - "riccati-equation"
+  - "linear-systems"
+  - "algorithms"
+
+# Related algorithms and cross-references
+related_algorithms:
+  - slug: "robust-control"
+    relationship: "same_family"
+    description: "H-infinity extends LQR to handle uncertainties and disturbances"
+  - slug: "adaptive-control"
+    relationship: "same_family"
+    description: "Adaptive control can tune LQR parameters online"
+  - slug: "pid-control"
+    relationship: "same_family"
+    description: "PID is simpler but LQR is optimal for multi-variable systems"
+

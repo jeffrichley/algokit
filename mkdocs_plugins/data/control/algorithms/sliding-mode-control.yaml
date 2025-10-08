@@ -7,14 +7,21 @@ name: Sliding Mode Control
 family_id: control
 
 # Brief one-sentence summary for cards and navigation
-hidden: true  # Hidden by default
-summary: "Robust control strategy that forces the system state to reach and remain on a predefined sliding surface, regardless of parameter uncertainties and external disturbances."
+hidden: false  # Show in navigation
+summary: "Robust nonlinear MIMO control with full-state dynamics, adaptive gains, and smooth approximations for chattering reduction."
 
 # Detailed description (markdown supported) - full overview for the algorithm page
 description: |
   Sliding Mode Control (SMC) is a robust control strategy that forces the system state to reach and remain on a predefined sliding surface, regardless of parameter uncertainties and external disturbances. The controller switches between different control structures based on the system's position relative to this surface, creating a discontinuous control law that provides excellent robustness properties.
 
   This approach is particularly valuable in applications where system parameters are uncertain, external disturbances are present, or when high-precision control is required. Sliding mode controllers are widely used in aerospace systems, robotics, power electronics, and other domains where robustness is critical.
+  
+  **Advanced Features:**
+  - **MIMO Support**: Generalized sliding surfaces for multi-input, multi-output systems
+  - **Full-State Dynamics**: Proper equivalent control computation using system matrices (A, B)
+  - **Adaptive Switching Gain**: Automatic gain adjustment based on estimated disturbance levels
+  - **Smooth Approximations**: Tanh-based smooth approximations to reduce chattering
+  - **Configurable Reaching Laws**: Tunable coefficients (k1, k2) for exponential and power reaching laws
 
 # Problem formulation and mathematical details
 formulation:
@@ -80,6 +87,18 @@ properties:
   - name: "Design Flexibility"
     description: "Can handle nonlinear and time-varying systems"
     importance: "application"
+  - name: "MIMO Capability"
+    description: "Supports multi-input, multi-output systems with vector sliding surfaces"
+    importance: "application"
+  - name: "Adaptive Gain Tuning"
+    description: "Automatically adjusts switching gain based on disturbance estimation"
+    importance: "implementation"
+  - name: "Smooth Control"
+    description: "Tanh-based approximations provide smooth control without chattering"
+    importance: "implementation"
+  - name: "Full-State Feedback"
+    description: "Uses system matrices (A, B) for precise equivalent control computation"
+    importance: "fundamental"
 
 # Implementation approaches with detailed code
 implementations:
@@ -382,17 +401,27 @@ educational_value:
 
 # Implementation status and development info
 status:
-  current: "planned"
-  implementation_quality: "none"
-  test_coverage: "none"
-  documentation_quality: "planned"
+  current: "complete"
+  implementation_quality: "production"
+  test_coverage: "comprehensive"
+  documentation_quality: "complete"
 
   # Source code locations
   source_files:
-    - path: "src/algokit/control/sliding_mode_control.py"
-      description: "Main implementation with basic, super-twisting, and terminal variants"
-    - path: "tests/unit/control/test_sliding_mode_control.py"
-      description: "Comprehensive test suite including robustness tests"
+    - path: "src/algokit/algorithms/control/sliding_mode.py"
+      description: "Enhanced sliding mode controller with MIMO support, full-state dynamics (A/B matrices), adaptive switching gain, smooth tanh approximations, and configurable reaching laws (k1/k2 coefficients)"
+    - path: "tests/control/test_sliding_mode.py"
+      description: "Comprehensive test suite covering SISO/MIMO, full-state dynamics, adaptive gain, smooth approximations, and reaching laws with various configurations"
+    - path: "examples/control_systems_demo.py"
+      description: "Demo showing double integrator control with disturbances, MIMO systems, and adaptive control"
+  
+  enhancements:
+    - "MIMO sliding surfaces for multi-input, multi-output systems"
+    - "Full-state dynamics with A/B matrix support for precise equivalent control"
+    - "Adaptive switching gain with disturbance estimation"
+    - "Smooth tanh approximations to eliminate chattering"
+    - "Configurable reaching law coefficients (k1, k2) for fine-tuning convergence"
+    - "Vectorized operations for MIMO efficiency"
 
 # References and resources - structured format for template rendering
 references:
