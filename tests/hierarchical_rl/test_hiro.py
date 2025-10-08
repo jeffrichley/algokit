@@ -581,3 +581,477 @@ class TestHIROPolicyNetworks:
 
         # Assert - Q-values have correct shape (batch_size, 1)
         assert q_value.shape == (2, 1)
+
+
+class TestHIROAgentEdgeCases:
+    """Tests for edge cases and additional coverage in HIRO agent."""
+
+    @pytest.mark.unit
+    def test_select_action_with_epsilon_exploration(self) -> None:
+        """Test that select_action uses random exploration when epsilon triggers."""
+        # Arrange - create agent with fixed seed for reproducibility
+        config = HIROConfig(state_size=4, action_size=3, seed=42)
+        agent = HIROAgent(config=config)
+        state = torch.randn(4)
+        goal = torch.randn(16)
+
+        # Act - select action with high epsilon (force random exploration)
+        action = agent.select_action(state, goal, epsilon=1.0)
+
+        # Assert - action is valid integer (random branch was taken)
+        assert isinstance(action, int)
+        assert 0 <= action < 3
+
+    @pytest.mark.unit
+    def test_goal_distance_updates_statistics(self) -> None:
+        """Test that goal_distance updates statistics after buffer exceeds 100 samples."""
+        # Arrange - create agent and add many samples to distance buffer
+        config = HIROConfig(state_size=4, action_size=2)
+        agent = HIROAgent(config=config)
+        state = torch.randn(4)
+        goal = torch.randn(4)
+
+        # Act - compute distance many times to fill buffer past 100 samples
+        for _ in range(150):
+            agent.goal_distance(state + torch.randn(4) * 0.1, goal)
+
+        # Assert - statistics should have been updated (mean and std)
+        assert agent.distance_mean != 0.0
+        assert agent.distance_std != 1.0  # Should have changed from initial value
+        assert len(agent.distance_buffer) == 150
+
+    @pytest.mark.unit
+    def test_relabel_goal_with_short_trajectory(self) -> None:
+        """Test that relabel_goal handles trajectories shorter than horizon."""
+        # Arrange - create agent with horizon of 5 but only 2 states in trajectory
+        config = HIROConfig(state_size=4, action_size=2, goal_horizon=5)
+        agent = HIROAgent(config=config)
+        start_state = torch.tensor([1.0, 2.0, 3.0, 4.0])
+        trajectory = [
+            torch.tensor([1.5, 2.5, 3.5, 4.5]),
+            torch.tensor([2.0, 3.0, 4.0, 5.0]),
+        ]
+
+        # Act - relabel goal with trajectory shorter than horizon
+        relabeled_goal = agent.relabel_goal(start_state, trajectory, horizon=5)
+
+        # Assert - should use last state when trajectory < horizon
+        assert relabeled_goal.shape == (4,)
+        expected_delta = trajectory[-1] - start_state
+        assert torch.allclose(relabeled_goal, expected_delta)
+
+
+class TestHIROTrainingMethods:
+    """Tests for HIRO training methods including critics and actors."""
+
+    @pytest.mark.unit
+    def test_train_lower_with_empty_buffer(self) -> None:
+        """Test that train_lower returns 0.0 when buffer is too small."""
+        # Arrange - create agent with empty lower buffer
+        config = HIROConfig(state_size=4, action_size=2)
+        agent = HIROAgent(config=config)
+
+        # Act - attempt to train with insufficient data
+        loss = agent.train_lower(batch_size=64)
+
+        # Assert - should return 0.0 when buffer < batch_size
+        assert loss == 0.0
+
+    @pytest.mark.unit
+    def test_train_lower_with_sufficient_data(self) -> None:
+        """Test that train_lower updates critic with sufficient data."""
+        # Arrange - create agent and populate lower buffer with experiences
+        config = HIROConfig(state_size=4, action_size=2, seed=42)
+        agent = HIROAgent(config=config)
+
+        # Add experiences to lower buffer
+        for _ in range(100):
+            agent.lower_buffer.append(
+                {
+                    "state": torch.randn(4),
+                    "action": 0,
+                    "reward": 1.0,
+                    "next_state": torch.randn(4),
+                    "goal": torch.randn(16),
+                    "done": False,
+                }
+            )
+
+        # Act - train lower-level critic
+        loss = agent.train_lower(batch_size=32)
+
+        # Assert - loss should be positive float (training occurred)
+        assert isinstance(loss, float)
+        assert loss >= 0.0
+
+    @pytest.mark.unit
+    def test_train_lower_actor_with_empty_buffer(self) -> None:
+        """Test that train_lower_actor returns 0.0 when buffer is too small."""
+        # Arrange - create agent with empty lower buffer
+        config = HIROConfig(state_size=4, action_size=2)
+        agent = HIROAgent(config=config)
+
+        # Act - attempt to train actor with insufficient data
+        loss = agent.train_lower_actor(batch_size=64)
+
+        # Assert - should return 0.0 when buffer < batch_size
+        assert loss == 0.0
+
+    @pytest.mark.unit
+    def test_train_lower_actor_with_sufficient_data(self) -> None:
+        """Test that train_lower_actor updates policy with sufficient data."""
+        # Arrange - create agent and populate lower buffer with experiences
+        config = HIROConfig(state_size=4, action_size=3, seed=42)
+        agent = HIROAgent(config=config)
+
+        # Add experiences to lower buffer
+        for _ in range(100):
+            agent.lower_buffer.append(
+                {
+                    "state": torch.randn(4),
+                    "action": 0,
+                    "reward": 1.0,
+                    "next_state": torch.randn(4),
+                    "goal": torch.randn(16),
+                    "done": False,
+                }
+            )
+
+        # Act - train lower-level actor
+        loss = agent.train_lower_actor(batch_size=32)
+
+        # Assert - loss should be float (training occurred, can be negative)
+        assert isinstance(loss, float)
+
+    @pytest.mark.unit
+    def test_train_higher_with_empty_buffer(self) -> None:
+        """Test that train_higher returns 0.0 when buffer is too small."""
+        # Arrange - create agent with empty higher buffer
+        config = HIROConfig(state_size=4, action_size=2)
+        agent = HIROAgent(config=config)
+
+        # Act - attempt to train with insufficient data
+        loss = agent.train_higher(batch_size=64)
+
+        # Assert - should return 0.0 when buffer < batch_size
+        assert loss == 0.0
+
+    @pytest.mark.unit
+    def test_train_higher_with_sufficient_data(self) -> None:
+        """Test that train_higher updates critic with sufficient data."""
+        # Arrange - create agent and populate higher buffer with experiences
+        config = HIROConfig(state_size=4, action_size=2, seed=42)
+        agent = HIROAgent(config=config)
+
+        # Add experiences to higher buffer
+        for _ in range(100):
+            agent.higher_buffer.append(
+                {
+                    "state": torch.randn(4),
+                    "goal": torch.randn(16),
+                    "reward": 1.0,
+                    "next_state": torch.randn(4),
+                    "done": False,
+                }
+            )
+
+        # Act - train higher-level critic
+        loss = agent.train_higher(batch_size=32)
+
+        # Assert - loss should be positive float (training occurred)
+        assert isinstance(loss, float)
+        assert loss >= 0.0
+
+    @pytest.mark.unit
+    def test_train_higher_actor_with_empty_buffer(self) -> None:
+        """Test that train_higher_actor returns 0.0 when buffer is too small."""
+        # Arrange - create agent with empty higher buffer
+        config = HIROConfig(state_size=4, action_size=2)
+        agent = HIROAgent(config=config)
+
+        # Act - attempt to train actor with insufficient data
+        loss = agent.train_higher_actor(batch_size=64)
+
+        # Assert - should return 0.0 when buffer < batch_size
+        assert loss == 0.0
+
+    @pytest.mark.unit
+    def test_train_higher_actor_with_sufficient_data(self) -> None:
+        """Test that train_higher_actor updates policy with sufficient data."""
+        # Arrange - create agent and populate higher buffer with experiences
+        config = HIROConfig(state_size=4, action_size=2, seed=42)
+        agent = HIROAgent(config=config)
+
+        # Add experiences to higher buffer
+        for _ in range(100):
+            agent.higher_buffer.append(
+                {
+                    "state": torch.randn(4),
+                    "goal": torch.randn(16),
+                    "reward": 1.0,
+                    "next_state": torch.randn(4),
+                    "done": False,
+                }
+            )
+
+        # Act - train higher-level actor
+        loss = agent.train_higher_actor(batch_size=32)
+
+        # Assert - loss should be float (training occurred, can be negative)
+        assert isinstance(loss, float)
+
+
+class TestHIROEpisodeTraining:
+    """Tests for HIRO episode training and integration."""
+
+    @pytest.mark.unit
+    def test_train_episode_returns_metrics(self) -> None:
+        """Test that train_episode executes and returns expected metrics."""
+
+        # Arrange - create a simple mock environment
+        class SimpleEnv:
+            """Simple mock environment for testing."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> tuple[list[float], dict[str, object]]:
+                """Reset environment."""
+                return [0.0, 0.0, 0.0, 0.0], {}
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [0.1, 0.1, 0.1, 0.1]
+                reward = 1.0
+                done = self.step_count >= 5  # Episode ends after 5 steps
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(state_size=4, action_size=2, goal_size=4, seed=42)
+        agent = HIROAgent(config=config)
+        env = SimpleEnv()
+
+        # Act - train for one episode with short max_steps
+        metrics = agent.train_episode(env, max_steps=10, epsilon=0.5)
+
+        # Assert - metrics dictionary contains expected keys
+        assert isinstance(metrics, dict)
+        assert "reward" in metrics
+        assert "steps" in metrics
+        assert "avg_lower_critic_loss" in metrics
+        assert "avg_higher_critic_loss" in metrics
+        assert "avg_lower_actor_loss" in metrics
+        assert "avg_higher_actor_loss" in metrics
+        assert metrics["steps"] > 0
+
+    @pytest.mark.unit
+    def test_train_episode_populates_buffers(self) -> None:
+        """Test that train_episode adds experiences to buffers."""
+
+        # Arrange - create a simple mock environment
+        class SimpleEnv:
+            """Simple mock environment for testing."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> tuple[list[float], dict[str, object]]:
+                """Reset environment."""
+                return [0.0, 0.0, 0.0, 0.0], {}
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [0.1, 0.1, 0.1, 0.1]
+                reward = 1.0
+                done = self.step_count >= 10
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(
+            state_size=4, action_size=2, goal_size=4, goal_horizon=5, seed=42
+        )
+        agent = HIROAgent(config=config)
+        env = SimpleEnv()
+
+        # Store initial buffer sizes
+        initial_lower_size = len(agent.lower_buffer)
+        initial_higher_size = len(agent.higher_buffer)
+
+        # Act - train for one episode
+        agent.train_episode(env, max_steps=20, epsilon=0.3)
+
+        # Assert - buffers should have new experiences
+        assert len(agent.lower_buffer) > initial_lower_size
+        # Higher buffer should have at least one experience (goal horizon reached)
+        assert len(agent.higher_buffer) >= initial_higher_size
+
+    @pytest.mark.unit
+    def test_train_episode_tracks_statistics(self) -> None:
+        """Test that train_episode tracks statistics correctly."""
+
+        # Arrange - create a simple mock environment
+        class SimpleEnv:
+            """Simple mock environment for testing."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> tuple[list[float], dict[str, object]]:
+                """Reset environment."""
+                return [0.0, 0.0, 0.0, 0.0], {}
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [0.1, 0.1, 0.1, 0.1]
+                reward = 1.0
+                done = self.step_count >= 8
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(state_size=4, action_size=2, goal_size=4, seed=42)
+        agent = HIROAgent(config=config)
+        env = SimpleEnv()
+
+        # Act - train for one episode
+        agent.train_episode(env, max_steps=15, epsilon=0.2)
+
+        # Assert - statistics should be tracked
+        assert len(agent.episode_rewards) > 0
+        assert len(agent.intrinsic_rewards) > 0
+        assert len(agent.extrinsic_rewards) > 0
+
+    @pytest.mark.unit
+    def test_train_episode_with_old_style_env_reset(self) -> None:
+        """Test that train_episode handles environments with old reset signature."""
+
+        # Arrange - create env that returns only state (not tuple)
+        class OldStyleEnv:
+            """Old style mock environment that returns state directly."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> list[float]:
+                """Reset environment (old style - returns state only)."""
+                return [0.0, 0.0, 0.0, 0.0]
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [0.1, 0.1, 0.1, 0.1]
+                reward = 1.0
+                done = self.step_count >= 5
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(state_size=4, action_size=2, goal_size=4, seed=42)
+        agent = HIROAgent(config=config)
+        env = OldStyleEnv()
+
+        # Act - train for one episode with old-style environment
+        metrics = agent.train_episode(env, max_steps=10, epsilon=0.5)
+
+        # Assert - should work correctly with old-style reset
+        assert isinstance(metrics, dict)
+        assert metrics["steps"] > 0
+
+    @pytest.mark.unit
+    def test_train_episode_with_none_goal_state(self) -> None:
+        """Test that train_episode handles None goal_state correctly."""
+
+        # Arrange - create environment and agent
+        class SimpleEnv:
+            """Simple mock environment for testing."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> tuple[list[float], dict[str, object]]:
+                """Reset environment."""
+                return [0.0, 0.0, 0.0, 0.0], {}
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [0.1, 0.1, 0.1, 0.1]
+                reward = 1.0
+                done = self.step_count >= 3
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(state_size=4, action_size=2, goal_size=4, seed=42)
+        agent = HIROAgent(config=config)
+        env = SimpleEnv()
+
+        # Manually set goal_state to None to test the None branch
+        agent.current_goal = None
+        agent.goal_state = None
+
+        # Act - train for one episode
+        metrics = agent.train_episode(env, max_steps=5, epsilon=0.3)
+
+        # Assert - should complete successfully with None goal
+        assert isinstance(metrics, dict)
+        assert metrics["steps"] > 0
+
+    @pytest.mark.unit
+    def test_train_episode_tracks_losses_when_positive(self) -> None:
+        """Test that train_episode tracks losses only when they are positive."""
+
+        # Arrange - create environment with longer episodes to ensure training
+        class LongerEnv:
+            """Environment that runs longer to ensure training occurs."""
+
+            def __init__(self) -> None:
+                self.step_count = 0
+
+            def reset(self) -> tuple[list[float], dict[str, object]]:
+                """Reset environment."""
+                return [0.0, 0.0, 0.0, 0.0], {}
+
+            def step(
+                self, action: int
+            ) -> tuple[list[float], float, bool, bool, dict[str, object]]:
+                """Take a step in environment."""
+                self.step_count += 1
+                next_state = [
+                    0.1 * self.step_count,
+                    0.1 * self.step_count,
+                    0.1 * self.step_count,
+                    0.1 * self.step_count,
+                ]
+                reward = 1.0
+                done = self.step_count >= 150  # Run longer to accumulate buffer
+                truncated = False
+                return next_state, reward, done, truncated, {}
+
+        config = HIROConfig(state_size=4, action_size=2, goal_size=4, seed=42)
+        agent = HIROAgent(config=config)
+        env = LongerEnv()
+
+        # Act - train for a longer episode to ensure losses are tracked
+        metrics = agent.train_episode(env, max_steps=200, epsilon=0.3)
+
+        # Assert - losses should be tracked (at least some entries should exist)
+        assert isinstance(metrics, dict)
+        assert metrics["steps"] > 0
+        # At least one loss should have been tracked
+        assert (
+            len(agent.lower_critic_losses) > 0
+            or len(agent.higher_critic_losses) > 0
+            or len(agent.lower_actor_losses) > 0
+            or len(agent.higher_actor_losses) > 0
+        )

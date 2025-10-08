@@ -12,13 +12,13 @@
 # Global metadata and configuration
 metadata:
   version: "1.0.0"
-  last_updated: "2025-10-03"
+  last_updated: "2025-10-07"
   total_families: 9
-  total_algorithms: 44
+  total_algorithms: 47
   implementation_status:
-    complete: 14
-    planned: 30
-    percentage: 31.8
+    complete: 23
+    planned: 24
+    percentage: 48.9
 
 # Algorithm families with overview information
 families:
@@ -144,9 +144,9 @@ families:
       - "reinforcement-learning"
       - "planning"
       - "multi-agent-systems"
-    status: "planned"
-    algorithms_count: 0
-    planned_count: 6
+    status: "complete"
+    algorithms_count: 3
+    planned_count: 3
 
   planning:
     name: "Planning Algorithms"
@@ -893,6 +893,145 @@ algorithms:
       - "policy-gradient"
       - "trpo"
       - "a2c"
+
+  # Hierarchical Reinforcement Learning Family (Complete)
+  feudal-rl:
+    name: "Feudal Reinforcement Learning"
+    family: "hierarchical-rl"
+    status: "complete"
+    description: "Hierarchical RL approach with manager-worker architecture for temporal abstraction"
+    overview: "Feudal Reinforcement Learning (FRL) implements a hierarchical architecture with a manager network that sets subgoals for worker networks. This approach enables efficient learning on tasks with long-term dependencies by decomposing complex problems into simpler subtasks."
+    complexity:
+      time: "O(|S| × |A| × H)"
+      space: "O(|S| × |A| × H)"
+      notes: "H = hierarchy depth, S = states, A = actions"
+    tags:
+      - "hierarchical-rl"
+      - "algorithms"
+      - "feudal-rl"
+      - "manager-worker"
+      - "temporal-abstraction"
+      - "subgoal-learning"
+      - "deep-learning"
+    implementation:
+      source_file: "src/algokit/algorithms/hierarchical_rl/feudal_rl.py"
+      test_file: "tests/hierarchical_rl/test_feudal_rl.py"
+      approaches:
+        - "Manager-Worker Architecture"
+        - "Subgoal Generation"
+        - "Intrinsic Motivation"
+        - "Temporal Abstraction"
+    mathematical_formulation:
+      manager_objective: "Maximize long-term return via subgoal selection"
+      worker_objective: "Maximize intrinsic reward for achieving manager's subgoals"
+      parameters:
+        - "θ_m: manager network parameters"
+        - "θ_w: worker network parameters"
+        - "c: subgoal horizon"
+        - "α: learning rate"
+    applications:
+      - "Complex navigation tasks"
+      - "Long-horizon planning"
+      - "Robotics manipulation"
+      - "Multi-stage decision making"
+    related_algorithms:
+      - "hiro"
+      - "options-framework"
+      - "actor-critic"
+      - "ppo"
+
+  hiro:
+    name: "HIRO (Data-Efficient Hierarchical RL)"
+    family: "hierarchical-rl"
+    status: "complete"
+    description: "Off-policy hierarchical RL with goal-conditioned policies and hindsight experience replay"
+    overview: "HIRO (HIerarchical Reinforcement learning with Off-policy correction) is a data-efficient hierarchical RL algorithm that uses goal-conditioned policies at both high and low levels. It incorporates off-policy corrections to improve sample efficiency and stability."
+    complexity:
+      time: "O(|S| × |A| × H × B)"
+      space: "O(|S| × |A| × H)"
+      notes: "H = hierarchy depth, B = batch size, S = states, A = actions"
+    tags:
+      - "hierarchical-rl"
+      - "algorithms"
+      - "hiro"
+      - "goal-conditioned"
+      - "off-policy"
+      - "hindsight-experience-replay"
+      - "data-efficient"
+      - "deep-learning"
+    implementation:
+      source_file: "src/algokit/algorithms/hierarchical_rl/hiro.py"
+      test_file: "tests/hierarchical_rl/test_hiro.py"
+      approaches:
+        - "High-Level Goal Selection"
+        - "Low-Level Goal-Conditioned Policy"
+        - "Off-Policy Correction"
+        - "Hindsight Experience Replay"
+    mathematical_formulation:
+      high_level_policy: "π_h(g|s): select subgoal g given state s"
+      low_level_policy: "π_l(a|s,g): select action a given state s and goal g"
+      off_policy_correction: "Adjusts high-level actions based on low-level behavior"
+      parameters:
+        - "θ_h: high-level policy parameters"
+        - "θ_l: low-level policy parameters"
+        - "c: subgoal horizon"
+        - "α_h, α_l: learning rates"
+    applications:
+      - "Robotic manipulation"
+      - "Long-horizon tasks"
+      - "Complex navigation"
+      - "Multi-stage problem solving"
+    related_algorithms:
+      - "feudal-rl"
+      - "options-framework"
+      - "dqn"
+      - "hindsight-experience-replay"
+
+  options-framework:
+    name: "Options Framework"
+    family: "hierarchical-rl"
+    status: "complete"
+    description: "Temporal abstraction framework using options (closed-loop policies) for hierarchical learning"
+    overview: "The Options Framework provides a formal temporal abstraction mechanism for hierarchical reinforcement learning. An option is a temporally extended action consisting of an initiation set, policy, and termination condition, enabling reusable skills and accelerated learning."
+    complexity:
+      time: "O(|S| × |O| × |A|)"
+      space: "O(|S| × |O| × |A|)"
+      notes: "S = states, O = options, A = primitive actions"
+    tags:
+      - "hierarchical-rl"
+      - "algorithms"
+      - "options-framework"
+      - "temporal-abstraction"
+      - "skill-learning"
+      - "semi-markov"
+      - "reusable-behaviors"
+    implementation:
+      source_file: "src/algokit/algorithms/hierarchical_rl/options_framework.py"
+      test_file: "tests/hierarchical_rl/test_options_framework.py"
+      approaches:
+        - "Option Discovery"
+        - "Option Learning"
+        - "Option Execution"
+        - "Policy over Options"
+    mathematical_formulation:
+      option_definition: "o = (I, π, β): initiation set, policy, termination"
+      intra_option_learning: "Learn option policies π_o(a|s)"
+      option_value_learning: "Learn Q(s, o) for option selection"
+      parameters:
+        - "I: initiation set"
+        - "π: option policy"
+        - "β: termination function"
+        - "α: learning rate"
+    applications:
+      - "Skill discovery"
+      - "Transfer learning"
+      - "Navigation with waypoints"
+      - "Hierarchical task decomposition"
+    related_algorithms:
+      - "feudal-rl"
+      - "hiro"
+      - "q-learning"
+      - "sarsa"
 
   # Control Family (Planned)
   pid-control:
