@@ -1,0 +1,253 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+  schedule:
+    - cron: '0 2 * * *'  # Nightly at 2 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # PHASE 1: Quality Gates (Must Pass First)
+  # ============================================================================
+
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff format check
+        run: uv run ruff format src tests --check
+
+      - name: Ruff lint
+        run: uv run ruff check src tests
+
+      - name: Spell check
+        run: uv run codespell src tests docs -I .codespellignore
+
+  typecheck:
+    name: Type Check (MyPy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: MyPy type check
+        run: uv run mypy src tests
+
+  test:
+    name: Tests & Coverage
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libpangocairo-1.0-0 pkg-config swig
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install pkg-config cairo pango gdk-pixbuf libffi swig
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest tests -c pytest-algorithms.ini \
+            --cov-report=xml:coverage-algorithms.xml \
+            --cov-report=html:htmlcov-algorithms
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage-algorithms.xml
+
+  complexity:
+    name: Complexity Check (Advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Advisory only, doesn't block pipeline
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Xenon complexity check
+        run: |
+          echo "🔍 Checking code complexity (advisory only)..."
+          uv run xenon --max-absolute B src || echo "⚠️ Complexity issues (non-blocking)"
+
+  # ============================================================================
+  # PHASE 2: Documentation Build (After Quality Gates Pass)
+  # ============================================================================
+
+  build-docs:
+    name: Build Documentation
+    needs: [lint, typecheck, test]  # Wait for all quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libpangocairo-1.0-0 pkg-config swig
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group docs
+
+      - name: Build MkDocs site
+        run: uv run mkdocs build
+
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  # ============================================================================
+  # PHASE 3: Deploy Documentation (Only on Main Branch)
+  # ============================================================================
+
+  deploy-docs:
+    name: Deploy Documentation
+    needs: [build-docs]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ============================================================================
+  # PHASE 4: Version Bump (Only on Main After Everything Passes)
+  # ============================================================================
+
+  version-bump:
+    name: Version Bump & Tag
+    needs: [lint, typecheck, test, deploy-docs]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.cz.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commitizen Bump
+        id: cz
+        uses: commitizen-tools/commitizen-action@0.24.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          push: true
+
+      - name: Print version
+        if: steps.cz.outputs.version != ''
+        run: |
+          echo "🎉 Bumped version to ${{ steps.cz.outputs.version }}"
+
+  # ============================================================================
+  # PHASE 5: Create GitHub Release (After Version Bump)
+  # ============================================================================
+
+  create-release:
+    name: Create GitHub Release
+    needs: [version-bump]
+    if: needs.version-bump.outputs.version != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version-bump.outputs.version }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}

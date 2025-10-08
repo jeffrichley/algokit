@@ -1,0 +1,36 @@
+# Codespell Ignore Words
+# One word per line - case sensitive
+# Used by codespell with: codespell -I .codespellignore
+
+# Project names
+algokit
+jeffrichley
+
+# Author names (from academic papers)
+hart
+nachum
+sutton
+vezhnevets
+dayan
+hinton
+florensa
+eysenbach
+harabor
+grastien
+wagner
+choset
+schulman
+
+# Technical terms and acronyms
+hiro
+feudal
+mstar
+dqn
+sarsa
+ppo
+mpc
+dmps
+atari
+mujoco
+openai
+deepmind
