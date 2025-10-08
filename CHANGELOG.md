@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## v0.15.0 (2025-10-08)
+
+### Feat
+
+- Add unified CI/CD workflow pipeline
+
+### Fix
+
+- Add 'hart' to codespell ignore list
+
+### Refactor
+
+- Use .codespellignore file for spell check exceptions
+
 ## v0.14.0 (2025-10-08)
 
 ### Feat
