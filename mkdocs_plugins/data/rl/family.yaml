@@ -19,6 +19,21 @@ description: |
   environment. This makes RL particularly powerful for sequential decision-making problems where
   the consequences of actions unfold over time.
 
+  ## The RL Framework
+
+  ```
+  ┌─────────┐                    ┌──────────────┐
+  │  Agent  │◄───── State ────────┤              │
+  │         │                     │ Environment  │
+  │         ├────── Action ───────►              │
+  └─────────┘◄───── Reward ───────┘              │
+                                  └──────────────┘
+  ```
+
+  The agent perceives the environment state, selects an action, receives a reward, and observes
+  the next state. This cycle repeats, allowing the agent to learn which actions lead to higher
+  cumulative rewards over time.
+
 # Family characteristics
 key_characteristics:
   - name: "Trial and Error Learning"
@@ -112,6 +127,22 @@ complexity:
 
 # Domain-specific sections (can be customized per family)
 domain_sections:
+  - name: "Implemented Algorithms"
+    content: |
+      ## 🎨 Our Implementations
+
+      ### Value-Based Methods
+      - **Q-Learning** (97% coverage) - Off-policy tabular RL
+      - **SARSA** (96% coverage) - On-policy tabular RL
+      - **DQN** (94% coverage) - Deep Q-Network for high-dimensional states
+
+      ### Policy-Based Methods
+      - **Policy Gradient** (100% coverage) - REINFORCE algorithm
+      - **PPO** (91% coverage) - Proximal Policy Optimization, state-of-the-art
+
+      ### Hybrid Methods
+      - **Actor-Critic** (90% coverage) - Combines value and policy learning
+
   - name: "Learning Approaches"
     content: |
       !!! info "Model-Based vs Model-Free"
@@ -138,6 +169,29 @@ domain_sections:
           2. **Policy-Based**: Learn policy directly (REINFORCE, Policy Gradient)
           3. **Actor-Critic**: Combine value and policy learning
           4. **Model-Based**: Learn environment model, plan with it
+
+  - name: "Choosing the Right Algorithm"
+    content: |
+      !!! tip "Algorithm Selection Guide"
+
+          **Use Tabular Methods (Q-Learning, SARSA) when:**
+
+          - Small, discrete state/action spaces
+          - Need guaranteed convergence
+          - Want interpretable results
+
+          **Use Deep RL (DQN, PPO) when:**
+
+          - High-dimensional observations (images, sensors)
+          - Complex state spaces
+          - Need function approximation
+          - Have GPU compute available
+
+          **Use Policy Gradient (REINFORCE, PPO) when:**
+
+          - Continuous action spaces
+          - Stochastic policies needed
+          - Direct policy optimization preferred
 
 # References and resources - point to refs.bib entries
 references:

@@ -115,6 +115,34 @@ complexity:
 
 # Domain-specific sections (can be customized per family)
 domain_sections:
+  - name: "Our Implementations"
+    content: |
+      ## 🎨 State-of-the-Art HRL Algorithms
+
+      ### Options Framework (95% coverage) 🎯
+      **Temporal abstraction through options (closed-loop policies with initiation/termination conditions)**
+
+      - Formal mathematical framework with convergence guarantees
+      - Semi-Markov decision process framework
+      - Flexible option discovery methods
+      - Best for discrete, well-defined subtasks
+
+      ### Feudal RL (98% coverage) 👑
+      **Manager-worker architecture with explicit goal-setting hierarchy**
+
+      - End-to-end differentiable manager-worker networks
+      - Automatic goal discovery in latent space
+      - Handles long-term dependencies
+      - Best for long-horizon continuous control
+
+      ### HIRO (99% coverage) 🚀
+      **Goal-conditioned policies with off-policy correction for sample efficiency**
+
+      - State-of-the-art sample efficiency
+      - Off-policy learning at both levels with goal relabeling
+      - TD3-style target smoothing
+      - Best for sample-limited robotic tasks
+
   - name: "Hierarchical Structures"
     content: |
       !!! info "Types of Hierarchies"
