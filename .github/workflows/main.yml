@@ -51,7 +51,7 @@ jobs:
         run: uv run ruff check src tests
 
       - name: Spell check
-        run: uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley
+        run: uv run codespell src tests docs --ignore-words-list=algokit,jeffrichley,hart
 
   typecheck:
     name: Type Check (MyPy)
