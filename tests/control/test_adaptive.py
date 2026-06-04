@@ -8,6 +8,7 @@ from algokit.algorithms.control.adaptive import (
     AdaptiveControlConfig,
     AdaptiveController,
     FirstOrderReferenceModel,
+    LinearPlant,
     PersistenceOfExcitationMonitor,
     SecondOrderReferenceModel,
     SimpleFirstOrderPlant,
@@ -1093,3 +1094,349 @@ class TestClosedLoopSimulation:
             results["parameters"][-1] - results["parameters"][0]
         )
         assert param_change > 0.01  # Parameters adapted
+
+
+class TestLinearPlant:
+    """Test general linear plant with matrix dynamics."""
+
+    @pytest.mark.unit
+    def test_initialization_scalar(self) -> None:
+        """Test LinearPlant initializes for single-input system."""
+        # Arrange - Define first-order system matrices
+        A = [[-1.0]]
+        B = [[2.0]]
+
+        # Act - Initialize plant
+        plant = LinearPlant(A=A, B=B)
+
+        # Assert - Verify dimensions and matrices
+        assert plant.n_states == 1
+        assert plant.n_inputs == 1
+        assert plant.A.shape == (1, 1)
+        assert plant.B.shape == (1, 1)
+
+    @pytest.mark.unit
+    def test_initialization_multidimensional(self) -> None:
+        """Test LinearPlant initializes for multi-state system."""
+        # Arrange - Define second-order system
+        A = [[-1.0, 0.5], [0.0, -2.0]]
+        B = [[1.0], [0.5]]
+
+        # Act - Initialize plant
+        plant = LinearPlant(A=A, B=B, initial_state=[1.0, 0.5])
+
+        # Assert - Verify dimensions
+        assert plant.n_states == 2
+        assert plant.n_inputs == 1
+        assert np.allclose(plant.state, [1.0, 0.5])
+
+    @pytest.mark.unit
+    def test_initialization_with_lists(self) -> None:
+        """Test LinearPlant accepts Python lists for matrices."""
+        # Arrange - Use Python lists instead of numpy arrays
+        A = [[0.0, 1.0], [-1.0, -0.5]]
+        B = [[0.0], [1.0]]
+
+        # Act - Initialize from lists
+        plant = LinearPlant(A=A, B=B)
+
+        # Assert - Matrices are properly converted to numpy
+        assert isinstance(plant.A, np.ndarray)
+        assert isinstance(plant.B, np.ndarray)
+
+    @pytest.mark.unit
+    def test_initialization_invalid_matrix_dimensions(self) -> None:
+        """Test LinearPlant raises error for incompatible dimensions."""
+        # Arrange - Create non-square A matrix
+        A = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]  # 3x2 (not square)
+        B = [[1.0]]
+
+        # Act & Assert - Should raise ValueError
+        with pytest.raises(ValueError, match="A must be square"):
+            LinearPlant(A=A, B=B)
+
+    @pytest.mark.unit
+    def test_initialization_mismatched_B_dimension(self) -> None:
+        """Test LinearPlant raises error when B rows don't match A."""
+        # Arrange - B has wrong number of rows
+        A = [[1.0, 2.0], [3.0, 4.0]]
+        B = [[1.0]]  # Should be 2x1, not 1x1
+
+        # Act & Assert - Should raise ValueError
+        with pytest.raises(ValueError, match="B rows"):
+            LinearPlant(A=A, B=B)
+
+    @pytest.mark.unit
+    def test_step_updates_state_rk4(self) -> None:
+        """Test step integrates dynamics using RK4."""
+        # Arrange - Simple first-order stable system
+        A = [[-1.0]]
+        B = [[1.0]]
+        plant = LinearPlant(A=A, B=B, initial_state=[0.0])
+
+        # Act - Apply control input
+        output = plant.step(control_input=5.0, dt=0.1)
+
+        # Assert - State should change (RK4 integration)
+        assert output != 0.0
+        assert plant.time == 0.1
+
+    @pytest.mark.unit
+    def test_step_with_disturbance(self) -> None:
+        """Test step applies disturbance to dynamics."""
+
+        # Arrange - Create plant with disturbance
+        def disturbance(t: float) -> np.ndarray:
+            return np.array([2.0])
+
+        A = [[-1.0]]
+        B = [[1.0]]
+        plant = LinearPlant(A=A, B=B, disturbance_fn=disturbance)
+
+        # Act - Step with zero control
+        output = plant.step(control_input=0.0, dt=0.1)
+
+        # Assert - State changes due to disturbance
+        assert output != 0.0
+
+    @pytest.mark.unit
+    def test_step_multidimensional(self) -> None:
+        """Test step works for multi-state systems."""
+        # Arrange - 2D system
+        A = [[0.0, 1.0], [-1.0, -0.5]]
+        B = [[0.0], [1.0]]
+        plant = LinearPlant(A=A, B=B, initial_state=[1.0, 0.0])
+
+        # Act - Apply control
+        output = plant.step(control_input=2.0, dt=0.01)
+
+        # Assert - Returns first state component
+        assert isinstance(output, float)
+        assert plant.state.shape == (2,)
+
+    @pytest.mark.unit
+    def test_get_state(self) -> None:
+        """Test get_state returns current state vector."""
+        # Arrange - Initialize with specific state
+        A = [[0.0]]
+        B = [[1.0]]
+        plant = LinearPlant(A=A, B=B, initial_state=[5.0])
+
+        # Act - Get state
+        state = plant.get_state()
+
+        # Assert - Returns correct state
+        assert isinstance(state, np.ndarray)
+        assert state[0] == 5.0
+
+    @pytest.mark.unit
+    def test_reset(self) -> None:
+        """Test reset returns plant to initial state."""
+        # Arrange - Initialize and advance state
+        A = [[-1.0]]
+        B = [[1.0]]
+        plant = LinearPlant(A=A, B=B, initial_state=[2.0])
+        plant.step(control_input=5.0, dt=0.1)
+
+        # Act - Reset plant
+        plant.reset()
+
+        # Assert - State and time are reset
+        assert plant.state[0] == 2.0
+        assert plant.time == 0.0
+
+
+class TestPEFreezeFeature:
+    """Test PE freeze functionality."""
+
+    @pytest.mark.unit
+    def test_pe_freeze_when_pe_fails(self) -> None:
+        """Test parameters freeze when PE condition fails."""
+        # Arrange - Enable PE monitoring with freeze
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            enable_pe_monitoring=True,
+            freeze_on_pe_failure=True,
+            pe_window_size=10,
+            pe_condition_threshold=50.0,
+        )
+        controller = AdaptiveController(config)
+
+        # Act - Feed non-exciting signal (constant regressor)
+        for _ in range(15):
+            controller.compute(
+                measurement=0.0,
+                regressor=[1.0, 0.0],  # Constant, non-PE signal
+                reference=10.0,
+                dt=0.1,
+            )
+
+        # Assert - Parameters should eventually freeze
+        # (After PE window fills with non-exciting data)
+        assert controller._pe_frozen or not controller.is_persistently_exciting()
+
+    @pytest.mark.unit
+    def test_pe_freeze_disabled_allows_updates(self) -> None:
+        """Test parameters update even without PE when freeze disabled."""
+        # Arrange - PE monitoring but freeze disabled
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            enable_pe_monitoring=True,
+            freeze_on_pe_failure=False,  # Don't freeze
+            pe_window_size=10,
+        )
+        controller = AdaptiveController(config)
+
+        # Act - Feed non-exciting signal
+        initial_params = controller.parameters.copy()
+        for _ in range(15):
+            controller.compute(
+                measurement=0.0, regressor=[1.0, 0.0], reference=10.0, dt=0.1
+            )
+
+        final_params = controller.parameters
+
+        # Assert - Parameters should still update
+        assert not np.allclose(initial_params, final_params)
+
+
+class TestDiagnosticFeatures:
+    """Test diagnostic and reporting features."""
+
+    @pytest.mark.unit
+    def test_get_full_history(self) -> None:
+        """Test get_full_history returns comprehensive data."""
+        # Arrange - Create controller with full tracking
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            track_full_history=True,
+            enable_lyapunov_monitoring=True,
+            enable_pe_monitoring=True,
+        )
+        controller = AdaptiveController(config)
+
+        # Act - Run some steps
+        for _ in range(10):
+            controller.compute(measurement=0.0, regressor=[1.0, 0.0], reference=10.0)
+
+        history = controller.get_full_history()
+
+        # Assert - All expected fields present
+        assert "time" in history
+        assert "measurement" in history
+        assert "reference" in history
+        assert "control" in history
+        assert "error" in history
+        assert "parameters" in history
+        assert "gamma" in history
+        assert "lyapunov" in history
+        assert "pe_condition" in history
+        assert len(history["time"]) == 10
+
+    @pytest.mark.unit
+    def test_report_metrics(self) -> None:
+        """Test report_metrics computes performance indicators."""
+        # Arrange - Create controller and run simulation
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            track_full_history=True,
+            enable_pe_monitoring=True,
+        )
+        controller = AdaptiveController(config)
+
+        for _ in range(20):
+            controller.compute(measurement=0.0, regressor=[1.0, 0.0], reference=10.0)
+
+        # Act - Generate metrics report
+        metrics = controller.report_metrics()
+
+        # Assert - All expected metrics present
+        assert "final_error" in metrics
+        assert "mean_error" in metrics
+        assert "rms_error" in metrics
+        assert "max_error" in metrics
+        assert "convergence_rate" in metrics
+        assert "final_gamma" in metrics
+        assert "mean_gamma" in metrics
+        assert "pe_satisfaction_rate" in metrics
+        assert "mean_pe_condition" in metrics
+
+        # Metrics should be reasonable
+        assert metrics["final_error"] >= 0
+        assert metrics["rms_error"] >= 0
+        assert metrics["final_gamma"] > 0
+
+    @pytest.mark.unit
+    def test_plot_results_no_matplotlib_raises(self) -> None:
+        """Test plot_results raises ImportError if matplotlib missing."""
+        # Arrange - Create controller with history
+        config = AdaptiveControlConfig(num_parameters=2, track_full_history=True)
+        controller = AdaptiveController(config)
+
+        for _ in range(5):
+            controller.compute(measurement=0.0, regressor=[1.0, 0.0], reference=10.0)
+
+        # Act & Assert - Plotting should work or raise ImportError
+        # (Depends on whether matplotlib is installed)
+        try:
+            import matplotlib.pyplot  # noqa: F401
+
+            # If matplotlib available, no exception expected
+            # We can't actually test plotting without mocking
+        except ImportError:
+            # If matplotlib not available, should raise
+            with pytest.raises(ImportError, match="matplotlib"):
+                controller.plot_results()
+
+    @pytest.mark.unit
+    def test_plot_results_no_history_raises(self) -> None:
+        """Test plot_results raises ValueError with no history."""
+        # Arrange - Create controller without running it
+        config = AdaptiveControlConfig(num_parameters=2, track_full_history=False)
+        controller = AdaptiveController(config)
+
+        # Act & Assert - Should raise ValueError
+        with pytest.raises(ValueError, match="No history data"):
+            controller.plot_results()
+
+
+class TestNewConfigFields:
+    """Test new configuration fields."""
+
+    @pytest.mark.unit
+    def test_config_with_pe_freeze(self) -> None:
+        """Test config accepts freeze_on_pe_failure."""
+        # Arrange & Act - Create config with PE freeze enabled
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            enable_pe_monitoring=True,
+            freeze_on_pe_failure=True,
+            pe_min_eigenvalue=1e-4,
+        )
+
+        # Assert - Config fields set correctly
+        assert config.freeze_on_pe_failure is True
+        assert config.pe_min_eigenvalue == 1e-4
+
+    @pytest.mark.unit
+    def test_config_with_lyapunov_matrix(self) -> None:
+        """Test config accepts Lyapunov P matrix."""
+        # Arrange & Act - Create config with P matrix
+        P = [[2.0]]
+        config = AdaptiveControlConfig(
+            num_parameters=2,
+            enable_lyapunov_monitoring=True,
+            lyapunov_p_matrix=P,
+        )
+
+        # Assert - Config accepts matrix
+        assert config.lyapunov_p_matrix == [[2.0]]
+
+    @pytest.mark.unit
+    def test_config_with_full_history_tracking(self) -> None:
+        """Test config accepts track_full_history."""
+        # Arrange & Act - Create config with history tracking
+        config = AdaptiveControlConfig(num_parameters=2, track_full_history=True)
+
+        # Assert - Config field set
+        assert config.track_full_history is True

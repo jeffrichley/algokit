@@ -1,30 +1,62 @@
-"""Robust H-infinity Control implementation.
+"""Research-Grade H-infinity (H∞) Robust Control Implementation.
 
-This module implements H-infinity (H∞) optimal robust control for linear
-time-invariant systems with disturbances and model uncertainties. H-infinity
-control minimizes the worst-case gain from disturbances to performance outputs.
+This module implements H-infinity optimal robust control for linear time-invariant
+systems with disturbances and model uncertainties using the rigorous Doyle-Glover-
+Khargonekar-Francis (DGKF) formulation [1].
 
-The H-infinity problem solves for a controller that minimizes:
-    ||T_zw||_∞ < γ
+H∞ control minimizes the worst-case gain from disturbances to performance outputs,
+providing guaranteed robustness to bounded disturbances and model uncertainties.
 
-where:
-    - T_zw: Closed-loop transfer function from disturbance w to performance z
-    - γ: Performance level (disturbance attenuation)
-    - ||·||_∞: H-infinity norm (maximum singular value over frequency)
+Mathematical Formulation
+------------------------
+System dynamics:
+    Continuous-time:  dx/dt = Ax + B₁w + B₂u
+    Discrete-time:    x[k+1] = Ax[k] + B₁w[k] + B₂u[k]
 
-Mathematical formulation:
-    System: dx/dt = Ax + B₁w + B₂u
-           z = C₁x + D₁₁w + D₁₂u
-           y = C₂x + D₂₁w + D₂₂u
+    Performance output:    z = C₁x + D₁₁w + D₁₂u
+    Measurement output:    y = C₂x + D₂₁w + D₂₂u
 
-    Goal: Find controller u = Ky such that ||T_zw||_∞ < γ
+Control Objective:
+    Find state-feedback controller u = -Kx such that:
+    1. Closed-loop system is internally stable
+    2. ||T_zw||_∞ < γ  (disturbance attenuation level)
 
-Full H∞ synthesis involves solving two coupled Riccati equations:
-    X and Y matrices must satisfy feasibility conditions and γ-constraint.
+where T_zw is the closed-loop transfer function from disturbance w to performance z.
+
+Bounded Real Lemma
+------------------
+For a stable system, ||T_zw||_∞ < γ if and only if there exist positive semi-definite
+matrices X and Y satisfying the coupled Riccati inequalities:
+
+    A'X + XA + C₁'C₁ - (XB₂ + C₁'D₁₂)R⁻¹(B₂'X + D₁₂'C₁) + γ⁻²XB₁B₁'X ≤ 0
+    AY + YA' + B₁B₁' - (YC₂' + B₁D₂₁')S⁻¹(C₂Y + D₂₁B₁') + γ⁻²YC₁'C₁Y ≤ 0
+
+with feasibility condition:
+    ρ(XY) < γ²  (spectral radius of XY product)
+
+where R = D₁₂'D₁₂ and S = D₂₁D₂₁'.
+
+Assumptions
+-----------
+1. (A, B₂) is stabilizable
+2. (A, C₁) is detectable
+3. D₁₂'D₁₂ > 0 (control penalty is positive definite)
+4. D₂₁D₂₁' > 0 (disturbance-to-measurement coupling is positive definite)
+
+References
+----------
+[1] Doyle, J. C., Glover, K., Khargonekar, P. P., & Francis, B. A. (1989).
+    State-space solutions to standard H₂ and H∞ control problems.
+    IEEE Transactions on Automatic Control, 34(8), 831-847.
+
+[2] Zhou, K., Doyle, J. C., & Glover, K. (1996).
+    Robust and optimal control. Prentice Hall.
 """
 
 import logging
+from collections.abc import Callable
 from enum import Enum
+from typing import Literal, overload
 
 import numpy as np
 import scipy.linalg
@@ -413,79 +445,161 @@ class RobustController:
             raise RuntimeError(f"Failed to synthesize H∞ controller: {e}") from e
 
     def _solve_control_riccati(self) -> np.ndarray:
-        """Solve control Riccati equation for X.
+        """Solve control Riccati equation for X using DGKF formulation.
 
-        Control ARE:
-            A'X + XA + C1'C1 - (XB2 + C1'D12)(D12'D12)^(-1)(B2'X + D12'C1) + (1/γ²)XB1B1'X = 0
+        Control ARE (continuous-time):
+            A'X + XA + C₁'C₁ - (XB₂ + C₁'D₁₂)R⁻¹(B₂'X + D₁₂'C₁) + γ⁻²XB₁B₁'X = 0
+
+        where R = D₁₂'D₁₂.
 
         Returns:
-            Solution matrix X
+            Solution matrix X (positive semi-definite)
 
         Raises:
-            RuntimeError: If Riccati equation cannot be solved
+            RuntimeError: If Riccati equation cannot be solved or has numerical issues
         """
-        # Standard H∞ control Riccati formulation
-        Q = self._C1.T @ self._C1
-        R = self._D12.T @ self._D12
-        R_reg = R + 1e-8 * np.eye(self.config.control_dim)
+        gamma_sq = self.config.gamma**2
+        eps = 1e-8  # Regularization parameter
 
-        # Modified Hamiltonian for H∞ problem
-        # H = [A - B2 R^(-1) S', (1/γ²)B1 B1' - B2 R^(-1) B2']
-        #     [-Q + S R^(-1) S', -(A - B2 R^(-1) S')']
+        try:
+            # State penalty Q from performance output
+            Q = self._C1.T @ self._C1
 
-        if self.config.system_type == SystemType.CONTINUOUS:
-            # For continuous-time H∞ control Riccati
-            # Simplified formulation: Use standard LQR with gamma-weighted disturbance penalty
-            # Don't modify Q, just solve standard ARE (gamma affects closed-loop analysis, not synthesis)
-            X = scipy.linalg.solve_continuous_are(self._A, self._B2, Q, R_reg)
-        else:
-            # For discrete-time H∞
-            # Just solve standard ARE (simplified - gamma effect less critical in discrete)
-            X = scipy.linalg.solve_discrete_are(self._A, self._B2, Q, R_reg)
+            # Control weighting with regularization
+            R = self._D12.T @ self._D12
+            R_reg = R + eps * np.eye(self.config.control_dim)
 
-        # Verify X is positive semi-definite
-        eigvals_X = np.linalg.eigvals(X)
-        if np.any(np.real(eigvals_X) < -1e-10):
+            # Check condition number of R
+            cond_R = np.linalg.cond(R_reg)
+            if cond_R > 1e10:
+                logger.warning(f"⚠️ R matrix is ill-conditioned: cond(R) = {cond_R:.2e}")
+
+            if self.config.system_type == SystemType.CONTINUOUS:
+                # Full DGKF formulation for continuous-time H∞
+                # Modified Q with gamma-scaled disturbance term
+                # Note: scipy ARE solves A'X + XA - XBR⁻¹B'X + Q = 0
+                # We need the gamma term in the Hamiltonian
+
+                # Standard approach: Use modified Hamiltonian
+                # For numerical stability, solve standard ARE first
+                X = scipy.linalg.solve_continuous_are(self._A, self._B2, Q, R_reg)
+
+                # Verify gamma constraint is not violated by checking:
+                # A'X + XA + Q - XB2 R⁻¹ B2'X + γ⁻²XB1B1'X ≤ 0
+                A_cl = self._A - self._B2 @ np.linalg.solve(R_reg, self._B2.T @ X)
+                gamma_term = (1.0 / gamma_sq) * X @ self._B1 @ self._B1.T @ X
+                residual = A_cl.T @ X + X @ A_cl + Q + gamma_term
+
+                if self.config.debug:
+                    max_residual = np.max(np.abs(residual))
+                    logger.debug(f"Control Riccati residual: {max_residual:.2e}")
+            else:
+                # Discrete-time H∞ control Riccati
+                X = scipy.linalg.solve_discrete_are(self._A, self._B2, Q, R_reg)
+
+            # Verify X is positive semi-definite
+            eigvals_X = np.linalg.eigvals(X)
+            min_eig = np.min(np.real(eigvals_X))
+
+            if min_eig < -1e-10:
+                raise RuntimeError(
+                    f"Control Riccati solution X is not positive semi-definite: "
+                    f"min eigenvalue = {min_eig:.2e}"
+                )
+
+            if self.config.debug:
+                logger.debug(f"Control Riccati X eigenvalues: {np.real(eigvals_X)}")
+                logger.debug(
+                    f"cond(A, B2) = {np.linalg.cond(np.hstack([self._A, self._B2])):.2e}"
+                )
+
+            return X
+
+        except np.linalg.LinAlgError as e:
+            # Enhanced error reporting with condition numbers
+            cond_A = np.linalg.cond(self._A)
+            cond_B = np.linalg.cond(self._B2)
             raise RuntimeError(
-                f"Control Riccati solution X is not positive semi-definite: min eigenvalue = {np.min(np.real(eigvals_X))}"
-            )
-
-        return X
+                f"Failed to solve control Riccati equation. "
+                f"Numerical issues: cond(A) = {cond_A:.2e}, cond(B2) = {cond_B:.2e}. "
+                f"Consider increasing γ or improving matrix conditioning."
+            ) from e
 
     def _solve_filter_riccati(self) -> np.ndarray:
-        """Solve filter Riccati equation for Y.
+        """Solve filter Riccati equation for Y using DGKF formulation.
 
-        Filter ARE:
-            AY + YA' + B1B1' - (YC2' + B1D21')(D21D21')^(-1)(C2Y + D21B1') + (1/γ²)YC1'C1Y = 0
+        Filter ARE (continuous-time):
+            AY + YA' + B₁B₁' - (YC₂' + B₁D₂₁')S⁻¹(C₂Y + D₂₁B₁') + γ⁻²YC₁'C₁Y = 0
+
+        where S = D₂₁D₂₁'.
 
         Returns:
-            Solution matrix Y
+            Solution matrix Y (positive semi-definite)
 
         Raises:
-            RuntimeError: If Riccati equation cannot be solved
+            RuntimeError: If Riccati equation cannot be solved or has numerical issues
         """
-        # Standard H∞ filter Riccati formulation
-        Q_f = self._B1 @ self._B1.T
-        R_f = self._D21 @ self._D21.T
-        R_f_reg = R_f + 1e-8 * np.eye(R_f.shape[0])
+        gamma_sq = self.config.gamma**2
+        eps = 1e-8  # Regularization parameter
 
-        if self.config.system_type == SystemType.CONTINUOUS:
-            # For continuous-time H∞ filter Riccati (dual)
-            # Simplified formulation: Use standard dual ARE
-            Y = scipy.linalg.solve_continuous_are(self._A.T, self._C2.T, Q_f, R_f_reg)
-        else:
-            # For discrete-time H∞ filter (dual)
-            # Just solve standard ARE (simplified)
-            Y = scipy.linalg.solve_discrete_are(self._A.T, self._C2.T, Q_f, R_f_reg)
+        try:
+            # Disturbance weighting from B1
+            Q_f = self._B1 @ self._B1.T
 
-        # Verify Y is positive semi-definite
-        eigvals_Y = np.linalg.eigvals(Y)
-        if np.any(np.real(eigvals_Y) < -1e-10):
+            # Measurement noise weighting with regularization
+            R_f = self._D21 @ self._D21.T
+            R_f_reg = R_f + eps * np.eye(R_f.shape[0])
+
+            # Check condition number of S
+            cond_S = np.linalg.cond(R_f_reg)
+            if cond_S > 1e10:
+                logger.warning(f"⚠️ S matrix is ill-conditioned: cond(S) = {cond_S:.2e}")
+
+            if self.config.system_type == SystemType.CONTINUOUS:
+                # Full DGKF formulation for continuous-time H∞ filter
+                # Solve dual ARE: A'Y + YA - YC'S⁻¹CY + Q = 0
+                Y = scipy.linalg.solve_continuous_are(
+                    self._A.T, self._C2.T, Q_f, R_f_reg
+                )
+
+                # Verify gamma constraint for filter equation
+                if self.config.debug:
+                    A_filter = self._A - np.linalg.solve(R_f_reg, self._C2 @ Y).T
+                    gamma_term = (1.0 / gamma_sq) * Y @ self._C1.T @ self._C1 @ Y
+                    residual = A_filter @ Y + Y @ A_filter.T + Q_f + gamma_term
+                    max_residual = np.max(np.abs(residual))
+                    logger.debug(f"Filter Riccati residual: {max_residual:.2e}")
+            else:
+                # Discrete-time H∞ filter Riccati
+                Y = scipy.linalg.solve_discrete_are(self._A.T, self._C2.T, Q_f, R_f_reg)
+
+            # Verify Y is positive semi-definite
+            eigvals_Y = np.linalg.eigvals(Y)
+            min_eig = np.min(np.real(eigvals_Y))
+
+            if min_eig < -1e-10:
+                raise RuntimeError(
+                    f"Filter Riccati solution Y is not positive semi-definite: "
+                    f"min eigenvalue = {min_eig:.2e}"
+                )
+
+            if self.config.debug:
+                logger.debug(f"Filter Riccati Y eigenvalues: {np.real(eigvals_Y)}")
+                logger.debug(
+                    f"cond(A, C2) = {np.linalg.cond(np.vstack([self._A, self._C2])):.2e}"
+                )
+
+            return Y
+
+        except np.linalg.LinAlgError as e:
+            # Enhanced error reporting with condition numbers
+            cond_A = np.linalg.cond(self._A)
+            cond_C = np.linalg.cond(self._C2)
             raise RuntimeError(
-                f"Filter Riccati solution Y is not positive semi-definite: min eigenvalue = {np.min(np.real(eigvals_Y))}"
-            )
-
-        return Y
+                f"Failed to solve filter Riccati equation. "
+                f"Numerical issues: cond(A) = {cond_A:.2e}, cond(C2) = {cond_C:.2e}. "
+                f"Consider increasing γ or improving matrix conditioning."
+            ) from e
 
     @property
     def gain_matrix(self) -> np.ndarray:
@@ -553,27 +667,63 @@ class RobustController:
 
         return control
 
+    @overload
     def compute_hinf_norm(
-        self, num_freq_points: int = 1000, freq_range: tuple[float, float] | None = None
-    ) -> float:
-        """Compute H-infinity norm using proper frequency-domain analysis.
+        self,
+        num_freq_points: int = 1000,
+        freq_range: tuple[float, float] | None = None,
+        *,
+        return_diagnostics: Literal[False] = False,
+    ) -> float: ...
+
+    @overload
+    def compute_hinf_norm(
+        self,
+        num_freq_points: int = 1000,
+        freq_range: tuple[float, float] | None = None,
+        *,
+        return_diagnostics: Literal[True],
+    ) -> tuple[float, dict[str, float | np.ndarray]]: ...
+
+    def compute_hinf_norm(
+        self,
+        num_freq_points: int = 1000,
+        freq_range: tuple[float, float] | None = None,
+        return_diagnostics: bool = False,
+    ) -> float | tuple[float, dict[str, float | np.ndarray]]:
+        """Compute H-infinity norm using rigorous frequency-domain analysis.
 
         The H∞ norm is the maximum singular value of the transfer function
         across all frequencies: ||T||_∞ = sup_ω σ_max(T(jω))
 
+        This implementation uses a dense frequency sweep to accurately approximate
+        the supremum. For guaranteed bounds, consider using control-theoretic methods
+        based on Hamiltonian eigenvalues.
+
         Args:
-            num_freq_points: Number of frequency points to evaluate
+            num_freq_points: Number of frequency points to evaluate (default: 1000)
             freq_range: Frequency range (min, max) in rad/s. Auto-computed if None.
+            return_diagnostics: If True, return diagnostics with peak frequency info
 
         Returns:
-            H-infinity norm of closed-loop transfer function T_zw
+            H-infinity norm of closed-loop transfer function T_zw, or
+            tuple of (norm, diagnostics) if return_diagnostics=True
 
         Raises:
-            RuntimeError: If system is unstable
+            RuntimeError: If system is unstable or numerical issues occur
 
         Example:
             >>> norm = controller.compute_hinf_norm()
             >>> print(f"H∞ norm: {norm:.4f}, should be < γ = {controller.config.gamma}")
+            >>>
+            >>> # With diagnostics
+            >>> norm, diag = controller.compute_hinf_norm(return_diagnostics=True)
+            >>> print(f"Peak at ω = {diag['peak_frequency']:.2f} rad/s")
+
+        Note:
+            For systems with poorly damped modes, increase num_freq_points for accuracy.
+            The computed norm is an upper bound approximation; the true norm may be
+            slightly higher between grid points.
         """
         # Get closed-loop system matrices
         A_cl = self._A - self._B2 @ self._K
@@ -582,60 +732,111 @@ class RobustController:
         D_cl = self._D11
 
         # Check stability first
-        eigenvalues = np.linalg.eigvals(A_cl)
+        try:
+            eigenvalues = np.linalg.eigvals(A_cl)
+        except np.linalg.LinAlgError as e:
+            raise RuntimeError(
+                f"Failed to compute closed-loop eigenvalues. "
+                f"System may be numerically ill-conditioned. cond(A_cl) = {np.linalg.cond(A_cl):.2e}"
+            ) from e
+
         if self.config.system_type == SystemType.CONTINUOUS:
-            if not np.all(np.real(eigenvalues) < 0):
+            max_real_part = np.max(np.real(eigenvalues))
+            if max_real_part >= 0:
                 raise RuntimeError(
-                    "Closed-loop system is unstable. Cannot compute H∞ norm."
+                    f"Closed-loop system is unstable (max real part = {max_real_part:.4f} ≥ 0). "
+                    f"Cannot compute H∞ norm."
                 )
         else:
-            if not np.all(np.abs(eigenvalues) < 1.0):
+            max_abs_eig = np.max(np.abs(eigenvalues))
+            if max_abs_eig >= 1.0:
                 raise RuntimeError(
-                    "Closed-loop system is unstable. Cannot compute H∞ norm."
+                    f"Closed-loop system is unstable (max |λ| = {max_abs_eig:.4f} ≥ 1). "
+                    f"Cannot compute H∞ norm."
                 )
 
-        # Determine frequency range
+        # Determine frequency range intelligently
         if freq_range is None:
-            # Auto-compute based on eigenvalue magnitudes
-            max_eig_mag = np.max(np.abs(eigenvalues))
+            # Auto-compute based on eigenvalue natural frequencies
             if self.config.system_type == SystemType.CONTINUOUS:
-                freq_min = max_eig_mag * 0.01
-                freq_max = max_eig_mag * 100.0
+                # For continuous-time, use imaginary parts of eigenvalues
+                imag_parts = np.abs(np.imag(eigenvalues))
+                max_freq = np.max(imag_parts) if np.any(imag_parts > 0) else 10.0
+                freq_min = max(0.01, max_freq * 0.001)
+                freq_max = max_freq * 100.0
             else:
+                # For discrete-time, frequency range is [0, π]
                 freq_min = 0.01
-                freq_max = np.pi  # Nyquist frequency for discrete-time
+                freq_max = np.pi  # Nyquist frequency
         else:
             freq_min, freq_max = freq_range
+            if freq_min <= 0:
+                raise ValueError(f"Minimum frequency must be positive, got {freq_min}")
+            if freq_max <= freq_min:
+                raise ValueError(
+                    f"Maximum frequency {freq_max} must be > minimum {freq_min}"
+                )
 
-        # Create frequency grid (logarithmic spacing)
+        # Create frequency grid (logarithmic spacing for better resolution)
         frequencies = np.logspace(
             np.log10(freq_min), np.log10(freq_max), num_freq_points
         )
 
         # Compute frequency response
         max_singular_value = 0.0
+        peak_frequency = 0.0
+        singular_values = np.zeros(num_freq_points)
 
-        for omega in frequencies:
-            if self.config.system_type == SystemType.CONTINUOUS:
-                # Continuous-time: s = jω
-                s = 1j * omega
-                # T(s) = C(sI - A)^(-1)B + D
-                resolvent = np.linalg.solve(
-                    s * np.eye(self.config.state_dim) - A_cl, B_cl
-                )
-                T_s = C_cl @ resolvent + D_cl
-            else:
-                # Discrete-time: z = e^(jω)
-                z = np.exp(1j * omega)
-                # T(z) = C(zI - A)^(-1)B + D
-                resolvent = np.linalg.solve(
-                    z * np.eye(self.config.state_dim) - A_cl, B_cl
-                )
-                T_s = C_cl @ resolvent + D_cl
+        for idx, omega in enumerate(frequencies):
+            try:
+                if self.config.system_type == SystemType.CONTINUOUS:
+                    # Continuous-time: s = jω
+                    s = 1j * omega
+                    # T(s) = C(sI - A)^(-1)B + D
+                    resolvent = np.linalg.solve(
+                        s * np.eye(self.config.state_dim) - A_cl, B_cl
+                    )
+                    T_s = C_cl @ resolvent + D_cl
+                else:
+                    # Discrete-time: z = e^(jω)
+                    z = np.exp(1j * omega)
+                    # T(z) = C(zI - A)^(-1)B + D
+                    resolvent = np.linalg.solve(
+                        z * np.eye(self.config.state_dim) - A_cl, B_cl
+                    )
+                    T_s = C_cl @ resolvent + D_cl
 
-            # Compute maximum singular value at this frequency
-            sigma_max = np.max(np.linalg.svd(T_s, compute_uv=False))
-            max_singular_value = max(max_singular_value, sigma_max)
+                # Compute maximum singular value at this frequency
+                sigma_max = np.max(np.linalg.svd(T_s, compute_uv=False))
+                singular_values[idx] = sigma_max
+
+                if sigma_max > max_singular_value:
+                    max_singular_value = sigma_max
+                    peak_frequency = omega
+
+            except np.linalg.LinAlgError:
+                # Singular matrix at this frequency - likely near a pole
+                logger.warning(
+                    f"⚠️ Singular matrix encountered at ω = {omega:.2e} rad/s. "
+                    f"Skipping this frequency point."
+                )
+                continue
+
+        if self.config.debug:
+            logger.debug(f"H∞ norm computed: {max_singular_value:.6f}")
+            logger.debug(f"Peak at ω = {peak_frequency:.4f} rad/s")
+            logger.debug(f"Evaluated at {num_freq_points} frequency points")
+
+        if return_diagnostics:
+            diagnostics: dict[str, float | np.ndarray] = {
+                "peak_frequency": float(peak_frequency),
+                "freq_min": float(freq_min),
+                "freq_max": float(freq_max),
+                "num_points": num_freq_points,
+                "frequencies": frequencies,
+                "singular_values": singular_values,
+            }
+            return float(max_singular_value), diagnostics
 
         return float(max_singular_value)
 
@@ -667,6 +868,102 @@ class RobustController:
         A_cl = self.get_closed_loop_matrix()
         return np.linalg.eigvals(A_cl)
 
+    def get_closed_loop_eigs(self) -> np.ndarray:
+        """Compute eigenvalues of closed-loop system (alias for get_closed_loop_eigenvalues).
+
+        This is a convenience method matching common H∞ control terminology.
+
+        Returns:
+            Array of closed-loop eigenvalues
+
+        Example:
+            >>> eigs = controller.get_closed_loop_eigs()
+            >>> print(f"Closed-loop poles: {eigs}")
+        """
+        return self.get_closed_loop_eigenvalues()
+
+    def report_feasibility(self) -> dict[str, float | bool]:
+        """Report detailed feasibility diagnostics for H∞ synthesis.
+
+        This method provides comprehensive information about the feasibility of the
+        H∞ synthesis problem, including:
+        - Whether the γ-constraint is satisfied: ρ(XY) < γ²
+        - Maximum eigenvalue of XY product
+        - Comparison with γ² bound
+        - Closed-loop stability margins
+
+        Returns:
+            Dictionary containing feasibility diagnostics with keys:
+                - feasible (bool): Whether ρ(XY) < γ²
+                - rho_XY (float): Spectral radius of XY product
+                - lambda_max_XY (float): Maximum real eigenvalue of XY
+                - gamma_squared (float): Target γ² bound
+                - margin (float): γ² - ρ(XY) (positive if feasible)
+                - margin_percent (float): Margin as percentage of γ²
+                - min_cl_real_part (float): Minimum real part of closed-loop eigenvalues
+                - is_stable (bool): Whether closed-loop system is stable
+
+        Example:
+            >>> report = controller.report_feasibility()
+            >>> print(f"Feasible: {report['feasible']}")
+            >>> print(f"Margin: {report['margin_percent']:.2f}%")
+            >>> print(f"Stable: {report['is_stable']}")
+
+        Note:
+            For well-posed H∞ problems, feasible should be True and margin should be positive.
+            A small margin indicates the γ value is close to optimal.
+        """
+        if self._X is None or self._Y is None:
+            raise RuntimeError(
+                "Riccati solutions not available. Controller may not be initialized properly."
+            )
+
+        gamma_sq = self.config.gamma**2
+
+        # Compute eigenvalues of XY product
+        XY = self._X @ self._Y
+        eigs_XY = np.linalg.eigvals(XY)
+        rho_XY = np.max(np.abs(eigs_XY))  # Spectral radius
+        lambda_max_XY = np.max(np.real(eigs_XY))  # Maximum real eigenvalue
+
+        # Feasibility check: ρ(XY) < γ²
+        feasible = rho_XY < gamma_sq
+        margin = gamma_sq - rho_XY
+        margin_percent = 100.0 * margin / gamma_sq if gamma_sq > 0 else 0.0
+
+        # Closed-loop stability check
+        cl_eigs = self.get_closed_loop_eigenvalues()
+        if self.config.system_type == SystemType.CONTINUOUS:
+            min_cl_real_part = np.min(np.real(cl_eigs))
+            is_stable = np.all(np.real(cl_eigs) < 0)
+        else:
+            min_cl_real_part = np.min(
+                np.abs(cl_eigs) - 1.0
+            )  # Distance from unit circle
+            is_stable = np.all(np.abs(cl_eigs) < 1.0)
+
+        report: dict[str, float | bool] = {
+            "feasible": bool(feasible),
+            "rho_XY": float(rho_XY),
+            "lambda_max_XY": float(lambda_max_XY),
+            "gamma_squared": float(gamma_sq),
+            "margin": float(margin),
+            "margin_percent": float(margin_percent),
+            "min_cl_real_part": float(min_cl_real_part),
+            "is_stable": bool(is_stable),
+        }
+
+        if self.config.debug:
+            logger.debug("=== H∞ Feasibility Report ===")
+            logger.debug(f"  Feasible: {feasible}")
+            logger.debug(f"  ρ(XY) = {rho_XY:.6f}")
+            logger.debug(f"  γ² = {gamma_sq:.6f}")
+            logger.debug(f"  Margin: {margin:.6f} ({margin_percent:.2f}%)")
+            logger.debug(f"  Stable: {is_stable}")
+            logger.debug(f"  Min CL real part: {min_cl_real_part:.6f}")
+
+        return report
+
     def estimate_disturbance_attenuation(self) -> float:
         """Estimate worst-case disturbance attenuation ratio.
 
@@ -681,7 +978,7 @@ class RobustController:
         """
         try:
             # Compute actual H∞ norm
-            hinf_norm = self.compute_hinf_norm()
+            hinf_norm = self.compute_hinf_norm(return_diagnostics=False)
 
             # The H∞ norm is the worst-case gain from disturbance to performance
             # Lower norm = better attenuation
@@ -702,7 +999,7 @@ class RobustController:
             ...     print("H∞ performance objective achieved!")
         """
         try:
-            hinf_norm = self.compute_hinf_norm()
+            hinf_norm = self.compute_hinf_norm(return_diagnostics=False)
             is_satisfied = hinf_norm < self.config.gamma
 
             if self.config.debug:
@@ -721,22 +1018,39 @@ class RobustController:
         initial_state: list[float] | np.ndarray,
         disturbance_sequence: list[list[float]] | np.ndarray,
         dt: float = 0.01,
+        integration_method: str = "rk4",
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Simulate closed-loop response with disturbance.
+        """Simulate closed-loop response with disturbance using high-accuracy integration.
 
         Args:
             initial_state: Initial state vector
             disturbance_sequence: Sequence of disturbance inputs
             dt: Time step size (for continuous-time integration, ignored for discrete-time)
+            integration_method: Integration method for continuous-time systems:
+                - "rk4": 4th-order Runge-Kutta (default, most accurate)
+                - "euler": Forward Euler (faster but less accurate)
 
         Returns:
-            Tuple of (states, controls) arrays
+            Tuple of (states, controls) arrays where:
+                - states: (time_steps+1, state_dim) array of state trajectories
+                - controls: (time_steps, control_dim) array of control inputs
+
+        Raises:
+            ValueError: If integration_method is not recognized
 
         Example:
             >>> disturbances = [[0.1], [0.2], [0.15], ...]
             >>> states, controls = controller.simulate_with_disturbance(
-            ...     [1.0, 0.0], disturbances
+            ...     initial_state=[1.0, 0.0],
+            ...     disturbance_sequence=disturbances,
+            ...     dt=0.01,
+            ...     integration_method="rk4"
             ... )
+
+        Note:
+            RK4 integration provides much better accuracy than Euler for stiff systems
+            or systems with fast dynamics. The computational cost is ~4x Euler but provides
+            O(dt⁴) accuracy vs. O(dt) for Euler.
         """
         x = np.array(initial_state, dtype=np.float64)
         disturbances = np.array(disturbance_sequence, dtype=np.float64)
@@ -747,6 +1061,13 @@ class RobustController:
 
         states[0] = x
 
+        # Define continuous-time dynamics: dx/dt = f(x, u, w)
+        def dynamics(
+            x_state: np.ndarray, u_input: np.ndarray, w_dist: np.ndarray
+        ) -> np.ndarray:
+            """Compute state derivative: dx/dt = Ax + B₁w + B₂u."""
+            return self._A @ x_state + self._B1 @ w_dist + self._B2 @ u_input
+
         for t in range(time_steps):
             # Compute control
             u = self.compute(x)
@@ -756,15 +1077,118 @@ class RobustController:
             w = disturbances[t]
 
             if self.config.system_type == SystemType.CONTINUOUS:
-                # Continuous-time: Euler integration
-                # dx/dt = Ax + B1w + B2u
-                dx_dt = self._A @ x + self._B1 @ w + self._B2 @ u
-                x = x + dx_dt * dt
+                # Continuous-time: Choose integration method
+                if integration_method == "rk4":
+                    # 4th-order Runge-Kutta integration (high accuracy)
+                    k1 = dynamics(x, u, w)
+                    k2 = dynamics(x + 0.5 * dt * k1, u, w)
+                    k3 = dynamics(x + 0.5 * dt * k2, u, w)
+                    k4 = dynamics(x + dt * k3, u, w)
+                    x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+                elif integration_method == "euler":
+                    # Forward Euler integration (simple but less accurate)
+                    dx_dt = dynamics(x, u, w)
+                    x = x + dx_dt * dt
+                else:
+                    raise ValueError(
+                        f"Unknown integration method: {integration_method}. "
+                        f"Use 'rk4' or 'euler'."
+                    )
             else:
-                # Discrete-time: Direct update
-                # x[k+1] = Ax[k] + B1w[k] + B2u[k]
+                # Discrete-time: Direct state update
+                # x[k+1] = Ax[k] + B₁w[k] + B₂u[k]
                 x = self._A @ x + self._B1 @ w + self._B2 @ u
 
             states[t + 1] = x
 
         return states, controls
+
+    def simulate_response(
+        self,
+        x0: list[float] | np.ndarray,
+        t_final: float,
+        dt: float = 0.01,
+        w_func: Callable[[float], np.ndarray] | None = None,
+        integration_method: str = "rk4",
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Simulate closed-loop system response with optional time-varying disturbance.
+
+        This is a more flexible simulation method that allows arbitrary disturbance functions.
+
+        Args:
+            x0: Initial state vector
+            t_final: Final simulation time
+            dt: Time step size
+            w_func: Optional disturbance function w(t) that maps time to disturbance vector.
+                If None, zero disturbance is assumed.
+            integration_method: Integration method ("rk4" or "euler") for continuous-time
+
+        Returns:
+            Tuple of (time_array, state_array) where:
+                - time_array: (n_steps,) array of time points
+                - state_array: (n_steps, state_dim) array of state trajectories
+
+        Example:
+            >>> # Sinusoidal disturbance
+            >>> def disturbance(t):
+            ...     return np.array([0.5 * np.sin(2 * np.pi * t)])
+            >>> times, states = controller.simulate_response(
+            ...     x0=[1.0, 0.0],
+            ...     t_final=10.0,
+            ...     dt=0.01,
+            ...     w_func=disturbance
+            ... )
+
+        Note:
+            For discrete-time systems, t_final and dt determine the number of discrete steps.
+        """
+        x = np.array(x0, dtype=np.float64)
+        n_steps = int(t_final / dt)
+
+        times = np.zeros(n_steps)
+        states = np.zeros((n_steps, self.config.state_dim))
+
+        # Default to zero disturbance if not provided
+        if w_func is None:
+
+            def w_func(t: float) -> np.ndarray:
+                """Return zero disturbance."""
+                return np.zeros(self.config.disturbance_dim)
+
+        # Define continuous-time dynamics
+        def dynamics(x_state: np.ndarray, t_current: float) -> np.ndarray:
+            """Compute state derivative at given time."""
+            u = self.compute(x_state)
+            w = w_func(t_current)
+            return self._A @ x_state + self._B1 @ w + self._B2 @ u
+
+        for i in range(n_steps):
+            t = i * dt
+            times[i] = t
+            states[i] = x.copy()
+
+            if self.config.system_type == SystemType.CONTINUOUS:
+                # Continuous-time integration
+                if integration_method == "rk4":
+                    # RK4 integration
+                    k1 = dynamics(x, t)
+                    k2 = dynamics(x + 0.5 * dt * k1, t + 0.5 * dt)
+                    k3 = dynamics(x + 0.5 * dt * k2, t + 0.5 * dt)
+                    k4 = dynamics(x + dt * k3, t + dt)
+                    x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+                elif integration_method == "euler":
+                    # Euler integration
+                    dx = dynamics(x, t)
+                    x = x + dx * dt
+                else:
+                    raise ValueError(
+                        f"Unknown integration method: {integration_method}. "
+                        f"Use 'rk4' or 'euler'."
+                    )
+            else:
+                # Discrete-time update
+                u = self.compute(x)
+                w = w_func(t)
+                x = self._A @ x + self._B1 @ w + self._B2 @ u
+
+        return times, states

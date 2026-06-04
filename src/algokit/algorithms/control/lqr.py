@@ -4,33 +4,56 @@ This module implements the Linear Quadratic Regulator for optimal state
 feedback control of linear time-invariant systems. LQR minimizes a quadratic
 cost function while satisfying system dynamics constraints.
 
-The LQR problem solves:
-    min J = ∫(x'Qx + u'Ru) dt
+Mathematical Background
+-----------------------
+The LQR problem minimizes the infinite-horizon cost functional:
+    J = ∫₀^∞ (x'Qx + u'Ru) dt    [continuous-time]
+    J = ∑ₖ₌₀^∞ (xₖ'Qxₖ + uₖ'Ruₖ) [discrete-time]
 
-for the linear system:
-    dx/dt = Ax + Bu
+subject to the linear system dynamics:
+    dx/dt = Ax + Bu              [continuous-time]
+    xₖ₊₁ = Axₖ + Buₖ             [discrete-time]
 
-The solution is a state feedback controller:
+The optimal control law is a linear state feedback:
     u = -Kx
 
-where K is computed by solving the Algebraic Riccati Equation (ARE):
+where the gain matrix K is derived from the solution P to the Algebraic
+Riccati Equation (ARE):
+
+Continuous-time ARE:
     A'P + PA - PBR⁻¹B'P + Q = 0
 
-Mathematical formulation:
-    - Q: State cost matrix (positive semi-definite)
-    - R: Control cost matrix (positive definite)
-    - K: Optimal feedback gain matrix
-    - P: Solution to Algebraic Riccati Equation
+Discrete-time ARE:
+    P = A'PA - A'PB(B'PB + R)⁻¹B'PA + Q
 
-Improvements:
-    - Regularization for numerical stability
-    - Stabilizability verification before solving ARE
-    - Runge-Kutta 4th order integration
-    - Discrete-time LQR support
-    - Cholesky-based positive definiteness checks
+The optimal gain is:
+    K = R⁻¹B'P                    [continuous-time]
+    K = (B'PB + R)⁻¹B'PA          [discrete-time]
+
+Closed-Loop Guarantees
+----------------------
+For a stabilizable system (A, B), the LQR controller guarantees:
+1. Closed-loop stability: All eigenvalues of (A - BK) have negative
+   real parts (continuous) or magnitude < 1 (discrete)
+2. Optimality: The control minimizes the cost functional J
+3. Phase margin ≥ 60° and gain margin ≥ ∞ (robustness guarantees)
+4. Lyapunov stability with V(x) = x'Px as the Lyapunov function
+
+Key Features
+------------
+- Continuous and discrete-time LQR via solve_continuous_are/solve_discrete_are
+- Numerical stability through R-matrix regularization
+- Stabilizability verification before solving ARE
+- RK4 integration for high-accuracy continuous-time simulation
+- Controllability diagnostics with rank and condition number reporting
+- Reference tracking with feedforward compensation
+- Control saturation with anti-windup
+- Process noise modeling for stochastic simulation
+- Rich diagnostics: closed-loop eigenvalues, controllability metrics
 """
 
 import logging
+import warnings
 from enum import Enum
 
 import numpy as np
@@ -354,7 +377,9 @@ class LQRController:
     def _solve_lqr(self) -> tuple[np.ndarray, np.ndarray]:
         """Solve the Algebraic Riccati Equation (continuous or discrete).
 
-        Uses regularized R matrix for numerical stability.
+        Uses regularized R matrix for numerical stability. Provides detailed
+        diagnostics if the solver fails, including condition numbers of
+        critical matrices.
 
         Returns:
             Tuple of (K, P) where:
@@ -362,7 +387,8 @@ class LQRController:
                 P: Solution to Riccati equation
 
         Raises:
-            RuntimeError: If Riccati equation has no solution
+            RuntimeError: If Riccati equation has no solution, with diagnostic
+                information about matrix conditioning
         """
         try:
             if self.config.lqr_type == LQRType.CONTINUOUS:
@@ -386,9 +412,27 @@ class LQRController:
             return K, P
 
         except np.linalg.LinAlgError as e:
-            raise RuntimeError(
-                f"Failed to solve Algebraic Riccati Equation: {e}"
-            ) from e
+            # Compute diagnostic information for debugging
+            cond_R = np.linalg.cond(self._R_reg)
+            cond_Q = np.linalg.cond(self._Q)
+            cond_A = np.linalg.cond(self._A)
+
+            # Compute controllability matrix for additional diagnostics
+            ctrb = self._compute_controllability_matrix()
+            cond_ctrb = np.linalg.cond(ctrb)
+            rank_ctrb = np.linalg.matrix_rank(ctrb)
+
+            error_msg = (
+                f"Failed to solve Algebraic Riccati Equation.\n"
+                f"Matrix conditioning diagnostics:\n"
+                f"  - cond(R) = {cond_R:.2e} (regularized)\n"
+                f"  - cond(Q) = {cond_Q:.2e}\n"
+                f"  - cond(A) = {cond_A:.2e}\n"
+                f"  - Controllability rank = {rank_ctrb}/{self.config.state_dim}\n"
+                f"  - cond(Controllability) = {cond_ctrb:.2e}\n"
+                f"Original error: {e}"
+            )
+            raise RuntimeError(error_msg) from e
 
     @property
     def gain_matrix(self) -> np.ndarray:
@@ -503,12 +547,50 @@ class LQRController:
 
         return saturated
 
+    def compute_control(
+        self,
+        state: list[float] | np.ndarray,
+        reference: list[float] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Compute optimal control for given state with saturation.
+
+        This is the primary API for computing instantaneous control signals.
+        Computes u = -K(x - x_ref) + u_feedforward with optional saturation.
+
+        Args:
+            state: Current state vector
+            reference: Optional reference state (default is zero)
+
+        Returns:
+            Control input vector (with saturation if configured)
+
+        Raises:
+            ValueError: If state dimension is incorrect
+
+        Example:
+            >>> controller = LQRController(config)
+            >>> u = controller.compute_control(state=[1.0, 0.5])
+            >>> # With reference tracking
+            >>> u = controller.compute_control(state=[1.0, 0.5], reference=[2.0, 0.0])
+        """
+        # Compute raw control
+        control = self.compute_raw_control(state, reference)
+
+        # Apply saturation
+        control = self.apply_saturation(control)
+
+        return control
+
     def compute(
         self,
         state: list[float] | np.ndarray,
         reference: list[float] | np.ndarray | None = None,
     ) -> np.ndarray:
         """Compute optimal control for given state with saturation.
+
+        .. deprecated::
+            Use :meth:`compute_control` instead. This method is maintained for
+            backward compatibility and will be removed in a future version.
 
         Args:
             state: Current state vector
@@ -524,13 +606,12 @@ class LQRController:
             >>> controller = LQRController(config)
             >>> u = controller.compute(state=[1.0, 0.5])
         """
-        # Compute raw control
-        control = self.compute_raw_control(state, reference)
-
-        # Apply saturation
-        control = self.apply_saturation(control)
-
-        return control
+        warnings.warn(
+            "compute() is deprecated, use compute_control() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.compute_control(state, reference)
 
     def compute_cost(
         self, state: list[float] | np.ndarray, control: list[float] | np.ndarray
@@ -555,6 +636,22 @@ class LQRController:
 
         return float(state_cost + control_cost)
 
+    def _compute_controllability_matrix(self) -> np.ndarray:
+        """Compute the controllability matrix [B AB A²B ... A^(n-1)B].
+
+        Returns:
+            Controllability matrix of shape (state_dim, state_dim * control_dim)
+        """
+        n = self.config.state_dim
+        controllability_matrix = self._B.copy()
+        A_power_B = self._B.copy()
+
+        for _ in range(1, n):
+            A_power_B = self._A @ A_power_B
+            controllability_matrix = np.hstack([controllability_matrix, A_power_B])
+
+        return controllability_matrix
+
     def is_controllable(self) -> bool:
         """Check if the system (A, B) is controllable.
 
@@ -569,17 +666,11 @@ class LQRController:
             ...     print("System is controllable")
         """
         # Compute controllability matrix [B AB A²B ... A^(n-1)B]
-        n = self.config.state_dim
-        controllability_matrix = self._B.copy()
-        A_power_B = self._B.copy()
-
-        for _ in range(1, n):
-            A_power_B = self._A @ A_power_B
-            controllability_matrix = np.hstack([controllability_matrix, A_power_B])
+        controllability_matrix = self._compute_controllability_matrix()
 
         # System is controllable if rank = n
         rank = np.linalg.matrix_rank(controllability_matrix)
-        return rank == n
+        return rank == self.config.state_dim
 
     def is_stabilizable(self) -> bool:
         """Check if the system (A, B) is stabilizable.
@@ -618,42 +709,114 @@ class LQRController:
     def get_closed_loop_eigenvalues(self) -> np.ndarray:
         """Compute eigenvalues of closed-loop system A - BK.
 
+        For continuous-time systems, stability requires Re(λ) < 0 for all λ.
+        For discrete-time systems, stability requires |λ| < 1 for all λ.
+
         Returns:
             Array of closed-loop eigenvalues
 
         Example:
             >>> eigenvalues = controller.get_closed_loop_eigenvalues()
+            >>> # Check stability for continuous-time
             >>> print(f"All stable: {np.all(np.real(eigenvalues) < 0)}")
+            >>> # Check stability for discrete-time
+            >>> print(f"All stable: {np.all(np.abs(eigenvalues) < 1)}")
         """
         closed_loop_A = self._A - self._B @ self._K
         return np.linalg.eigvals(closed_loop_A)
 
-    def simulate(
+    def report_controllability(self) -> dict[str, float | int]:
+        """Report controllability diagnostics for the system.
+
+        Computes the controllability matrix C = [B AB A²B ... A^(n-1)B] and
+        returns its rank and condition number. This helps diagnose numerical
+        issues and verify that the system can be controlled.
+
+        A system is controllable if rank(C) = n (state dimension).
+        A well-conditioned controllability matrix (cond < 1e8) indicates
+        good numerical properties for control design.
+
+        Returns:
+            Dictionary containing:
+                - 'rank': Rank of controllability matrix
+                - 'full_rank': Whether system is controllable (rank == state_dim)
+                - 'condition_number': Condition number of controllability matrix
+                - 'state_dim': Expected full rank (state dimension)
+
+        Example:
+            >>> diag = controller.report_controllability()
+            >>> print(f"Controllable: {diag['full_rank']}")
+            >>> print(f"Rank: {diag['rank']}/{diag['state_dim']}")
+            >>> print(f"Condition number: {diag['condition_number']:.2e}")
+        """
+        controllability_matrix = self._compute_controllability_matrix()
+        rank = np.linalg.matrix_rank(controllability_matrix)
+        condition_number = np.linalg.cond(controllability_matrix)
+
+        return {
+            "rank": int(rank),
+            "full_rank": bool(rank == self.config.state_dim),
+            "condition_number": float(condition_number),
+            "state_dim": int(self.config.state_dim),
+        }
+
+    def simulate_response(
         self,
         initial_state: list[float] | np.ndarray,
         time_steps: int,
         dt: float = 0.01,
         integration_method: str = "rk4",
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Simulate closed-loop system response.
+        process_noise_std: float | None = None,
+        reference: list[float] | np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Simulate closed-loop system response with optional process noise.
+
+        Simulates the system dynamics under LQR control using high-accuracy
+        RK4 integration (for continuous-time) or exact discrete-time updates.
+        Optionally adds Gaussian process noise for stochastic simulation.
 
         Args:
             initial_state: Initial state vector
             time_steps: Number of simulation steps
             dt: Time step size (ignored for discrete-time systems)
             integration_method: Integration method ('euler' or 'rk4')
+            process_noise_std: Standard deviation of Gaussian process noise
+                added to each state (default: None = no noise)
+            reference: Optional reference trajectory to track (default: zero)
 
         Returns:
-            Tuple of (states, controls) arrays
+            Tuple of (times, states, controls) arrays where:
+                - times: Array of time points (time_steps + 1,)
+                - states: State trajectory (time_steps + 1, state_dim)
+                - controls: Control trajectory (time_steps, control_dim)
 
         Example:
-            >>> states, controls = controller.simulate([1.0, 0.0], time_steps=100)
+            >>> # Basic simulation
+            >>> times, states, controls = controller.simulate_response(
+            ...     initial_state=[1.0, 0.0], time_steps=100, dt=0.01
+            ... )
+            >>> # With process noise
+            >>> times, states, controls = controller.simulate_response(
+            ...     initial_state=[1.0, 0.0],
+            ...     time_steps=100,
+            ...     dt=0.01,
+            ...     process_noise_std=0.01
+            ... )
+            >>> # With reference tracking
+            >>> times, states, controls = controller.simulate_response(
+            ...     initial_state=[0.0, 0.0],
+            ...     time_steps=100,
+            ...     dt=0.01,
+            ...     reference=[5.0, 0.0]
+            ... )
         """
         x = np.array(initial_state, dtype=np.float64)
         states = np.zeros((time_steps + 1, self.config.state_dim))
         controls = np.zeros((time_steps, self.config.control_dim))
+        times = np.zeros(time_steps + 1)
 
         states[0] = x
+        times[0] = 0.0
 
         # Use configured dt for discrete systems
         if self.config.lqr_type == LQRType.DISCRETE:
@@ -663,7 +826,7 @@ class LQRController:
 
         for t in range(time_steps):
             # Compute control
-            u = self.compute(x)
+            u = self.compute_control(x, reference=reference)
             controls[t] = u
 
             # Integrate system dynamics
@@ -678,8 +841,49 @@ class LQRController:
                     dx_dt = self._A @ x + self._B @ u
                     x = x + dx_dt * dt
 
-            states[t + 1] = x
+            # Add process noise if requested
+            if process_noise_std is not None and process_noise_std > 0:
+                noise = np.random.normal(0, process_noise_std, size=x.shape)
+                x = x + noise
 
+            states[t + 1] = x
+            times[t + 1] = times[t] + dt
+
+        return times, states, controls
+
+    def simulate(
+        self,
+        initial_state: list[float] | np.ndarray,
+        time_steps: int,
+        dt: float = 0.01,
+        integration_method: str = "rk4",
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Simulate closed-loop system response.
+
+        .. deprecated::
+            Use :meth:`simulate_response` instead. This method is maintained for
+            backward compatibility and will be removed in a future version.
+
+        Args:
+            initial_state: Initial state vector
+            time_steps: Number of simulation steps
+            dt: Time step size (ignored for discrete-time systems)
+            integration_method: Integration method ('euler' or 'rk4')
+
+        Returns:
+            Tuple of (states, controls) arrays
+
+        Example:
+            >>> states, controls = controller.simulate([1.0, 0.0], time_steps=100)
+        """
+        warnings.warn(
+            "simulate() is deprecated, use simulate_response() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        _, states, controls = self.simulate_response(
+            initial_state, time_steps, dt, integration_method
+        )
         return states, controls
 
     def _rk4_step(self, x: np.ndarray, u: np.ndarray, dt: float) -> np.ndarray:

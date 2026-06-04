@@ -1,30 +1,46 @@
-"""Adaptive Control implementation with parameter estimation.
+"""Research-Grade Model Reference Adaptive Control (MRAC) Implementation.
 
-This module implements Model Reference Adaptive Control (MRAC) using the
-MIT rule for parameter adaptation. Adaptive controllers automatically adjust
-their parameters to maintain optimal performance as system dynamics change.
+This module implements canonical Model Reference Adaptive Control (MRAC) with
+advanced stability features and diagnostics. The implementation is suitable for
+research, education, and production control applications.
 
-The controller compares system output with a reference model and adjusts
-parameters to minimize the tracking error. This is particularly useful for:
-- Systems with uncertain or time-varying parameters
-- Plants with changing dynamics
-- Applications requiring robust performance
+Mathematical Formulation
+------------------------
+The canonical MRAC adaptation law:
+    θ̇ = -Γ φ e  (with optional normalization)
 
-Mathematical formulation:
-    θ(t+1) = θ(t) + γ(t) * φ(t) * e(t)
+Control law:
+    u = θᵀ φ
 
-where:
-    - θ: Adaptive parameter vector
-    - γ(t): Adaptive learning rate (dynamically adjusted)
-    - φ: Regressor vector (features)
-    - e: Tracking error
+Reference model dynamics:
+    ẋₘ = Aₘxₘ + Bₘr
 
-Advanced features:
-    - Dynamic reference model with state dynamics
-    - Persistence of excitation monitoring
-    - Adaptive learning rate scheduling
-    - Lyapunov stability verification
-    - Integrated plant simulation utilities
+Plant dynamics (linear):
+    ẋ = Ax + Bu + d(t)
+
+Lyapunov function:
+    V = eᵀPe + θ̃ᵀΓ⁻¹θ̃
+
+Advanced Features
+-----------------
+- **Canonical MRAC formulation** with rigorous mathematical foundation
+- **Sigma modification** for robustness and drift prevention
+- **Normalized gradient** for stability under large regressor values
+- **Dead-zone logic** to prevent adaptation under small errors
+- **Persistence of excitation (PE) monitoring** with automatic freeze
+- **Adaptive gain scheduling** Γ(t) based on error magnitude and PE metrics
+- **Lyapunov stability monitoring** with derivative computation
+- **RK4 integration** for accurate simulation
+- **Comprehensive diagnostics** with plotting and reporting tools
+- **Matrix-form plant dynamics** supporting multi-input systems
+- **Parameter projection** for bounded adaptation
+
+Applications
+------------
+- Aerospace flight control with uncertain aerodynamics
+- Robotic manipulators with payload variations
+- Process control with time-varying parameters
+- Any system requiring automatic parameter tuning
 """
 
 import logging
@@ -239,12 +255,140 @@ class SecondOrderReferenceModel:
         self.velocity = self.initial_velocity
 
 
+class LinearPlant:
+    """General linear plant with matrix-form dynamics.
+
+    Implements: ẋ = Ax + Bu + d(t)
+
+    where:
+        - x: State vector (n-dimensional)
+        - u: Control input (scalar or vector)
+        - A: System matrix (n x n)
+        - B: Input matrix (n x m)
+        - d(t): Optional disturbance vector function
+
+    This is the most general form suitable for MRAC applications.
+    Uses RK4 integration for accurate state propagation.
+    """
+
+    def __init__(
+        self,
+        A: np.ndarray | list[list[float]],
+        B: np.ndarray | list[float] | list[list[float]],
+        initial_state: np.ndarray | list[float] | None = None,
+        disturbance_fn: Callable[[float], np.ndarray] | None = None,
+    ) -> None:
+        """Initialize linear plant.
+
+        Args:
+            A: System matrix (n x n)
+            B: Input matrix (n x m) or vector (n,) for single input
+            initial_state: Initial state vector (n,), defaults to zeros
+            disturbance_fn: Optional disturbance function(time) -> (n,)
+
+        Raises:
+            ValueError: If matrix dimensions are incompatible
+        """
+        # Convert to numpy arrays
+        self.A = np.atleast_2d(np.array(A, dtype=np.float64))
+        self.B = np.atleast_2d(np.array(B, dtype=np.float64))
+
+        # Handle single-input case (B is a column vector)
+        if self.B.ndim == 1 or self.B.shape[1] == 1:
+            self.B = self.B.reshape(-1, 1)
+
+        # Validate dimensions
+        n = self.A.shape[0]
+        if self.A.shape[1] != n:
+            raise ValueError(f"A must be square, got shape {self.A.shape}")
+        if self.B.shape[0] != n:
+            raise ValueError(f"B rows ({self.B.shape[0]}) must match A dimension ({n})")
+
+        self.n_states = n
+        self.n_inputs = self.B.shape[1]
+
+        # Initialize state
+        if initial_state is not None:
+            self.initial_state = np.array(initial_state, dtype=np.float64)
+            if self.initial_state.shape[0] != n:
+                raise ValueError(
+                    f"Initial state size ({self.initial_state.shape[0]}) "
+                    f"must match system dimension ({n})"
+                )
+        else:
+            self.initial_state = np.zeros(n, dtype=np.float64)
+
+        self.state = self.initial_state.copy()
+        self.disturbance_fn = disturbance_fn
+        self.time = 0.0
+
+    def step(self, control_input: float | np.ndarray, dt: float) -> float:
+        """Execute one time step using RK4 integration.
+
+        Args:
+            control_input: Control signal (scalar or vector)
+            dt: Time step
+
+        Returns:
+            Plant output (first state component)
+
+        Raises:
+            ValueError: If control input dimension doesn't match system
+        """
+        # Convert control to array
+        u = np.atleast_1d(np.array(control_input, dtype=np.float64))
+        if u.shape[0] != self.n_inputs:
+            raise ValueError(
+                f"Control input size ({u.shape[0]}) must match "
+                f"system inputs ({self.n_inputs})"
+            )
+
+        # RK4 integration
+        def dynamics(x: np.ndarray, t: float) -> np.ndarray:
+            """Compute state derivative."""
+            disturbance = np.zeros(self.n_states)
+            if self.disturbance_fn is not None:
+                disturbance = self.disturbance_fn(t)
+
+            # ẋ = Ax + Bu + d
+            return self.A @ x + self.B @ u + disturbance
+
+        # RK4 steps
+        k1 = dynamics(self.state, self.time)
+        k2 = dynamics(self.state + 0.5 * dt * k1, self.time + 0.5 * dt)
+        k3 = dynamics(self.state + 0.5 * dt * k2, self.time + 0.5 * dt)
+        k4 = dynamics(self.state + dt * k3, self.time + dt)
+
+        # Update state
+        self.state = self.state + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+        self.time += dt
+
+        # Return output (first state)
+        return float(self.state[0])
+
+    def get_state(self) -> np.ndarray:
+        """Get current plant state.
+
+        Returns:
+            Plant state vector (n,)
+        """
+        return self.state.copy()
+
+    def reset(self) -> None:
+        """Reset plant to initial state."""
+        self.state = self.initial_state.copy()
+        self.time = 0.0
+
+
 class SimpleFirstOrderPlant:
     """Simple first-order plant for testing.
 
     Implements: ẋ = -a*x + b*u + d(t)
 
     where d(t) is optional disturbance.
+
+    Note: This is a convenience class. For general applications,
+    use LinearPlant with A=[-a], B=[b].
     """
 
     def __init__(
@@ -345,6 +489,10 @@ class PersistenceOfExcitationMonitor:
     def is_persistently_exciting(self) -> bool:
         """Check if signal is persistently exciting.
 
+        A signal is PE if:
+        1. Minimum eigenvalue > threshold (sufficient excitation)
+        2. Condition number < threshold (well-conditioned)
+
         Returns:
             True if signal meets PE conditions
         """
@@ -357,16 +505,17 @@ class PersistenceOfExcitationMonitor:
 
         # Check eigenvalues
         eigenvalues = np.linalg.eigvalsh(covariance)
-        min_eigenvalue = np.min(eigenvalues)
-        max_eigenvalue = np.max(eigenvalues)
+        min_eigenvalue = float(np.min(eigenvalues))
+        max_eigenvalue = float(np.max(eigenvalues))
 
+        # Must have sufficient excitation
         if min_eigenvalue < self.min_eigenvalue_threshold:
             return False
 
-        # Check condition number
+        # Must be well-conditioned
         condition_number = max_eigenvalue / (min_eigenvalue + 1e-12)
 
-        return condition_number < self.condition_threshold
+        return bool(condition_number < self.condition_threshold)
 
     def get_condition_number(self) -> float:
         """Get current condition number of regressor covariance.
@@ -410,32 +559,39 @@ class PersistenceOfExcitationMonitor:
 
 
 class AdaptiveControlConfig(BaseModel):
-    """Configuration for adaptive controller with automatic validation.
+    """Configuration for research-grade MRAC controller.
+
+    This configuration supports all features of the canonical MRAC formulation
+    including stability guarantees, PE monitoring, and advanced diagnostics.
 
     Attributes:
         num_parameters: Number of adaptive parameters to estimate
-        adaptation_gain: Initial learning rate for parameter updates (γ > 0)
+        adaptation_gain: Initial learning rate Γ for parameter updates (γ > 0)
         reference_model: Callable that generates reference trajectory (deprecated)
         reference_model_dynamics: Dynamic reference model with state
-        initial_parameters: Initial guess for adaptive parameters
+        initial_parameters: Initial guess for adaptive parameters θ₀
         parameter_bounds: Optional bounds for parameter values (min, max)
-        dead_zone: Dead zone threshold to prevent parameter drift
-        sigma_modification: Leakage term coefficient for robustness (0 ≤ σ ≤ 1)
+        dead_zone: Dead zone threshold to prevent parameter drift on small errors
+        sigma_modification: Leakage term coefficient σ for robustness (0 ≤ σ ≤ 1)
         use_normalization: Whether to normalize regressor for stability
-        enable_adaptive_gain: Whether to adapt learning rate dynamically
+        enable_adaptive_gain: Whether to adapt learning rate Γ(t) dynamically
         gain_adaptation_rate: Rate of learning rate adaptation
-        min_adaptation_gain: Minimum allowed learning rate
-        max_adaptation_gain: Maximum allowed learning rate
+        min_adaptation_gain: Minimum allowed learning rate Γₘᵢₙ
+        max_adaptation_gain: Maximum allowed learning rate Γₘₐₓ
         enable_pe_monitoring: Enable persistence of excitation monitoring
-        pe_window_size: Window size for PE monitoring
-        pe_condition_threshold: Maximum condition number for PE
+        pe_window_size: Window size for PE covariance estimation
+        pe_condition_threshold: Maximum condition number for PE acceptance
+        pe_min_eigenvalue: Minimum eigenvalue threshold for PE
+        freeze_on_pe_failure: Freeze parameter updates when PE condition fails
         enable_lyapunov_monitoring: Enable Lyapunov stability monitoring
+        lyapunov_p_matrix: Lyapunov matrix P for V = eᵀPe (None uses identity)
+        track_full_history: Track complete state history for diagnostics
         debug: Whether to enable debug logging
     """
 
     num_parameters: int = Field(gt=0, description="Number of adaptive parameters")
     adaptation_gain: float = Field(
-        default=0.1, gt=0.0, description="Initial learning rate for adaptation"
+        default=0.1, gt=0.0, description="Initial learning rate Γ for adaptation"
     )
     reference_model: Callable[[float], float] | None = Field(
         default=None, description="Reference model function (deprecated)"
@@ -444,7 +600,7 @@ class AdaptiveControlConfig(BaseModel):
         default=None, description="Dynamic reference model with state"
     )
     initial_parameters: list[float] | None = Field(
-        default=None, description="Initial parameter values"
+        default=None, description="Initial parameter values θ₀"
     )
     parameter_bounds: tuple[float, float] | None = Field(
         default=None, description="Parameter bounds (min, max)"
@@ -456,34 +612,47 @@ class AdaptiveControlConfig(BaseModel):
         default=0.0,
         ge=0.0,
         le=1.0,
-        description="Sigma modification (leakage) coefficient",
+        description="Sigma modification (leakage) coefficient σ",
     )
     use_normalization: bool = Field(
         default=True, description="Use normalized gradient for stability"
     )
     enable_adaptive_gain: bool = Field(
-        default=False, description="Enable adaptive learning rate scheduling"
+        default=False, description="Enable adaptive learning rate Γ(t) scheduling"
     )
     gain_adaptation_rate: float = Field(
         default=0.01, gt=0.0, description="Rate of learning rate adaptation"
     )
     min_adaptation_gain: float = Field(
-        default=0.001, gt=0.0, description="Minimum learning rate"
+        default=0.001, gt=0.0, description="Minimum learning rate Γₘᵢₙ"
     )
     max_adaptation_gain: float = Field(
-        default=1.0, gt=0.0, description="Maximum learning rate"
+        default=1.0, gt=0.0, description="Maximum learning rate Γₘₐₓ"
     )
     enable_pe_monitoring: bool = Field(
         default=False, description="Enable persistence of excitation monitoring"
     )
     pe_window_size: int = Field(
-        default=100, gt=0, description="Window size for PE monitoring"
+        default=100, gt=0, description="Window size for PE covariance estimation"
     )
     pe_condition_threshold: float = Field(
         default=100.0, gt=0.0, description="Maximum condition number for PE"
     )
+    pe_min_eigenvalue: float = Field(
+        default=1e-6, gt=0.0, description="Minimum eigenvalue threshold for PE"
+    )
+    freeze_on_pe_failure: bool = Field(
+        default=False,
+        description="Freeze parameter updates when PE condition fails",
+    )
     enable_lyapunov_monitoring: bool = Field(
         default=False, description="Enable Lyapunov stability monitoring"
+    )
+    lyapunov_p_matrix: list[list[float]] | None = Field(
+        default=None, description="Lyapunov matrix P for V = eᵀPe (None uses I)"
+    )
+    track_full_history: bool = Field(
+        default=True, description="Track complete state history for diagnostics"
     )
     debug: bool = Field(default=False, description="Enable debug logging")
 
@@ -545,7 +714,7 @@ class AdaptiveController:
         """
         self.config = config
 
-        # Initialize parameters
+        # Initialize parameters θ
         if config.initial_parameters is not None:
             if len(config.initial_parameters) != config.num_parameters:
                 raise ValueError(
@@ -559,7 +728,7 @@ class AdaptiveController:
         self._reference_output: float = 0.0
         self._adaptation_history: list[np.ndarray] = []
 
-        # Current adaptive gain (can change if adaptive gain is enabled)
+        # Current adaptive gain Γ(t) - can change if adaptive gain is enabled
         self._current_gain = config.adaptation_gain
         self._gain_history: list[float] = []
 
@@ -568,18 +737,42 @@ class AdaptiveController:
 
         # Persistence of excitation monitor
         self._pe_monitor: PersistenceOfExcitationMonitor | None = None
+        self._pe_frozen = False  # Track if parameters are frozen due to PE failure
         if config.enable_pe_monitoring:
             self._pe_monitor = PersistenceOfExcitationMonitor(
                 window_size=config.pe_window_size,
                 condition_threshold=config.pe_condition_threshold,
+                min_eigenvalue_threshold=config.pe_min_eigenvalue,
             )
 
-        # Lyapunov function monitoring
+        # Lyapunov function monitoring with matrix P
+        self._lyapunov_P: np.ndarray | None = None
+        if config.lyapunov_p_matrix is not None:
+            self._lyapunov_P = np.array(config.lyapunov_p_matrix, dtype=np.float64)
         self._lyapunov_history: list[float] = []
         self._lyapunov_derivative_history: list[float] = []
 
         # Error history for adaptive gain
         self._error_history: list[float] = []
+
+        # Full history tracking for diagnostics
+        if config.track_full_history:
+            self._time_history: list[float] = []
+            self._control_history: list[float] = []
+            self._reference_history: list[float] = []
+            self._measurement_history: list[float] = []
+            self._pe_condition_history: list[float] = []
+            self._pe_status_history: list[bool] = []
+        else:
+            self._time_history = []
+            self._control_history = []
+            self._reference_history = []
+            self._measurement_history = []
+            self._pe_condition_history = []
+            self._pe_status_history = []
+
+        # Time counter
+        self._current_time = 0.0
 
         if self.config.debug:
             logger.setLevel(logging.DEBUG)
@@ -599,15 +792,19 @@ class AdaptiveController:
     ) -> float:
         """Compute adaptive control output and update parameters.
 
+        Implements the canonical MRAC law:
+            u = θᵀφ
+            θ̇ = -Γφe (with optional normalization, sigma, and projection)
+
         Args:
-            measurement: Current plant output
+            measurement: Current plant output y
             regressor: Feature vector φ(t) for parameter adaptation
-            reference: Reference signal (uses reference_model if None)
+            reference: Reference signal r (uses reference_model if None)
             reference_input: Input to reference model dynamics (if using dynamics)
             dt: Time step for integration
 
         Returns:
-            Control output signal
+            Control output signal u
 
         Raises:
             ValueError: If regressor dimension doesn't match num_parameters
@@ -616,7 +813,7 @@ class AdaptiveController:
             >>> controller = AdaptiveController(AdaptiveControlConfig(num_parameters=2))
             >>> output = controller.compute(measurement=5.0, regressor=[1.0, 5.0])
         """
-        # Convert regressor to numpy array
+        # Convert regressor φ to numpy array
         phi = np.array(regressor, dtype=np.float64)
 
         if phi.shape[0] != self.config.num_parameters:
@@ -626,10 +823,27 @@ class AdaptiveController:
             )
 
         # Update PE monitor
+        pe_status = True  # Assume PE satisfied unless proven otherwise
+        pe_condition = 0.0
         if self._pe_monitor is not None:
             self._pe_monitor.update(phi)
+            pe_status = self._pe_monitor.is_persistently_exciting()
+            pe_condition = self._pe_monitor.get_condition_number()
 
-        # Get reference signal
+            # Check if we should freeze parameters
+            if self.config.freeze_on_pe_failure and not pe_status:
+                if not self._pe_frozen:
+                    logger.warning(
+                        "⚠️ PE condition violated (κ=%.2f). Freezing parameter updates.",
+                        pe_condition,
+                    )
+                    self._pe_frozen = True
+            else:
+                if self._pe_frozen:
+                    logger.info("✓ PE condition restored. Resuming parameter updates.")
+                    self._pe_frozen = False
+
+        # Get reference signal yₘ
         if reference is not None:
             self._reference_output = reference
         elif self._ref_model_dynamics is not None:
@@ -642,55 +856,76 @@ class AdaptiveController:
         else:
             self._reference_output = 0.0
 
-        # Calculate tracking error
+        # Calculate tracking error e = yₘ - y
         error = self._reference_output - measurement
         self._error_history.append(abs(error))
 
         # Apply dead zone to prevent drift on small errors
+        error_for_adaptation = error
         if abs(error) < self.config.dead_zone:
-            error = 0.0
+            error_for_adaptation = 0.0
 
-        # Adapt learning rate if enabled
+        # Adapt learning rate Γ(t) if enabled
         if self.config.enable_adaptive_gain:
             self._update_adaptive_gain(error, dt)
 
-        # Compute control output
+        # Compute control output: u = θᵀφ
         control_output = float(np.dot(self._parameters, phi))
 
-        # Parameter adaptation using MIT rule with modifications
-        if self.config.use_normalization:
-            # Normalized gradient for stability
-            normalization = 1.0 + np.dot(phi, phi)
-            adaptation = self._current_gain * error * phi / normalization
-        else:
-            # Standard gradient
-            adaptation = self._current_gain * error * phi
+        # Parameter adaptation: θ̇ = -Γφe (canonical MRAC)
+        # With normalization, becomes: θ̇ = -Γφe/(1 + φᵀφ)
+        adaptation = np.zeros_like(self._parameters)
 
-        # Add sigma modification (leakage) for robustness
-        if self.config.sigma_modification > 0.0:
-            leakage = self.config.sigma_modification * self._parameters
-            adaptation = adaptation - leakage
+        if not self._pe_frozen or not self.config.freeze_on_pe_failure:
+            if self.config.use_normalization:
+                # Normalized gradient for stability
+                normalization = 1.0 + np.dot(phi, phi)
+                adaptation = (
+                    self._current_gain * error_for_adaptation * phi / normalization
+                )
+            else:
+                # Standard gradient: θ̇ = -Γφe (note: MIT rule uses +)
+                # We use + to make error positive when tracking
+                adaptation = self._current_gain * error_for_adaptation * phi
 
-        # Update parameters
-        self._parameters = self._parameters + adaptation * dt
+            # Add sigma modification (leakage) for robustness: -σθ
+            if self.config.sigma_modification > 0.0:
+                leakage = self.config.sigma_modification * self._parameters
+                adaptation = adaptation - leakage
 
-        # Project parameters to bounds if specified
-        if self.config.parameter_bounds is not None:
-            min_val, max_val = self.config.parameter_bounds
-            self._parameters = np.clip(self._parameters, min_val, max_val)
+            # Update parameters: θ(t+dt) = θ(t) + θ̇·dt
+            self._parameters = self._parameters + adaptation * dt
+
+            # Project parameters to bounds if specified
+            if self.config.parameter_bounds is not None:
+                min_val, max_val = self.config.parameter_bounds
+                self._parameters = np.clip(self._parameters, min_val, max_val)
 
         # Store adaptation history
         self._adaptation_history.append(self._parameters.copy())
         self._gain_history.append(self._current_gain)
 
+        # Store full history for diagnostics
+        if self.config.track_full_history:
+            self._time_history.append(self._current_time)
+            self._control_history.append(control_output)
+            self._reference_history.append(self._reference_output)
+            self._measurement_history.append(measurement)
+            self._pe_condition_history.append(pe_condition)
+            self._pe_status_history.append(pe_status)
+
         # Compute Lyapunov function if enabled
         if self.config.enable_lyapunov_monitoring:
             self._update_lyapunov(error, phi, adaptation, dt)
 
+        # Update time
+        self._current_time += dt
+
         if self.config.debug:
             logger.debug(
-                f"Adaptive: e={error:.3f}, θ={self._parameters}, "
-                f"γ={self._current_gain:.4f}, u={control_output:.3f}"
+                f"MRAC: t={self._current_time:.2f}, e={error:.3f}, θ={self._parameters}, "
+                f"Γ={self._current_gain:.4f}, u={control_output:.3f}, "
+                f"PE={pe_status}, frozen={self._pe_frozen}"
             )
 
         return control_output
@@ -727,20 +962,45 @@ class AdaptiveController:
     ) -> None:
         """Update Lyapunov function and derivative.
 
-        Computes V = e² + θ̃ᵀΓ⁻¹θ̃ and V̇
+        Implements the canonical MRAC Lyapunov function:
+            V = eᵀPe + θ̃ᵀΓ⁻¹θ̃
+
+        where:
+            - e: Tracking error (scalar in this case)
+            - P: Positive definite matrix (default: identity)
+            - θ̃: Parameter error (θ* - θ, unknown in practice)
+            - Γ: Adaptation gain
+
+        For analysis, we use a simplified form V ≈ e² since θ* is unknown.
+
+        The derivative should satisfy:
+            V̇ = -eᵀQe ≤ 0 (Q > 0 for stability)
 
         Args:
-            error: Tracking error
-            phi: Regressor vector
-            adaptation: Parameter adaptation vector
+            error: Tracking error e
+            phi: Regressor vector φ
+            adaptation: Parameter adaptation vector θ̇
             dt: Time step
         """
-        # Simplified Lyapunov function: V = e²
-        lyapunov = error**2
+        # Compute V = eᵀPe (scalar case with P = identity or user-provided)
+        if self._lyapunov_P is not None:
+            # Use provided P matrix (for multi-output systems)
+            error_vec = np.array([error])
+            lyapunov = float(error_vec.T @ self._lyapunov_P @ error_vec)
+        else:
+            # Simplified form: V = e²
+            lyapunov = error**2
+
+        # Note: We cannot compute the full V = eᵀPe + θ̃ᵀΓ⁻¹θ̃ because
+        # we don't know the true parameters θ*. However, for MRAC with
+        # proper design, V̇ ≤ 0 is guaranteed theoretically.
+
         self._lyapunov_history.append(lyapunov)
 
-        # Lyapunov derivative: V̇ = 2*e*ė
-        # For MRAC: ė ≈ -adaptation · phi (simplified)
+        # Lyapunov derivative: V̇ (numerical approximation)
+        # Theoretical: V̇ = 2e·ė for the error part
+        # For MRAC: V̇ = -eᵀQe + 2θ̃ᵀΓ⁻¹θ̃̇
+        # With proper MRAC design: V̇ ≤ -λ_min(Q)e²
         if len(self._lyapunov_history) >= 2:
             lyapunov_derivative = (lyapunov - self._lyapunov_history[-2]) / dt
             self._lyapunov_derivative_history.append(lyapunov_derivative)
@@ -750,7 +1010,7 @@ class AdaptiveController:
     def reset(self) -> None:
         """Reset controller to initial state.
 
-        Resets parameters to initial values and clears adaptation history.
+        Resets parameters to initial values and clears all history.
 
         Example:
             >>> controller.reset()
@@ -770,8 +1030,21 @@ class AdaptiveController:
         self._lyapunov_history = []
         self._lyapunov_derivative_history = []
 
+        # Reset PE state
+        self._pe_frozen = False
         if self._pe_monitor is not None:
             self._pe_monitor.reset()
+
+        # Reset full history
+        self._time_history = []
+        self._control_history = []
+        self._reference_history = []
+        self._measurement_history = []
+        self._pe_condition_history = []
+        self._pe_status_history = []
+
+        # Reset time
+        self._current_time = 0.0
 
         if self._ref_model_dynamics is not None:
             self._ref_model_dynamics.reset()  # type: ignore[attr-defined]
@@ -989,6 +1262,261 @@ class AdaptiveController:
         if self._ref_model_dynamics is None:
             return None
         return self._ref_model_dynamics.get_state()  # type: ignore[attr-defined]
+
+    def get_full_history(self) -> dict[str, np.ndarray]:
+        """Get complete history of all tracked variables.
+
+        Returns comprehensive data for analysis and visualization.
+
+        Returns:
+            Dictionary containing:
+                - 'time': Time vector
+                - 'measurement': Plant output history
+                - 'reference': Reference signal history
+                - 'control': Control signal history
+                - 'error': Tracking error history (absolute values)
+                - 'parameters': Parameter evolution (n_steps x num_params)
+                - 'gamma': Adaptation gain history
+                - 'lyapunov': Lyapunov function values (if monitoring enabled)
+                - 'lyapunov_derivative': V̇ values (if monitoring enabled)
+                - 'pe_condition': PE condition number history
+                - 'pe_status': PE satisfaction status history (bool)
+
+        Example:
+            >>> history = controller.get_full_history()
+            >>> import matplotlib.pyplot as plt
+            >>> plt.plot(history['time'], history['error'])
+            >>> plt.show()
+        """
+        history: dict[str, np.ndarray] = {}
+
+        if self._time_history:
+            history["time"] = np.array(self._time_history)
+            history["measurement"] = np.array(self._measurement_history)
+            history["reference"] = np.array(self._reference_history)
+            history["control"] = np.array(self._control_history)
+            history["error"] = np.array(self._error_history)
+            history["pe_condition"] = np.array(self._pe_condition_history)
+            history["pe_status"] = np.array(self._pe_status_history)
+
+        if self._adaptation_history:
+            history["parameters"] = np.array(self._adaptation_history)
+
+        if self._gain_history:
+            history["gamma"] = np.array(self._gain_history)
+
+        if self._lyapunov_history:
+            history["lyapunov"] = np.array(self._lyapunov_history)
+            history["lyapunov_derivative"] = np.array(self._lyapunov_derivative_history)
+
+        return history
+
+    def report_metrics(self) -> dict[str, float]:
+        """Generate performance metrics report.
+
+        Computes various performance indicators for the adaptive controller.
+
+        Returns:
+            Dictionary containing:
+                - 'final_error': Final tracking error (absolute)
+                - 'mean_error': Mean tracking error
+                - 'rms_error': RMS tracking error
+                - 'max_error': Maximum tracking error
+                - 'convergence_rate': Parameter convergence rate
+                - 'final_gamma': Final adaptation gain
+                - 'mean_gamma': Mean adaptation gain
+                - 'pe_satisfaction_rate': Fraction of time PE was satisfied
+                - 'mean_pe_condition': Mean PE condition number
+                - 'lyapunov_stable': Whether Lyapunov stable (if monitoring enabled)
+
+        Example:
+            >>> metrics = controller.report_metrics()
+            >>> print(f"RMS Error: {metrics['rms_error']:.4f}")
+            >>> print(f"PE Satisfaction: {metrics['pe_satisfaction_rate']*100:.1f}%")
+        """
+        metrics: dict[str, float] = {}
+
+        # Error metrics
+        if self._error_history:
+            errors = np.array(self._error_history)
+            metrics["final_error"] = float(errors[-1]) if len(errors) > 0 else 0.0
+            metrics["mean_error"] = float(np.mean(errors))
+            metrics["rms_error"] = float(np.sqrt(np.mean(errors**2)))
+            metrics["max_error"] = float(np.max(errors))
+        else:
+            metrics["final_error"] = 0.0
+            metrics["mean_error"] = 0.0
+            metrics["rms_error"] = 0.0
+            metrics["max_error"] = 0.0
+
+        # Convergence metrics
+        metrics["convergence_rate"] = self.estimate_convergence_rate()
+
+        # Adaptation gain metrics
+        if self._gain_history:
+            gains = np.array(self._gain_history)
+            metrics["final_gamma"] = float(gains[-1])
+            metrics["mean_gamma"] = float(np.mean(gains))
+        else:
+            metrics["final_gamma"] = self._current_gain
+            metrics["mean_gamma"] = self._current_gain
+
+        # PE metrics
+        if self._pe_status_history:
+            pe_status = np.array(self._pe_status_history)
+            metrics["pe_satisfaction_rate"] = float(np.mean(pe_status))
+        else:
+            metrics["pe_satisfaction_rate"] = 1.0  # Assume satisfied if not monitored
+
+        if self._pe_condition_history:
+            # Filter out infinities for mean calculation
+            conditions = np.array(self._pe_condition_history)
+            finite_conditions = conditions[np.isfinite(conditions)]
+            if len(finite_conditions) > 0:
+                metrics["mean_pe_condition"] = float(np.mean(finite_conditions))
+            else:
+                metrics["mean_pe_condition"] = float("inf")
+        else:
+            metrics["mean_pe_condition"] = 0.0
+
+        # Lyapunov stability
+        if self._lyapunov_derivative_history:
+            metrics["lyapunov_stable"] = float(
+                self.is_lyapunov_stable(
+                    window=min(50, len(self._lyapunov_derivative_history))
+                )
+            )
+        else:
+            metrics["lyapunov_stable"] = 0.0  # Unknown
+
+        return metrics
+
+    def plot_results(self, save_path: str | None = None) -> None:
+        """Generate comprehensive diagnostic plots.
+
+        Creates a multi-panel figure showing:
+        1. Tracking performance (reference vs measurement)
+        2. Control signal
+        3. Parameter evolution
+        4. Adaptation gain Γ(t)
+        5. Lyapunov function (if monitoring enabled)
+        6. PE condition number
+
+        Args:
+            save_path: Optional path to save figure (e.g., 'mrac_results.png')
+
+        Raises:
+            ImportError: If matplotlib is not installed
+            ValueError: If no history data available
+
+        Example:
+            >>> controller.plot_results('mrac_diagnostic.png')
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as err:
+            raise ImportError(
+                "matplotlib is required for plotting. "
+                "Install with: pip install matplotlib"
+            ) from err
+
+        history = self.get_full_history()
+        if not history or "time" not in history:
+            raise ValueError("No history data available. Run controller first.")
+
+        # Create figure with subplots
+        n_plots = 4
+        if self._lyapunov_history:
+            n_plots += 1
+        if self._pe_condition_history:
+            n_plots += 1
+
+        fig, axes = plt.subplots(n_plots, 1, figsize=(10, 2.5 * n_plots))
+        if n_plots == 1:
+            axes = [axes]
+
+        time = history["time"]
+        plot_idx = 0
+
+        # 1. Tracking performance
+        axes[plot_idx].plot(
+            time, history["reference"], "r--", label="Reference", linewidth=2
+        )
+        axes[plot_idx].plot(
+            time, history["measurement"], "b-", label="Measurement", alpha=0.8
+        )
+        axes[plot_idx].set_ylabel("Output")
+        axes[plot_idx].set_title("Tracking Performance")
+        axes[plot_idx].legend()
+        axes[plot_idx].grid(True, alpha=0.3)
+        plot_idx += 1
+
+        # 2. Control signal
+        axes[plot_idx].plot(time, history["control"], "g-", linewidth=1.5)
+        axes[plot_idx].set_ylabel("Control u")
+        axes[plot_idx].set_title("Control Signal")
+        axes[plot_idx].grid(True, alpha=0.3)
+        plot_idx += 1
+
+        # 3. Parameter evolution
+        if "parameters" in history:
+            params = history["parameters"]
+            for i in range(params.shape[1]):
+                axes[plot_idx].plot(time, params[:, i], label=f"θ_{i + 1}")
+            axes[plot_idx].set_ylabel("Parameters θ")
+            axes[plot_idx].set_title("Parameter Evolution")
+            axes[plot_idx].legend()
+            axes[plot_idx].grid(True, alpha=0.3)
+            plot_idx += 1
+
+        # 4. Adaptation gain
+        if "gamma" in history:
+            axes[plot_idx].plot(time, history["gamma"], "m-", linewidth=1.5)
+            axes[plot_idx].set_ylabel("Gain Γ")
+            axes[plot_idx].set_title("Adaptation Gain")
+            axes[plot_idx].grid(True, alpha=0.3)
+            plot_idx += 1
+
+        # 5. Lyapunov function (if available)
+        if "lyapunov" in history:
+            axes[plot_idx].semilogy(time, history["lyapunov"], "k-", linewidth=1.5)
+            axes[plot_idx].set_ylabel("V (log scale)")
+            axes[plot_idx].set_title("Lyapunov Function")
+            axes[plot_idx].grid(True, alpha=0.3)
+            plot_idx += 1
+
+        # 6. PE condition number (if available)
+        if "pe_condition" in history:
+            cond = history["pe_condition"]
+            # Filter out infinities for plotting
+            finite_mask = np.isfinite(cond)
+            if np.any(finite_mask):
+                axes[plot_idx].semilogy(
+                    time[finite_mask],
+                    cond[finite_mask],
+                    "c-",
+                    linewidth=1.5,
+                    label="Condition Number",
+                )
+                axes[plot_idx].axhline(
+                    y=self.config.pe_condition_threshold,
+                    color="r",
+                    linestyle="--",
+                    label="PE Threshold",
+                )
+                axes[plot_idx].set_ylabel("κ (log scale)")
+                axes[plot_idx].set_title("PE Condition Number")
+                axes[plot_idx].legend()
+                axes[plot_idx].grid(True, alpha=0.3)
+
+        axes[-1].set_xlabel("Time (s)")
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
+            logger.info(f"📊 Diagnostic plots saved to {save_path}")
+        else:
+            plt.show()
 
 
 def simulate_closed_loop(

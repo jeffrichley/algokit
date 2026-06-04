@@ -635,7 +635,9 @@ class TestRobustController:
         controller = RobustController(config)
 
         # Act - Compute H-infinity norm via frequency sweep
-        hinf_norm = controller.compute_hinf_norm(num_freq_points=100)
+        hinf_norm = controller.compute_hinf_norm(
+            num_freq_points=100, return_diagnostics=False
+        )
 
         # Assert - Norm should be positive and less than gamma
         assert hinf_norm > 0.0
@@ -677,6 +679,333 @@ class TestRobustController:
         # Both should be positive semi-definite
         assert np.all(np.linalg.eigvals(X) >= -1e-10)
         assert np.all(np.linalg.eigvals(Y) >= -1e-10)
+
+    @pytest.mark.unit
+    def test_get_closed_loop_eigs_alias(self) -> None:
+        """Test get_closed_loop_eigs() is an alias for get_closed_loop_eigenvalues()."""
+        # Arrange - Create robust controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=1.0,
+        )
+        controller = RobustController(config)
+
+        # Act - Get eigenvalues using both methods
+        eigs1 = controller.get_closed_loop_eigenvalues()
+        eigs2 = controller.get_closed_loop_eigs()
+
+        # Assert - Both methods should return identical results
+        assert np.allclose(eigs1, eigs2)
+
+    @pytest.mark.unit
+    def test_report_feasibility(self) -> None:
+        """Test feasibility report provides complete diagnostics."""
+        # Arrange - Create robust controller with known feasible system
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=5.0,  # Large gamma ensures feasibility
+        )
+        controller = RobustController(config)
+
+        # Act - Get feasibility report
+        report = controller.report_feasibility()
+
+        # Assert - Report should contain all required keys
+        assert "feasible" in report
+        assert "rho_XY" in report
+        assert "lambda_max_XY" in report
+        assert "gamma_squared" in report
+        assert "margin" in report
+        assert "margin_percent" in report
+        assert "min_cl_real_part" in report
+        assert "is_stable" in report
+
+        # Verify types
+        assert isinstance(report["feasible"], bool)
+        assert isinstance(report["rho_XY"], float)
+        assert isinstance(report["is_stable"], bool)
+
+        # Verify feasibility conditions
+        assert report["feasible"] is True
+        assert report["is_stable"] is True
+        assert report["rho_XY"] < report["gamma_squared"]
+        assert report["margin"] > 0
+
+    @pytest.mark.unit
+    def test_simulate_response_with_rk4(self) -> None:
+        """Test simulate_response method with RK4 integration."""
+        # Arrange - Create robust controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=1.0,
+        )
+        controller = RobustController(config)
+
+        # Act - Simulate with zero disturbance
+        times, states = controller.simulate_response(
+            x0=[1.0, 0.0], t_final=1.0, dt=0.01, integration_method="rk4"
+        )
+
+        # Assert - Output shapes should be correct
+        assert times.shape[0] == 100
+        assert states.shape == (100, 2)
+        # States should converge to zero
+        assert np.linalg.norm(states[-1]) < np.linalg.norm(states[0])
+
+    @pytest.mark.unit
+    def test_simulate_response_with_disturbance_function(self) -> None:
+        """Test simulate_response with time-varying disturbance function."""
+        # Arrange - Create robust controller and sinusoidal disturbance
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=2.0,
+        )
+        controller = RobustController(config)
+
+        # Define time-varying disturbance
+        def disturbance(t: float) -> np.ndarray:
+            return np.array([0.1 * np.sin(2 * np.pi * t)])
+
+        # Act - Simulate with disturbance
+        times, states = controller.simulate_response(
+            x0=[0.0, 0.0], t_final=2.0, dt=0.01, w_func=disturbance
+        )
+
+        # Assert - States should remain bounded due to H∞ control
+        max_state_norm = np.max(np.linalg.norm(states, axis=1))
+        assert max_state_norm < 5.0  # Should be reasonably bounded
+
+    @pytest.mark.unit
+    def test_simulate_with_disturbance_euler_integration(self) -> None:
+        """Test simulate_with_disturbance using Euler integration method."""
+        # Arrange - Create controller and disturbance sequence
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=1.0,
+        )
+        controller = RobustController(config)
+        disturbances = [[0.1] for _ in range(50)]
+
+        # Act - Simulate with Euler integration
+        states, controls = controller.simulate_with_disturbance(
+            initial_state=[1.0, 0.0],
+            disturbance_sequence=disturbances,
+            dt=0.01,
+            integration_method="euler",
+        )
+
+        # Assert - Should return correct shapes
+        assert states.shape == (51, 2)
+        assert controls.shape == (50, 1)
+
+    @pytest.mark.unit
+    def test_simulate_with_disturbance_invalid_method(self) -> None:
+        """Test simulate_with_disturbance raises error for invalid integration method."""
+        # Arrange - Create controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=1.0,
+        )
+        controller = RobustController(config)
+        disturbances = [[0.1] for _ in range(10)]
+
+        # Act & Assert - Should raise ValueError for invalid method
+        with pytest.raises(ValueError, match="Unknown integration method"):
+            controller.simulate_with_disturbance(
+                initial_state=[1.0, 0.0],
+                disturbance_sequence=disturbances,
+                integration_method="invalid_method",
+            )
+
+    @pytest.mark.unit
+    def test_compute_hinf_norm_with_diagnostics(self) -> None:
+        """Test compute_hinf_norm returns diagnostics when requested."""
+        # Arrange - Create robust controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=5.0,
+        )
+        controller = RobustController(config)
+
+        # Act - Compute norm with diagnostics
+        result = controller.compute_hinf_norm(
+            num_freq_points=100, return_diagnostics=True
+        )
+        assert isinstance(result, tuple)
+        norm, diagnostics = result
+
+        # Assert - Should return norm and diagnostics dictionary
+        assert isinstance(norm, float)
+        assert isinstance(diagnostics, dict)
+        assert "peak_frequency" in diagnostics
+        assert "freq_min" in diagnostics
+        assert "freq_max" in diagnostics
+        assert "num_points" in diagnostics
+        assert "frequencies" in diagnostics
+        assert "singular_values" in diagnostics
+        assert diagnostics["num_points"] == 100
+
+    @pytest.mark.unit
+    def test_compute_hinf_norm_custom_frequency_range(self) -> None:
+        """Test compute_hinf_norm with custom frequency range."""
+        # Arrange - Create robust controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=5.0,
+        )
+        controller = RobustController(config)
+
+        # Act - Compute norm with custom frequency range
+        norm = controller.compute_hinf_norm(
+            num_freq_points=50, freq_range=(0.1, 10.0), return_diagnostics=False
+        )
+
+        # Assert - Should return valid norm
+        assert norm > 0.0
+        assert norm < config.gamma
+
+    @pytest.mark.unit
+    def test_compute_hinf_norm_invalid_frequency_range(self) -> None:
+        """Test compute_hinf_norm raises error for invalid frequency range."""
+        # Arrange - Create robust controller
+        A = [[0, 1], [-1, -0.5]]
+        B1 = [[0], [1]]
+        B2 = [[0], [1]]
+        C1 = [[1, 0], [0, 1]]
+        D11 = [[0], [0]]
+        D12 = [[0], [1]]
+        config = RobustControlConfig(
+            state_dim=2,
+            control_dim=1,
+            disturbance_dim=1,
+            A=A,
+            B1=B1,
+            B2=B2,
+            C1=C1,
+            D11=D11,
+            D12=D12,
+            gamma=5.0,
+        )
+        controller = RobustController(config)
+
+        # Act & Assert - Should raise ValueError for invalid range
+        with pytest.raises(ValueError, match="must be positive"):
+            controller.compute_hinf_norm(freq_range=(0.0, 10.0))
+
+        with pytest.raises(ValueError, match="must be >"):
+            controller.compute_hinf_norm(freq_range=(10.0, 1.0))
 
     @pytest.mark.unit
     def test_optional_c2_d21_d22_matrices(self) -> None:
