@@ -114,6 +114,23 @@ uv run pytest tests/unit/test_example.py
 - **[API Reference](docs/api.md)**: Complete API documentation
 - **[Contributing Guide](CONTRIBUTING.md)**: How to contribute to the project
 
+## 📖 Build & Serve the Docs Site Locally
+
+algokit ships an [mkdocs-material](https://squidfunk.github.io/mkdocs-material/) site under `docs/`. To preview docs changes locally:
+
+```bash
+# Install the docs dependency group
+uv sync --group docs
+
+# Serve with live reload at http://127.0.0.1:8000/
+uv run mkdocs serve
+
+# Build a static site into ./site/
+uv run mkdocs build
+```
+
+The justfile exposes `just docs-serve` (live reload) and `just docs` (build) as idiomatic in-repo shortcuts; see `mkdocs.yml` for further configuration (theme, plugins, navigation).
+
 ## 🛠️ Development
 
 ### Quality Checks
