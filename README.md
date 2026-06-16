@@ -158,6 +158,16 @@ uv run dev checkit
 uv run dev test
 ```
 
+## 🗺️ Roadmap
+
+Active development areas (see [open issues](https://github.com/jeffrichley/algokit/issues) for live priorities):
+
+- More adaptive control variants (e.g., MIT rule, gain-scheduled LQR)
+- Expanded swarm intelligence catalog
+- Additional examples + notebooks per algorithm family
+
+Contributions and issue proposals welcome.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
