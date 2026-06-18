@@ -723,14 +723,17 @@ class TestSlidingModeAdvancedFeatures:
     @pytest.mark.unit
     def test_adaptive_gain_increases_with_disturbance(self) -> None:
         """Test adaptive gain update based on sliding surface magnitude."""
-        # Arrange - Set up test fixtures and inputs
+        # Arrange - Lyapunov law dK/dt = eta*|s| - rho*K has steady-state
+        # K* = eta*|s|/rho. Need eta*|s| > rho*K_init so dK(0) > 0 and the
+        # gain actually grows: with |s|=10, rho=0.5 (default), K_init=5,
+        # eta must exceed 0.25.
         config = SlidingModeConfig(
             state_dim=2,
             control_dim=1,
             C=[1.0, 0.0],
             K_init=5.0,
             adaptive_gain=True,
-            eta=0.1,
+            eta=0.5,
         )
         controller = SlidingModeController(config)
 
