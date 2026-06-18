@@ -73,7 +73,7 @@ dev = [
   "pre-commit>=3.6",
   # Testing (integral to development)
   "hypothesis>=6.136.6",
-  "pytest>=8.4.1",
+  "pytest>=9.0.3",
   "pytest-asyncio>=1.1.0",
   "pytest-cov>=6.2.1",
   "coverage>=7.0.0",
