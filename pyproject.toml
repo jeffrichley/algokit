@@ -33,7 +33,7 @@ dependencies = [
   "mkdocs-gen-files>=0.5.0",
   "mkdocs-git-revision-date-localized-plugin>=1.4.7",
   "mkdocs-macros-plugin>=1.3.9",
-  "mkdocs-material>=9.6.18",
+  "mkdocs-material>=9.7.7",
   "mkdocs-mermaid2-plugin>=1.2.2",
   "mkdocstrings[python]>=0.30.0",
   "networkx>=3.5",
@@ -105,12 +105,12 @@ dev = [
   "commitizen>=4.8.3",
   "codespell>=2.4.0",
   # Documentation (for development)
-  "mkdocs-material>=9.5",
+  "mkdocs-material>=9.7.7",
   "pytest-drill-sergeant>=0.1.0",
 ]
 docs = [
   "mkdocs>=1.6.1",
-  "mkdocs-material>=9.6.18",
+  "mkdocs-material>=9.7.7",
   "mkdocs-mermaid2-plugin>=1.0.0",
   "mkdocs-git-revision-date-localized-plugin>=1.2.0",
   "mkdocstrings>=0.24.0",
